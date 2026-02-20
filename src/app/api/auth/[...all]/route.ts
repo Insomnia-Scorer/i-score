@@ -2,23 +2,22 @@
 import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
-export const runtime = "edge"; // ここでEdgeを指定
+export const runtime = "edge";
 
-const handler = async (req: Request) => {
-    // 1. まず process.env.DB を見る
-    // 2. なければ req.context.env.DB を見る
-    // 3. どちらもなければ ctx から探す
-    const env = (process.env as any) || (req as any).context?.env;
+// Next.js 15 + Cloudflare Pages で env を確実に捕まえる書き方
+const handler = async (req: Request, ctx: any) => {
+    // 執念で env を探す：ctx.context (Pages) または ctx (Workers)
+    const env = ctx.context?.env || ctx.env || (process.env as any);
 
     if (!env?.DB) {
-        // デバッグ用：何が取れているかログに出す（Cloudflareのログで見れます）
-        console.error("Available env keys:", Object.keys(process.env || {}));
-        return new Response("D1 Database binding (DB) not found. Check wrangler.jsonc", { status: 500 });
+        console.error("Critical: D1 Database not found in any context.");
+        return new Response("D1 Binding Missing", { status: 500 });
     }
 
     const auth = getAuth(env.DB);
     const authHandler = toNextJsHandler(auth);
 
+    // Better Auth は内部でパスを解決するので、メソッドさえ合わせればOK
     if (req.method === "GET") return authHandler.GET(req);
     if (req.method === "POST") return authHandler.POST(req);
     
