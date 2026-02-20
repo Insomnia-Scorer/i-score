@@ -2,18 +2,23 @@
 import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
-const handler = async (req: Request, ctx: any) => {
-    // ctx.context.env (Pages) または ctx.env (Workers) から取得
-    const env = ctx.context?.env || ctx.env;
+export const runtime = "edge"; // ここでEdgeを指定
+
+const handler = async (req: Request) => {
+    // 1. まず process.env.DB を見る
+    // 2. なければ req.context.env.DB を見る
+    // 3. どちらもなければ ctx から探す
+    const env = (process.env as any) || (req as any).context?.env;
 
     if (!env?.DB) {
-        return new Response("D1 Database not found", { status: 500 });
+        // デバッグ用：何が取れているかログに出す（Cloudflareのログで見れます）
+        console.error("Available env keys:", Object.keys(process.env || {}));
+        return new Response("D1 Database binding (DB) not found. Check wrangler.jsonc", { status: 500 });
     }
 
     const auth = getAuth(env.DB);
     const authHandler = toNextJsHandler(auth);
 
-    // リクエストのメソッドに合わせて GET または POST を呼び出す
     if (req.method === "GET") return authHandler.GET(req);
     if (req.method === "POST") return authHandler.POST(req);
     
