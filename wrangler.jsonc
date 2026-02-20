@@ -15,5 +15,12 @@
 	"observability": {
 		"enabled": true
 	},
+	"d1_databases": [
+		{
+			"binding": "DB", 
+			"database_name": "i-score-db",
+			"database_id": "fdcb7241-930e-4ef5-97d2-08f6358faff4"
+		}
+	],
 	"upload_source_maps": true
 }
