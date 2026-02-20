@@ -46,3 +46,5 @@ export const verification = sqliteTable("verification", {
     createdAt: integer("created_at", { mode: "timestamp" }),
     updatedAt: integer("updated_at", { mode: "timestamp" }),
 });
+
+export const schema = { user, session, account, verification };

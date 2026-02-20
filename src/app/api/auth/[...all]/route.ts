@@ -1,6 +1,17 @@
 // src/app/api/auth/[...all]/route.ts
-import { getAuth } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
+
+export const { GET, POST } = toNextJsHandler(auth);
+
+
+/*
+import { toNextJsHandler } from "better-auth/next-js";
+import { auth } from "@/lib/auth";
+import { getDB } from "@/db/drizzle";
+import { request } from "http";
+
+//export const { POST, GET } = toNextJsHandler(auth);
 
 export const runtime = "edge";
 
@@ -13,8 +24,7 @@ const handler = async (req: Request, ctx: any) => {
         console.error("Critical: D1 Database not found in any context.");
         return new Response("D1 Binding Missing", { status: 500 });
     }
-
-    const auth = getAuth(env.DB);
+    const db = getDB(env);
     const authHandler = toNextJsHandler(auth);
 
     // Better Auth は内部でパスを解決するので、メソッドさえ合わせればOK
@@ -24,5 +34,9 @@ const handler = async (req: Request, ctx: any) => {
     return new Response("Method not allowed", { status: 405 });
 };
 
+// D1Database を取得
+export const db = getDB({ DB: handler.arguments[0].DB })
+
 export const GET = handler;
 export const POST = handler;
+*/
