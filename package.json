@@ -47,7 +47,7 @@
 	},
 	"private": true,
 	"scripts": {
-		"build": "OPEN_NEXT_ORIGIN_ALGO=v2 next build",
+		"build": "OPEN_NEXT_ORIGIN_ALGO=v2 next build --webpack",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
 		"check": "npm run build && tsc",
 		"deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
