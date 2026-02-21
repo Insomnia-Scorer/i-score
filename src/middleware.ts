@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 // 💡 重要：better-auth 本体ではなく、クッキー操作専用の軽量ツールだけを使う
 import { getSessionCookie } from "better-auth/cookies";
 
-export const runtime = "edge"; // experimental-edge より edge が安定します
+export const runtime = "experimental-edge"; // experimental-edge より edge が安定します
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
