@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     },
 
     // 3. Webpackレベルで不要なバイナリ（OGP生成など）を物理的に消去する
-    webpack: (config, { isServer }) => {
+    /*webpack: (config, { isServer }) => {
         if (isServer) {
             config.resolve.alias = {
                 ...config.resolve.alias,
@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
             };
         }
         return config;
-    },
+    },*/
 };
 
 export default nextConfig;
