@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-	/* config options here */
+	// サーバー側のサイズを減らすための設定
+    serverExternalPackages: ["@better-auth/cloudflare-d1"], 
+    output: "standalone", // これを試すと、不要な依存関係が削られることがあります
+    experimental: {
+      // 必要なものだけに絞り込む
+      optimizePackageImports: ["lucide-react", "better-auth"],
+    },
 };
 
 export default nextConfig;
