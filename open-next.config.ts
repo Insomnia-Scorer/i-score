@@ -2,9 +2,15 @@
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
 
 export default defineCloudflareConfig({
-	// Uncomment to enable R2 cache,
-	// It should be imported as:
-	// `import r2IncrementalCache from "@opennextjs/cloudflare/overrides/incremental-cache/r2-incremental-cache";`
-	// See https://opennext.js.org/cloudflare/caching for more details
-	// incrementalCache: r2IncrementalCache,
+  default: {
+    // 💡 1つの handler.mjs にまとめず、ページごとにファイルを分割する
+    splitting: true,
+    minify: true,
+  },
+  // 重いライブラリを「外部」として扱い、メインのバイナリから追い出す
+  dangerous: {
+    shards: {
+      // 認証周りなど、特定の重い処理をさらに細かく分割したい場合に設定（まずはsplittingだけでOK）
+    }
+  }
 });
