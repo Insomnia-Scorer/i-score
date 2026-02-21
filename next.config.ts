@@ -1,17 +1,35 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-	// サーバー側のサイズを減らすための設定
-    serverExternalPackages: ["@better-auth/cloudflare-d1"], 
-    output: "standalone", // これを試すと、不要な依存関係が削られることがあります
+    // 1. 重いライブラリをビルドに含めず、外部参照（External）として扱う
+    serverExternalPackages: ["@better-auth/cloudflare-d1", "drizzle-orm"],
+
+    // 2. スタンドアロン出力はCloudflareでは逆に重くなる場合があるため一旦コメントアウト
+    // output: "standalone", 
+
     experimental: {
-      // 必要なものだけに絞り込む
-      optimizePackageImports: ["lucide-react", "better-auth"],
+        // パッケージのインポートを最適化
+        optimizePackageImports: ["lucide-react", "better-auth", "drizzle-orm"],
+    },
+
+    // 3. Webpackレベルで不要なバイナリ（OGP生成など）を物理的に消去する
+    webpack: (config, { isServer }) => {
+        if (isServer) {
+            config.resolve.alias = {
+                ...config.resolve.alias,
+                "@vercel/og": false,
+                "satori": false,
+                "resvg": false,
+            };
+        }
+        return config;
     },
 };
 
 export default nextConfig;
 
-// added by create cloudflare to enable calling `getCloudflareContext()` in `next dev`
+// Cloudflare Dev環境用
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
-initOpenNextCloudflareForDev();
+if (process.env.NODE_ENV === "development") {
+    initOpenNextCloudflareForDev();
+}
