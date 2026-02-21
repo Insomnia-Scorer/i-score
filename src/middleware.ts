@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
-export const runtime = "edge";
+export const runtime = "experimental-edge";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
