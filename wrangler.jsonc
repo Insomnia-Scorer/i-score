@@ -20,7 +20,6 @@
 	},
     "build": {
         "command": "npm run build",
-        "minify": true
     },
 	"d1_databases": [
 		{
