@@ -68,7 +68,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Better Auth デモ ログイン</CardTitle>
+          <CardTitle className="text-xl">ログイン</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -122,7 +122,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             rel="noopener noreferrer"
             className="text-blue-900 hover:underline"
           >
-            HakamataSoft
+            insomnia-Scorer
           </a>
         </div>
 

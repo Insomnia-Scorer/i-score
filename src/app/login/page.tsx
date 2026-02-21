@@ -11,7 +11,7 @@ export default function LoginPage() {
               <Image src="/logo.png" alt="ロゴ" fill className="object-contain" sizes="24px" />
             </div>
           </div>
-          Hakamata soft
+          i-Score
         </div>
         <LoginForm />
         <div className="mt-4 text-center text-sm text-muted-foreground">

@@ -17,7 +17,7 @@ export default function SignupPage() {
               />
             </div>
           </div>
-          Hakamata soft
+          i-Score
         </div>
         <SignupForm />
       </div>
