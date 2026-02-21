@@ -140,12 +140,12 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
         <div className="mb-2">
           <span>Developed by </span>
           <a
-            href="https://hakamata-soft.com/"
+            href="https://i-score.insomnia-scorer.workers.dev/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-900 hover:underline"
           >
-            HakamataSoft
+            Insomnia-Scorer
           </a>
         </div>
 
