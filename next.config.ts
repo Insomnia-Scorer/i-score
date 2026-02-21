@@ -24,6 +24,19 @@ const nextConfig: NextConfig = {
         }
         return config;
     },*/
+    // webpack設定を関数形式ではなく、オブジェクトのキーとして残しつつ
+    // Turbopackが動くときは無視されるようにします
+    webpack: (config, { isServer }) => {
+        if (isServer) {
+          config.resolve.alias = {
+            ...config.resolve.alias,
+            "@vercel/og": false,
+            "satori": false,
+            "resvg": false,
+          };
+        }
+        return config;
+    },
 };
 
 export default nextConfig;
