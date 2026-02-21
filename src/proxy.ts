@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
+export const runtime = "edge";
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
