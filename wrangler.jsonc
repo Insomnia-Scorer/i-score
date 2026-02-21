@@ -28,5 +28,8 @@
 			"database_id": "fdcb7241-930e-4ef5-97d2-08f6358faff4"
 		}
 	],
+	"vars": {
+		"BETTER_AUTH_URL": "https://i-score.insomnia-scorer.workers.dev/"
+	},
 	"upload_source_maps": true
 }
