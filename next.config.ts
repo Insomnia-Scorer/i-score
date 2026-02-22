@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   // Cloudflare の画像最適化機能を使わずに、標準の画像として扱います
   images: {
     unoptimized: true,
+    loader: 'custom', // 💡 Cloudflare標準のloaderを使わせない
+    loaderFile: './src/lib/dummy-loader.js', // 空のファイルを用意
   },
 };
 
