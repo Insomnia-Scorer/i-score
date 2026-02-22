@@ -5,7 +5,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "i-score",
-	"main": ".next/static/chunks/worker.js",
+	//"main": ".next/static/chunks/worker.js",
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
     "placement": {
@@ -18,9 +18,9 @@
 	"observability": {
 		"enabled": true
 	},
-    "build": {
-        "command": "npm run build",
-    },
+    //"build": {
+    //    "command": "npm run build",
+    //},
 	"d1_databases": [
 		{
 			"binding": "DB", 
