@@ -2,8 +2,6 @@
 import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
-export const runtime = "edge";
-
 const handler = async (req: Request, ctx: any) => {
     const env = ctx.env;
 
