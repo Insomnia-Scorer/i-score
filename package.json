@@ -51,7 +51,7 @@
 		"build": "OPEN_NEXT_ORIGIN_ALGO=v2 next build --webpack --no-mangling",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
 		"check": "npm run build && tsc",
-		"deploy": "opennextjs-cloudflare build && npx wrangler deploy --no-bundle",
+		"deploy": "opennextjs-cloudflare build && sed -i 's/import.*cloudflare:images.*//g' .open-next/worker.js && npx wrangler deploy --no-bundle",
 		"dev": "next dev --webpack",
 		"lint": "next lint",
 		"preview": "opennextjs-cloudflare build && npx wrangler dev --no-bundle",
