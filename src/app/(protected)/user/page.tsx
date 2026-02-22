@@ -1,3 +1,10 @@
+// src/app/(protected)/user/page.tsx
+
+// 💡 これが Cloudflare Workers で動かすための絶対ルールです
+export const runtime = "edge"; 
+// 💡 ビルド時に DB を見に行こうとして落ちるのを防ぎます
+export const dynamic = "force-dynamic";
+
 import { requireSession } from "@/lib/auth-guard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
