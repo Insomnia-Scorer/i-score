@@ -5,8 +5,12 @@ const nextConfig: NextConfig = {
   // これが Workers での外部パッケージ解決の鍵です
   serverExternalPackages: ["better-auth", "drizzle-orm", "@better-auth/cloudflare-d1"],
 
-  experimental: {
-    // 💡 Turbopack を一旦完全にオフにし、安定した Webpack ビルドを強制します
+  // 💡 Turbopack を一旦完全にオフにし、安定した Webpack ビルドを強制します
+  experimental: {},
+
+  // Cloudflare の画像最適化機能を使わずに、標準の画像として扱います
+  images: {
+    unoptimized: true,
   },
 };
 
