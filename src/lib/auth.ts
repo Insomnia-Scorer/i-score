@@ -26,6 +26,18 @@ export const auth = betterAuth({
     admin(),
     nextCookies(), // 常に配列の最後に配置
   ],
+  socialProviders: {
+    google: {
+        // 本番では環境変数から読み込む（今はダミーでOK）
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    },
+    line: {
+        // 本番では環境変数から読み込む（今はダミーでOK）
+        clientId: process.env.LINE_CLIENT_ID || "",
+        clientSecret: process.env.LINE_CLIENT_SECRET || "",
+    }
+  }
 });
 
 

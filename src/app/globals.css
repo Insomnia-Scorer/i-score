@@ -30,18 +30,16 @@
     --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        /* Better Auth風 (Dark Mode) */
-        --background: #09090b;
-        --foreground: #fafafa;
-        --muted: #27272a;
-        --muted-foreground: #a1a1aa;
-        --primary: #fafafa;
-        --primary-foreground: #18181b;
-        --border: #27272a;
-        --ring: #d4d4d8;
-    }
+.dark {
+    /* Better Auth風 (Dark Mode) */
+    --background: #09090b;
+    --foreground: #fafafa;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+    --primary: #fafafa;
+    --primary-foreground: #18181b;
+    --border: #27272a;
+    --ring: #d4d4d8;
 }
 
 body {
