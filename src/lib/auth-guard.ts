@@ -1,9 +1,21 @@
-import { auth } from "@/lib/auth";
+// src/lib/auth-guard.ts
+import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-// 認証ガード
+// 💡 Workers 環境では、ビルド設定によって env が process.env に注入されます
 export async function requireSession() {
+  // Workers 用の DB バインディング取得
+  // (もしこれで見つからない場合は、引数で env を渡す構造にする必要があります)
+  const db = (process.env as any).DB as D1Database;
+
+  if (!db) {
+    console.error("D1 Database 'DB' is not bound to process.env");
+    throw new Error("Database connection failed");
+  }
+
+  const auth = getAuth(db);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -14,12 +26,9 @@ export async function requireSession() {
   return session;
 }
 
-// 認証+認可(admin)ガード
 export async function requireAdmin() {
-  // 認証チェック
   const session = await requireSession();
 
-  // 認可エラーはルートページへリダイレクト
   if (session.user.role !== "admin") {
     redirect("/");
   }
