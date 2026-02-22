@@ -1,3 +1,22 @@
+// next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  // 1. これが Workers での外部パッケージ解決の鍵です
+  serverExternalPackages: ["@better-auth/cloudflare-d1", "drizzle-orm"],
+
+  experimental: {
+    // 💡 Turbopack を一旦完全にオフにし、安定した Webpack ビルドを強制します
+  },
+
+  // 2. 余計な alias などを一旦削除し、Next.js 標準の挙動に戻します
+  // Cloudflare のビルドプロセスが AWS 用のファイルを追いかけないようにします
+};
+
+export default nextConfig;
+
+
+/*
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -35,3 +54,4 @@ import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 if (process.env.NODE_ENV === "development") {
     initOpenNextCloudflareForDev();
 }
+*/
