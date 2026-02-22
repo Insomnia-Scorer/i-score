@@ -1,62 +1,43 @@
 // src/lib/auth.ts
-import { db } from "@/db/drizzle";
-import { schema } from "@/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
+import { drizzle } from "drizzle-orm/d1"; // D1用drizzle
+import * as schema from "@/db/schema"; // schema全体をインポート
 
-export const auth = betterAuth({
-  // 防衛ライン②: メール/パスワード認証のみ許可
-  emailAndPassword: {
-    enabled: true,
-  },
-  database: drizzleAdapter(db, {
-    provider: "sqlite",
-    schema: schema,
-  }),
-  // 防衛ライン③: セッション管理 (自動ログアウト)
-  session: {
-    expiresIn: 60 * 10, // 10分 (seconds)
-    updateAge: 60 * 1, // 1分ごとに有効期限を更新
-  },
-  // 防衛ライン④: 認可 (Role管理)
-  // NextAuthのように手動で型拡張せずとも、プラグインを入れるだけで完了
-  plugins: [
-    admin(),
-    nextCookies(), // 常に配列の最後に配置
-  ],
-  socialProviders: {
-    google: {
-        // 本番では環境変数から読み込む（今はダミーでOK）
-        clientId: process.env.GOOGLE_CLIENT_ID || "",
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    },
-    line: {
-        // 本番では環境変数から読み込む（今はダミーでOK）
-        clientId: process.env.LINE_CLIENT_ID || "",
-        clientSecret: process.env.LINE_CLIENT_SECRET || "",
-    }
-  }
-});
+// 💡 関数化して、外部から D1 インスタンスを受け取れるようにします
+export const getAuth = (d1: D1Database) => {
+  // D1 インスタンスを Drizzle インスタンスに変換
+  const db = drizzle(d1);
 
-
-/*
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "@/db/schema";
-
-// auth 本体をエクスポートするのではなく、envを受け取ってbetterAuthを返す関数を作る
-export const getAuth = (db: D1Database) => betterAuth({
-    database: drizzleAdapter(drizzle(db), {
-        provider: "sqlite",
-        schema: {
-            ...schema,
-        },
-    }),
+  return betterAuth({
     emailAndPassword: {
-        enabled: true
+      enabled: true,
+    },
+    database: drizzleAdapter(db, {
+      provider: "sqlite",
+      schema: schema,
+    }),
+    // 防衛ライン③: セッション管理
+    session: {
+      expiresIn: 60 * 10, 
+      updateAge: 60 * 1, 
+    },
+    // 防衛ライン④: 認可 (Role管理)
+    plugins: [
+      admin(),
+      nextCookies(),
+    ],
+    socialProviders: {
+      google: {
+          clientId: process.env.GOOGLE_CLIENT_ID || "",
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      },
+      line: {
+          clientId: process.env.LINE_CLIENT_ID || "",
+          clientSecret: process.env.LINE_CLIENT_SECRET || "",
+      }
     }
-});
-*/
+  });
+};

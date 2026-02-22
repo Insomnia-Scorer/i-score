@@ -1,42 +1,34 @@
 // src/app/api/auth/[...all]/route.ts
-import { auth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
-
-export const { GET, POST } = toNextJsHandler(auth);
-
-
-/*
-import { toNextJsHandler } from "better-auth/next-js";
-import { auth } from "@/lib/auth";
-import { getDB } from "@/db/drizzle";
-import { request } from "http";
-
-//export const { POST, GET } = toNextJsHandler(auth);
 
 export const runtime = "edge";
 
-// Next.js 15 + Cloudflare Pages で env を確実に捕まえる書き方
 const handler = async (req: Request, ctx: any) => {
-    // 執念で env を探す：ctx.context (Pages) または ctx (Workers)
-    const env = ctx.context?.env || ctx.env || (process.env as any);
+    const env = ctx.env;
 
     if (!env?.DB) {
-        console.error("Critical: D1 Database not found in any context.");
-        return new Response("D1 Binding Missing", { status: 500 });
+        return new Response("D1 Database (DB) not found in env", { status: 500 });
     }
-    const db = getDB(env);
+
+    const auth = getAuth(env.DB);
     const authHandler = toNextJsHandler(auth);
 
-    // Better Auth は内部でパスを解決するので、メソッドさえ合わせればOK
-    if (req.method === "GET") return authHandler.GET(req);
-    if (req.method === "POST") return authHandler.POST(req);
-    
-    return new Response("Method not allowed", { status: 405 });
-};
+    // 💡 リクエストのメソッド（GET/POSTなど）に合わせて適切なハンドラーを呼び出す
+    const method = req.method.toUpperCase();
 
-// D1Database を取得
-export const db = getDB({ DB: handler.arguments[0].DB })
+    // TypeScriptの型エラーを回避しつつ、メソッドを振り分けます
+    if (method === "GET") return authHandler.GET(req);
+    if (method === "POST") return authHandler.POST(req);
+    if (method === "PATCH") return authHandler.PATCH(req);
+    if (method === "PUT") return authHandler.PUT(req);
+    if (method === "DELETE") return authHandler.DELETE(req);
+
+    return new Response("Method Not Allowed", { status: 405 });
+};
 
 export const GET = handler;
 export const POST = handler;
-*/
+export const PUT = handler;
+export const PATCH = handler;
+export const DELETE = handler;
