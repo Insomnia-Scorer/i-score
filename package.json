@@ -51,7 +51,7 @@
 		"build": "next build",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
 		"check": "npm run build && tsc",
-		"deploy": "npx @cloudflare/next-on-pages && npx wrangler deploy",
+		"deploy": "npx @cloudflare/next-on-pages && npx wrangler deploy .cloudflare/worker.js",
 		"dev": "next dev",
 		"lint": "next lint",
 		"preview": "npx @cloudflare/next-on-pages && npx wrangler dev",
