@@ -5,7 +5,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "i-score",
-	"main": ".open-next/worker.js",
+	//"main": ".open-next/worker.js",
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": [
 		"nodejs_compat",
@@ -14,10 +14,10 @@
     "placement": {
         "mode": "smart"
     },
-	"assets": {
-		"binding": "ASSETS",
-		"directory": ".open-next/assets"
-	},
+	//"assets": {
+	//	"binding": "ASSETS",
+	//	"directory": ".open-next/assets"
+	//},
 	"observability": {
 		"enabled": true
 	},

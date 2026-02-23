@@ -13,7 +13,6 @@
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.2.2",
-		"@opennextjs/cloudflare": "^1.16.5",
 		"@radix-ui/react-checkbox": "^1.3.3",
 		"@radix-ui/react-label": "^2.1.8",
 		"@radix-ui/react-separator": "^1.1.8",
@@ -48,13 +47,13 @@
 	},
 	"private": true,
 	"scripts": {
-		"build": "OPEN_NEXT_ORIGIN_ALGO=v2 next build --webpack --no-mangling",
+		"build": "next build",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
 		"check": "npm run build && tsc",
-		"deploy": "opennextjs-cloudflare build && sed -i 's/import.*cloudflare:images.*//g' .open-next/worker.js && npx wrangler deploy --no-bundle",
-		"dev": "next dev --webpack",
+		"deploy": "next build && npx wrangler deploy",
+		"dev": "next dev",
 		"lint": "next lint",
-		"preview": "opennextjs-cloudflare build && npx wrangler dev --no-bundle",
+		"preview": "next build && npx wrangler dev",
 		"start": "next start"
 	}
 }
