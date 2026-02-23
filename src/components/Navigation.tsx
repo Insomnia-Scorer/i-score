@@ -5,9 +5,10 @@ import Link from "next/link";
 import NavLinks from './NavLinks';
 import { requireSession } from "@/lib/auth-guard";
 import { Logout } from '@/components/logout'
+import { headers } from "next/headers";
 
 export default async function Navigation() {
-  const session = await requireSession();
+  const session = await requireSession(await headers());
   const isUserAdmin = session?.user.role === "admin";
   const userName = session.user.name;
   const userRole = session.user.role;

@@ -1,12 +1,10 @@
 // src/lib/auth-guard.ts
 import { getAuth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-// 💡 Workers 環境では、ビルド設定によって env が process.env に注入されます
-export async function requireSession() {
-  // Workers 用の DB バインディング取得
-  // (もしこれで見つからない場合は、引数で env を渡す構造にする必要があります)
+// 💡 headers は呼び出し元の Server Component から引数として受け取る
+export async function requireSession(headerList: Headers) {
+  // Workers 環境での D1 取得
   const db = (process.env as any).DB as D1Database;
 
   if (!db) {
@@ -16,8 +14,9 @@ export async function requireSession() {
 
   const auth = getAuth(db);
 
+  // 引数で受け取った headerList を使用
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: headerList,
   });
 
   if (!session) {
@@ -26,8 +25,9 @@ export async function requireSession() {
   return session;
 }
 
-export async function requireAdmin() {
-  const session = await requireSession();
+export async function requireAdmin(headerList: Headers) {
+  // session 取得時にも headerList を引き継ぐ
+  const session = await requireSession(headerList);
 
   if (session.user.role !== "admin") {
     redirect("/");

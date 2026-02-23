@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Shield, User, Info } from "lucide-react";
+import { headers } from "next/headers";
 
 export default async function Home() {
   // 認証ガード
-  const session = await requireSession();
+  const session = await requireSession(await headers());
   const { name, email, role } = session.user;
   const roleVariant = role === "admin" ? "destructive" : "secondary";
 

@@ -3,6 +3,7 @@ export const runtime = 'edge';
 // 💡 ビルド時に DB を見に行こうとして落ちるのを防ぎます
 export const dynamic = "force-dynamic";
 
+import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth-guard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,7 @@ import Link from "next/link";
 
 export default async function AdminPage() {
   // 認証+認可(admin)ガード
-  const session = await requireAdmin();
+  const session = await requireAdmin(await headers());
   const { name, email } = session.user;
 
   return (

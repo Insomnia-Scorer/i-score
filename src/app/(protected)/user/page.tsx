@@ -10,10 +10,11 @@ import { UserCircle, CheckCircle2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { headers } from "next/headers";
 
 export default async function UserPage() {
   // 認証ガード
-  const session = await requireSession();
+  const session = await requireSession(await headers());
   const { name, role, email } = session.user;
 
   return (
