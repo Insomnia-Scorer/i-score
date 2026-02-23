@@ -1,4 +1,6 @@
 // src/app/api/auth/[...all]/route.ts
+export const runtime = 'edge';
+
 import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 

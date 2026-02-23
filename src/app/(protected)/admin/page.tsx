@@ -1,5 +1,5 @@
 // src/app/(protected)/admin/page.tsx
-
+export const runtime = 'edge';
 // 💡 ビルド時に DB を見に行こうとして落ちるのを防ぎます
 export const dynamic = "force-dynamic";
 
