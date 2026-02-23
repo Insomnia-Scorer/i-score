@@ -1,3 +1,30 @@
+// src/app/admin/page.tsx
+export const runtime = 'edge';
+export const dynamic = "force-dynamic";
+
+import { headers } from "next/headers";
+import { requireAdmin } from "@/lib/auth-guard";
+
+export default async function AdminPage() {
+  // ガードのみ実行
+  const session = await requireAdmin(await headers());
+  const { name, email } = session.user;
+
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h1>管理者専用コンソール</h1>
+      <p>名前: {name}</p>
+      <p>メール: {email}</p>
+      <hr />
+      <p>この画面が見えたら、次は UI コンポーネントを一つずつ戻しましょう！</p>
+    </div>
+  );
+}
+
+
+
+
+/*
 // src/app/(protected)/admin/page.tsx
 export const runtime = 'edge';
 // 💡 ビルド時に DB を見に行こうとして落ちるのを防ぎます
@@ -75,3 +102,4 @@ export default async function AdminPage() {
     </div>
   );
 }
+*/
