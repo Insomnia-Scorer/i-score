@@ -6,6 +6,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "i-score",
 	//"main": ".open-next/worker.js",
+	"main": ".next/static/chunks/worker.js",
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": [
 		"nodejs_compat",
@@ -18,6 +19,10 @@
 	//	"binding": "ASSETS",
 	//	"directory": ".open-next/assets"
 	//},
+	"assets": {
+    	"directory": ".next/static",
+    	"binding": "ASSETS"
+  	},
 	"observability": {
 		"enabled": true
 	},
