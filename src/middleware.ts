@@ -1,6 +1,8 @@
+// src/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "edge"; 
+// 💡 審判（Next.js）の指示通りに書き換え
+export const runtime = "experimental-edge"; 
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,20 +13,20 @@ export async function middleware(request: NextRequest) {
   const isAdminPath = pathname.startsWith("/admin");
 
   // 2. Cookie の有無を「標準機能」だけでチェック
-  // better-auth のデフォルト名は "better-auth.session_token" です
+  // .get("名前") で取得。better-auth の標準トークン名を確認してください
   const sessionToken = request.cookies.get("better-auth.session_token");
 
-  // ケース1：未ログイン ＋ 公開パス以外
+  // 未ログイン ＋ 公開パス以外
   if (!sessionToken && !isPublicPath) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // ケース2：ログイン済み ＋ 公開パス（逆流防止）
+  // ログイン済み ＋ 公開パス（逆流防止）
   if (sessionToken && isPublicPath) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 管理者パスの簡易ガード（詳細な判定は Server Component で！）
+  // 管理者パスの簡易ガード
   if (isAdminPath && !sessionToken) {
     return NextResponse.redirect(new URL("/", request.url));
   }
@@ -33,5 +35,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // 静的ファイルやAPIを除外する設定
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"],
 };
