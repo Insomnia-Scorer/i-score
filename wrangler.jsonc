@@ -6,7 +6,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "i-score",
 	//"main": ".open-next/worker.js",
-	"main": ".next/static/chunks/worker.js",
+	"main": ".cloudflare/worker.js",
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": [
 		"nodejs_compat",
@@ -20,7 +20,7 @@
 	//	"directory": ".open-next/assets"
 	//},
 	"assets": {
-    	"directory": ".next/static",
+    	"directory": ".cloudflare/assets",
     	"binding": "ASSETS"
   	},
 	"observability": {
