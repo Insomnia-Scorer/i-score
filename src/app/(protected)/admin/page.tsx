@@ -1,27 +1,26 @@
-// src/app/admin/page.tsx
+// src/app/(protected)/admin/page.tsx
 export const runtime = 'edge';
 export const dynamic = "force-dynamic";
 
-import { headers } from "next/headers";
-import { requireAdmin } from "@/lib/auth-guard";
-
 export default async function AdminPage() {
-  // ガードのみ実行
-  const session = await requireAdmin(await headers());
-  const { name, email } = session.user;
+  // 💡 テンプレートのように、直接 D1 (process.env.DB) を触ってみる
+  const db = (process.env as any).DB as D1Database;
+  
+  if (!db) {
+    return <div>D1 Database がバインドされていません。</div>;
+  }
+
+  // テストクエリを実行（テーブル名はご自身のものに合わせてください。例: user）
+  const { results } = await db.prepare("SELECT count(*) as count FROM user").all();
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>管理者専用コンソール</h1>
-      <p>名前: {name}</p>
-      <p>メール: {email}</p>
-      <hr />
-      <p>この画面が見えたら、次は UI コンポーネントを一つずつ戻しましょう！</p>
+    <div className="p-10">
+      <h1 className="text-2xl font-bold">管理者疎通テスト</h1>
+      <p className="mt-4">D1からの応答: {JSON.stringify(results)}</p>
+      <p className="mt-2 text-green-600">この画面が出れば、Next.jsとD1の接続は完璧です！</p>
     </div>
   );
 }
-
-
 
 
 /*
