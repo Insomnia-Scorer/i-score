@@ -1,3 +1,21 @@
+// src/db/drizzle.ts
+import { drizzle } from 'drizzle-orm/d1';
+
+export const getDb = () => {
+  // 💡 プランA（純正）では、環境変数プロセスから直接 DB を取得できる構成が一般的です
+  // もし getRequestContext を使う場合は 'next/dist/server/web/spec-extension/adapters/request-cookies' などが必要ですが、
+  // 最もシンプルなのは以下の形です。
+  
+  const db = process.env.DB as unknown as D1Database;
+  
+  if (!db) {
+    throw new Error("D1 database binding 'DB' not found.");
+  }
+  
+  return drizzle(db);
+};
+
+/*
 import { drizzle } from 'drizzle-orm/d1';
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 
@@ -19,3 +37,4 @@ export const db = async () => {
         return null
     }
 }
+*/
