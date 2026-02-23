@@ -1,3 +1,6 @@
+// src/components/Navigation.tsx
+"use client";
+
 import Link from "next/link";
 import NavLinks from './NavLinks';
 import { requireSession } from "@/lib/auth-guard";

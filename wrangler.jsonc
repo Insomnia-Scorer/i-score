@@ -31,6 +31,7 @@
 	],
 	"vars": {
 		"BETTER_AUTH_URL": "https://i-score.insomnia-scorer.workers.dev",
+		"NEXT_PUBLIC_BETTER_AUTH_URL": "https://i-score.insomnia-scorer.workers.dev",
         "NPM_FLAGS": "--legacy-peer-deps"
 	},
 	"upload_source_maps": true

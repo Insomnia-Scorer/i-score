@@ -1,3 +1,4 @@
+// src/components/logout.tsx
 "use client";
 
 import { signOut } from "@/lib/auth-client";

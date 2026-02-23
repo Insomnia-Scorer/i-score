@@ -1,4 +1,5 @@
-import Image from "next/image";
+// src/app/signup/page.tsx
+
 import { LoginForm } from "@/components/login-form";
 
 export default function LoginPage() {

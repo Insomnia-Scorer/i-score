@@ -1,3 +1,4 @@
+// src/app/test/page.tsx
 "use client";
 import { createAuthClient } from "better-auth/react";
 
