@@ -11,17 +11,18 @@
 		"nodejs_compat",
 		// "global_fetch_strictly_public"
 	],
+	"pages_build_output_dir": ".next",
     //"placement": {
     //    "mode": "smart"
     //},
-	"assets": {
-    	"directory": ".cloudflare",
-    	"binding": "ASSETS"
-  	},
-	"observability": {
-		"enabled": true
-	},
-	"minify": false,
+	//"assets": {
+    //	"directory": ".cloudflare",
+    //	"binding": "ASSETS"
+  	//},
+	//"observability": {
+	//	"enabled": true
+	//},
+	//"minify": false,
 	"d1_databases": [
 		{
 			"binding": "DB", 

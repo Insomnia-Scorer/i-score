@@ -51,8 +51,8 @@
     	"dev": "next dev",
     	"build": "next build",
     	"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
-		"deploy": "next build && npx @cloudflare/next-on-pages --outdir .cloudflare && rm .cloudflare/index.html && echo '_worker.js' > .cloudflare/.assetsignore && npx wrangler deploy",
-		"preview": "next build && npx @cloudflare/next-on-pages --outdir .cloudflare && rm .cloudflare/index.html && echo '_worker.js' > .cloudflare/.assetsignore && npx wrangler dev",
+		"deploy": "npx wrangler deploy",
+		"preview": "npx wrangler dev",
     	"lint": "next lint",
     	"check": "npm run build && tsc",
     	"start": "next start"
