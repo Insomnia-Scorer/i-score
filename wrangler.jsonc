@@ -5,19 +5,19 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "i-score",
-	//"main": ".cloudflare/worker.js",
+	"main": ".cloudflare/worker.js",
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": [
 		"nodejs_compat",
 		// "global_fetch_strictly_public"
 	],
-    "placement": {
-        "mode": "smart"
-    },
-	//"assets": {
-    //	"directory": ".cloudflare/assets",
-    //	"binding": "ASSETS"
-  	//},
+    //"placement": {
+    //    "mode": "smart"
+    //},
+	"assets": {
+    	"directory": ".cloudflare",
+    	"binding": "ASSETS"
+  	},
 	"observability": {
 		"enabled": true
 	},
@@ -32,7 +32,7 @@
 	"vars": {
 		"BETTER_AUTH_URL": "https://i-score.insomnia-scorer.workers.dev",
 		"NEXT_PUBLIC_BETTER_AUTH_URL": "https://i-score.insomnia-scorer.workers.dev",
-        "NPM_FLAGS": "--legacy-peer-deps"
+        //"NPM_FLAGS": "--legacy-peer-deps"
 	},
-	"upload_source_maps": true
+	//"upload_source_maps": true
 }
