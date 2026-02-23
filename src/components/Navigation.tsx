@@ -3,15 +3,14 @@
 
 import Link from "next/link";
 import NavLinks from './NavLinks';
-import { requireSession } from "@/lib/auth-guard";
 import { Logout } from '@/components/logout'
-import { headers } from "next/headers";
 
-export default async function Navigation() {
-  const session = await requireSession(await headers());
+export default async function Navigation({ session }: { session: any }) {
+  if (!session) {
+    return null; // セッションがない場合はナビゲーションを表示しない
+  }
   const isUserAdmin = session?.user.role === "admin";
-  const userName = session.user.name;
-  const userRole = session.user.role;
+  const { name: userName, role: userRole } = session.user;
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
