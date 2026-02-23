@@ -31,8 +31,8 @@
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {
-		"@cloudflare/next-on-pages": "^1.13.16",
 		"@eslint/eslintrc": "^0.1.0",
+		"@opennextjs/cloudflare": "^1.16.6",
 		"@tailwindcss/postcss": "4.1.17",
 		"@types/node": "24.10.1",
 		"@types/react": "19.2.7",
@@ -48,13 +48,13 @@
 	},
 	"private": true,
 	"scripts": {
-    	"dev": "next dev",
-    	"build": "next build",
-    	"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
-		"deploy": "npx wrangler deploy",
-		"preview": "npx wrangler dev",
-    	"lint": "next lint",
-    	"check": "npm run build && tsc",
-    	"start": "next start"
+		"dev": "next dev",
+		"build": "next build",
+		"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
+		"deploy": "npx @opennextjs/cloudflare && npx wrangler deploy",
+		"preview": "npx @opennextjs/cloudflare && npx wrangler dev",
+		"lint": "next lint",
+		"check": "npm run build && tsc",
+		"start": "next start"
 	}
 }
