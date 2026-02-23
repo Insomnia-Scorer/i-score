@@ -5,18 +5,17 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "i-score",
-	"main": ".next/standalone/server.js",
+	"main": ".open-next/worker.js",
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": [
 		"nodejs_compat",
-		// "global_fetch_strictly_public"
+		"global_fetch_strictly_public"
 	],
-	"pages_build_output_dir": ".next",
     //"placement": {
     //    "mode": "smart"
     //},
 	"assets": {
-    	"directory": ".next/static",
+    	"directory": ".open-next/assets",
     	"binding": "ASSETS"
   	},
 	//"observability": {
@@ -35,5 +34,5 @@
 		"NEXT_PUBLIC_BETTER_AUTH_URL": "https://i-score.insomnia-scorer.workers.dev",
         //"NPM_FLAGS": "--legacy-peer-deps"
 	},
-	//"upload_source_maps": true
+	"upload_source_maps": true
 }
