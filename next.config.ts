@@ -3,7 +3,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // これが Workers での外部パッケージ解決の鍵です
-  serverExternalPackages: ["better-auth", "drizzle-orm", "@better-auth/cloudflare-d1"],
+  //serverExternalPackages: ["better-auth", "drizzle-orm", "@better-auth/cloudflare-d1"],
+  serverExternalPackages: [],
   // 💡 Turbopack を一旦完全にオフにし、安定した Webpack ビルドを強制します
   experimental: {},
   output: 'standalone',
