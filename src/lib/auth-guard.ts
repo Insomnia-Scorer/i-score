@@ -1,13 +1,15 @@
 // src/lib/auth-guard.ts
 import { getAuth } from "@/lib/auth";
+import { getDb } from "@/db/drizzle"; // 💡 getDb を使用するように統一
 import { redirect } from "next/navigation";
 
 // 💡 headers は呼び出し元の Server Component から引数として受け取る
 export async function requireSession(headerList: Headers) {
-  // Workers 環境での D1 取得
-  const db = (process.env as any).DB as D1Database;
+  // getDb() 内で D1 取得と Drizzle 初期化が行われます
+  // ただし getAuth は D1Database を直接必要とするため、ここではまず D1 を取得します
+  const d1 = (process.env as any).DB as D1Database;
 
-  if (!db) {
+  if (!d1) {
     console.error("D1 Database 'DB' is not bound to process.env");
     throw new Error("Database connection failed");
   }

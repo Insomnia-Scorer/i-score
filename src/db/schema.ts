@@ -7,6 +7,7 @@ export const user = sqliteTable("user", {
     email: text("email").notNull().unique(),
     emailVerified: integer("email_verified", { mode: "boolean" }).notNull(),
     image: text("image"),
+    role: text("role").notNull().default("user"), // 💡 権限管理用のカラムを追加
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });

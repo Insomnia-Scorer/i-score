@@ -1,13 +1,16 @@
 // src/db/drizzle.ts
 import { drizzle } from 'drizzle-orm/d1';
 
+/**
+ * 💡 D1 データベースインスタンスを取得し、Drizzle オブジェクトを返します。
+ * Next.js (Cloudflare Workers runtime) 環境では process.env.DB に injection されます。
+ */
 export const getDb = () => {
-  // 💡 実行時の process.env を直接参照する
-  // 実行時（リクエスト時）であれば、Workersが注入した D1 がここに入っています
   const d1 = (process.env as any).DB as D1Database;
 
   if (!d1) {
-    throw new Error("D1 database binding 'DB' not found in process.env. Check wrangler.jsonc.");
+    // 💡 ローカル開発時や環境構築ミスを早期に発見するためのエラーハンドリング
+    throw new Error("D1 database binding 'DB' not found. Check your wrangler.toml or Cloudflare dashboard.");
   }
 
   return drizzle(d1);

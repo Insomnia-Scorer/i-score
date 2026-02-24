@@ -1,20 +1,17 @@
 // src/lib/auth-client.ts
 import { createAuthClient } from "better-auth/react";
-// -----------------------------------------------------------
-// Client SDK
-// 一般的なユーザー操作（トリガー）はこのSDKがカバーする
-// -----------------------------------------------------------
-// ログイン (signIn)
-// 新規登録 (signUp)
-// ログアウト (signOut)
-// -- 非推奨 -------------------------------------------------
-// クライアント側でのセッション取得 (useSession) ※ React Hook (監視用: UI連動)
-// クライアント側でのセッション取得 (getSession) ※ Async Func (点呼用: イベント時)
-// ※ データ取得は原則 Server Components (Page/Layout) で行い、Propsで渡すこと
-// -----------------------------------------------------------
+import { adminClient } from "better-auth/client/plugins";
+
+/**
+ * 💡 Client SDK Instance
+ * ブラウザ上での認証操作（ログイン、サインアップ、セッション監視）を行うためのクライアント。
+ */
 export const authClient = createAuthClient({
-  //baseURL: "https://i-score.insomnia-scorer.workers.dev",
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL, // 例: http://localhost:3000
+  // baseURL は環境変数 NEXT_PUBLIC_BETTER_AUTH_URL から自動取得される想定
+  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+  plugins: [
+    adminClient() // 💡 管理者向け操作をクライアントでも有効化
+  ]
 });
 
-export const { signIn, signUp, signOut } = authClient;
+export const { signIn, signUp, signOut, useSession } = authClient;
