@@ -17,6 +17,7 @@ i-Score は以下の技術スタックを採用しています。
 - **Authentication**: Better-Auth
 - **UI Components**: Radix UI, Lucide React, Tailwind CSS
 - **Deployment**: Cloudflare Workers
+  - **制約**: OpenNext および Cloudflare Pages は使用しないでください。
 
 ## 2. コーディング標準
 - **TypeScript**: 全てのコードで厳密な型定義を使用してください。

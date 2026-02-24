@@ -1,18 +1,21 @@
-import { requireSession } from "@/lib/auth-guard";
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Shield, User, Info } from "lucide-react";
-import { headers } from "next/headers";
+import { authClient } from "@/lib/auth-client";
 
-export default async function Home() {
-  // 認証ガード
-  const session = await requireSession(await headers());
+export default function Home() {
+  const { data: session } = authClient.useSession();
+
+  if (!session) return null;
+
   const { name, email, role } = session.user;
   const roleVariant = role === "admin" ? "destructive" : "secondary";
 
   return (
-    <div className="flex min-h-[calc(100-vh-4rem)] flex-col items-center justify-center p-4 md:p-8">
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center p-4 md:p-8">
       <main className="w-full max-w-2xl space-y-8">
         <header className="space-y-2 text-center">
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">

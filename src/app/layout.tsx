@@ -1,3 +1,4 @@
+import * as React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -33,9 +34,9 @@ export default function RootLayout({
 					defaultTheme="system"
 					enableSystem
 					disableTransitionOnChange>
-					{/* 💡 画面の一番上にヘッダーを配置 */}
-          			<Header />
-          			{/* 💡 メインコンテンツが画面の残りの高さを埋めるように flex-1 を指定 */}
+					{/* 💡 ヘッダーを復活 */}
+					<Header />
+					{/* 💡 メインコンテンツが画面の残りの高さを埋めるように flex-1 を指定 */}
 					<main className="flex-1 flex flex-col">
 						{children}
 					</main>

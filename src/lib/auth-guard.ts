@@ -14,7 +14,7 @@ export async function requireSession(headerList: Headers) {
     throw new Error("Database connection failed");
   }
 
-  const auth = getAuth(db);
+  const auth = getAuth(d1);
 
   // 引数で受け取った headerList を使用
   const session = await auth.api.getSession({

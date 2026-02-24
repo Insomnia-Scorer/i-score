@@ -1,33 +1,5 @@
-// src/app/(protected)/admin/page.tsx
-export default async function AdminPage() {
-  // 💡 テンプレートのように、直接 D1 (process.env.DB) を触ってみる
-  const db = (process.env as any).DB as D1Database;
-  
-  if (!db) {
-    return <div>D1 Database がバインドされていません。</div>;
-  }
+"use client";
 
-  // テストクエリを実行（テーブル名はご自身のものに合わせてください。例: user）
-  const { results } = await db.prepare("SELECT count(*) as count FROM user").all();
-
-  return (
-    <div className="p-10">
-      <h1 className="text-2xl font-bold">管理者疎通テスト</h1>
-      <p className="mt-4">D1からの応答: {JSON.stringify(results)}</p>
-      <p className="mt-2 text-green-600">この画面が出れば、Next.jsとD1の接続は完璧です！</p>
-    </div>
-  );
-}
-
-
-/*
-// src/app/(protected)/admin/page.tsx
-export const runtime = 'edge';
-// 💡 ビルド時に DB を見に行こうとして落ちるのを防ぎます
-export const dynamic = "force-dynamic";
-
-import { headers } from "next/headers";
-import { requireAdmin } from "@/lib/auth-guard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -35,10 +7,23 @@ import { ShieldAlert, Lock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import React from "react";
 
-export default async function AdminPage() {
-  // 認証+認可(admin)ガード
-  const session = await requireAdmin(await headers());
+export default function AdminPage() {
+  const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!isPending && session && session.user.role !== "admin") {
+      router.push("/dashboard");
+    }
+  }, [session, isPending, router]);
+
+  if (isPending) return <div className="p-10 text-center">読み込み中...</div>;
+  if (!session || session.user.role !== "admin") return null;
+
   const { name, email } = session.user;
 
   return (
@@ -98,4 +83,3 @@ export default async function AdminPage() {
     </div>
   );
 }
-*/

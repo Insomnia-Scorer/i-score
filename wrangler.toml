@@ -1,10 +1,11 @@
 name = "i-score"
-main = ".next/standalone/server.js"
+main = "src/worker.ts"
 compatibility_date = "2025-10-08"
-compatibility_flags = [
-    "nodejs_compat",
-    "global_fetch_strictly_public"
-]
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "out"
+binding = "ASSETS"
 
 [observability]
 enabled = true
@@ -19,6 +20,3 @@ database_id = "fdcb7241-930e-4ef5-97d2-08f6358faff4"
 [vars]
 BETTER_AUTH_URL = "https://i-score.insomnia-scorer.workers.dev"
 NEXT_PUBLIC_BETTER_AUTH_URL = "https://i-score.insomnia-scorer.workers.dev"
-
-# ソースマップのアップロード
-upload_source_maps = true

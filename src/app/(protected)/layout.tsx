@@ -1,16 +1,29 @@
-// src/app/(protected)/layout.tsx
-import { headers } from "next/headers";
-import { requireSession } from "@/lib/auth-guard";
-import Navigation from "@/components/Navigation";
+"use client";
 
-export default async function ProtectedLayout({children}: {children: React.ReactNode}) {
-  // 💡 Server Component なので headers() が使える！
-  // ログイン必須でない場合は getSession に変えてもOKです
-  const session = await requireSession(await headers());
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+import React from "react";
+
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/login");
+    }
+  }, [session, isPending, router]);
+
+  if (isPending) {
+    return <div className="flex h-screen items-center justify-center">読み込み中...</div>;
+  }
+
+  if (!session) {
+    return null;
+  }
+
   return (
     <>
-      {/* 認証者へのみナビゲーションを表示する */}
-      <Navigation session={session} />
       {children}
     </>
   );

@@ -1,16 +1,18 @@
-// src/app/(protected)/user/page.tsx
-import { requireSession } from "@/lib/auth-guard";
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserCircle, CheckCircle2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { headers } from "next/headers";
+import { authClient } from "@/lib/auth-client";
 
-export default async function UserPage() {
-  // 認証ガード
-  const session = await requireSession(await headers());
+export default function UserPage() {
+  const { data: session } = authClient.useSession();
+
+  if (!session) return null;
+
   const { name, role, email } = session.user;
 
   return (

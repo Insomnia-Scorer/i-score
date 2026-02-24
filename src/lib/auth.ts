@@ -1,7 +1,6 @@
 // src/lib/auth.ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1"; // D1用drizzle
 import * as schema from "@/db/schema"; // schema全体をインポート
@@ -21,13 +20,12 @@ export const getAuth = (d1: D1Database, env?: any) => {
     }),
     // 防衛ライン③: セッション管理
     session: {
-      expiresIn: 60 * 10, 
-      updateAge: 60 * 1, 
+      expiresIn: 60 * 10,
+      updateAge: 60 * 1,
     },
     // 防衛ライン④: 認可 (Role管理)
     plugins: [
       admin(),
-      nextCookies(),
     ],
     socialProviders: {
       google: {
