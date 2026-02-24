@@ -13,7 +13,8 @@ import { createAuthClient } from "better-auth/react";
 // ※ データ取得は原則 Server Components (Page/Layout) で行い、Propsで渡すこと
 // -----------------------------------------------------------
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL, // 例: http://localhost:3000
+  baseURL: "https://i-score.insomnia-scorer.workers.dev",
+  //baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL, // 例: http://localhost:3000
 });
 
 export const { signIn, signUp, signOut } = authClient;
