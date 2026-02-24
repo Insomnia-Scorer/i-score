@@ -6,13 +6,17 @@ import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 import { getAuth } from "@/lib/auth";
 
-const app = new Hono<{ Bindings: { DB: D1Database; [key: string]: any } }>().basePath('/api/auth');
+const app = new Hono<{ Bindings: { DB: D1Database } }>().basePath('/api/auth');
 
 app.all('/*', async (c) => {
-  // c.env を渡すことで、D1 とソーシャルログインの ID 類を両方解決
   const auth = getAuth(c.env.DB, c.env);
   return auth.handler(c.req.raw);
 });
 
-export const GET = handle(app);
-export const POST = handle(app);
+// 各メソッドを個別にエクスポート（Next.jsの制約）
+const h = handle(app);
+export const GET = h;
+export const POST = h;
+export const PATCH = h;
+export const PUT = h;
+export const DELETE = h;
