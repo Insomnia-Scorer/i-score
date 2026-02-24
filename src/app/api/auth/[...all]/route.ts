@@ -6,17 +6,23 @@ import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
 const handler = async (req: Request, context: any) => {
-// 💡 Cloudflareの公式なやり方：context.params ではなく、第2引数そのものが env を含む場合があります
-  // または、Next.js 15 ならば globalThis 経由で取得できる場合があります
-  const env = (process.env as any).DB ? process.env : (context as any).env;
-  const d1 = env?.DB;
+  // 💡 OpenNext + Next.js 15 における D1 取得の全パターンを網羅
+  const d1 = 
+    (process.env as any).DB ||           // パターン1: 標準env
+    context?.env?.DB ||                  // パターン2: OpenNextのコンテキスト
+    (globalThis as any).env?.DB ||       // パターン3: グローバル
+    (req as any).context?.env?.DB;       // パターン4: リクエスト内継承
 
   if (!d1) {
-    // 最終手段：デバッグ用に env の中身を文字列化して出す
-    const keys = Object.keys(process.env).join(", ");
-    return new Response(`DB not found. Available keys: ${keys}`, { status: 500 });
+    // 🔍 犯人探しのための最終手段：何が届いているか全部出す
+    const debugInfo = {
+      hasProcessEnvDB: !!(process.env as any).DB,
+      hasContextEnvDB: !!context?.env?.DB,
+      contextKeys: Object.keys(context || {}),
+      envKeys: Object.keys((process.env) || {}),
+    };
+    return new Response(`D1 NOT FOUND. Debug: ${JSON.stringify(debugInfo)}`, { status: 500 });
   }
-
   const auth = getAuth(d1);
   const authHandler = toNextJsHandler(auth);
 
