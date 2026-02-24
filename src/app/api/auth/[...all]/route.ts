@@ -5,11 +5,16 @@ export const dynamic = 'force-dynamic';
 import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
-const handler = async (req: Request) => {
-  const d1 = (process.env as any).DB as D1Database;
+const handler = async (req: Request, context: any) => {
+// 💡 Cloudflareの公式なやり方：context.params ではなく、第2引数そのものが env を含む場合があります
+  // または、Next.js 15 ならば globalThis 経由で取得できる場合があります
+  const env = (process.env as any).DB ? process.env : (context as any).env;
+  const d1 = env?.DB;
 
   if (!d1) {
-    return new Response("D1 Database (DB) not found in process.env", { status: 500 });
+    // 最終手段：デバッグ用に env の中身を文字列化して出す
+    const keys = Object.keys(process.env).join(", ");
+    return new Response(`DB not found. Available keys: ${keys}`, { status: 500 });
   }
 
   const auth = getAuth(d1);
