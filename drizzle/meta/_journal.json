@@ -8,6 +8,13 @@
       "when": 1771601098035,
       "tag": "0000_chemical_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1771972515906,
+      "tag": "0001_regular_caretaker",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,7 @@ enabled = true
 binding = "DB"
 database_name = "i-score-db"
 database_id = "fdcb7241-930e-4ef5-97d2-08f6358faff4"
+migrations_dir = "drizzle"
 
 # 環境変数の設定
 [vars]
