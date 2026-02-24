@@ -14,9 +14,17 @@ app.get('/api/hello', (c) => {
     return c.json({ message: 'Hello from Hono!' })
 })
 
-// 静的資産へのフォールバック
-app.all('*', async (c) => {
-    return c.env.ASSETS.fetch(c.req.raw)
-})
+export default {
+    async fetch(request: Request, env: any, ctx: ExecutionContext) {
+        const url = new URL(request.url)
 
-export default app
+        // API リクエストの場合のみ Hono を起動
+        if (url.pathname.startsWith('/api/')) {
+            return app.fetch(request, env, ctx)
+        }
+
+        // それ以外（静的資産など）は直接 ASSETS 経由で返却
+        // Hono のミドルウェアやルーティングをバイパスすることで CPU 時間を節約
+        return env.ASSETS.fetch(request)
+    }
+}

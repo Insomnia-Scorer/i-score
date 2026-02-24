@@ -24,7 +24,7 @@ export const getAuth = (d1: D1Database, env?: any) => {
         role: {
           type: "string",
           defaultValue: "user",
-          input: false, // ユーザーによる直接入力を禁止
+          input: false,
         },
       },
     },
@@ -40,16 +40,16 @@ export const getAuth = (d1: D1Database, env?: any) => {
       admin(),
     ],
     socialProviders: {
-      ...(env?.GOOGLE_CLIENT_ID || (typeof process !== "undefined" && process.env.GOOGLE_CLIENT_ID) ? {
+      ...(env?.GOOGLE_CLIENT_ID ? {
         google: {
-          clientId: env?.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "",
-          clientSecret: env?.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || "",
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET || "",
         },
       } : {}),
-      ...(env?.LINE_CLIENT_ID || (typeof process !== "undefined" && process.env.LINE_CLIENT_ID) ? {
+      ...(env?.LINE_CLIENT_ID ? {
         line: {
-          clientId: env?.LINE_CLIENT_ID || process.env.LINE_CLIENT_ID || "",
-          clientSecret: env?.LINE_CLIENT_SECRET || process.env.LINE_CLIENT_SECRET || "",
+          clientId: env.LINE_CLIENT_ID,
+          clientSecret: env.LINE_CLIENT_SECRET || "",
         },
       } : {}),
     }
