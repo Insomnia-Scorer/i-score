@@ -16,9 +16,9 @@ export const getAuth = (d1: D1Database, env?: any) => {
 
   const db = drizzle(d1);
   authCache = betterAuth({
-    emailAndPassword: {
-      enabled: true,
-    },
+    //emailAndPassword: {
+    //  enabled: true,
+    //},
     user: {
       additionalFields: {
         role: {
