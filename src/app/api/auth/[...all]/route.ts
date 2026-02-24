@@ -5,24 +5,31 @@ export const dynamic = 'force-dynamic';
 import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
+// OpenNextがグローバルに注入する型定義（必要に応じて）
+declare global {
+  var env: {
+    DB: D1Database;
+    [key: string]: any;
+  };
+}
+
 const handler = async (req: Request, context: any) => {
-  // 💡 OpenNext + Next.js 15 における D1 取得の全パターンを網羅
-  const d1 = 
-    (process.env as any).DB ||           // パターン1: 標準env
-    context?.env?.DB ||                  // パターン2: OpenNextのコンテキスト
-    (globalThis as any).env?.DB ||       // パターン3: グローバル
-    (req as any).context?.env?.DB;       // パターン4: リクエスト内継承
+// 💡 外部ライブラリを使わない D1 取得の決定版
+  // OpenNext (opennextjs-cloudflare) は Workers の `env` を
+  // globalThis.env または process.env にマッピングしようとします。
+  const d1 = (process.env as any).DB || (globalThis as any).env?.DB;
 
   if (!d1) {
-    // 🔍 犯人探しのための最終手段：何が届いているか全部出す
-    const debugInfo = {
-      hasProcessEnvDB: !!(process.env as any).DB,
-      hasContextEnvDB: !!context?.env?.DB,
-      contextKeys: Object.keys(context || {}),
-      envKeys: Object.keys((process.env) || {}),
+    // デバッグ情報を詳細化
+    const debug = {
+      hasProcessEnv: !!process.env,
+      hasGlobalEnv: !!(globalThis as any).env,
+      processEnvKeys: Object.keys(process.env || {}),
+      globalEnvKeys: (globalThis as any).env ? Object.keys((globalThis as any).env) : [],
     };
-    return new Response(`D1 NOT FOUND. Debug: ${JSON.stringify(debugInfo)}`, { status: 500 });
+    return new Response(`D1 NOT FOUND. Debug: ${JSON.stringify(debug)}`, { status: 500 });
   }
+
   const auth = getAuth(d1);
   const authHandler = toNextJsHandler(auth);
 
