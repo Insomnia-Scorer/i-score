@@ -5,7 +5,6 @@
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": [
 		"nodejs_compat",
-		"transform_dot_env",
 		"global_fetch_strictly_public"
 	],
 	"assets": {
