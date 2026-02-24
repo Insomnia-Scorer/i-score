@@ -1,0 +1,29 @@
+name = "i-score"
+main = ".open-next/worker.js"
+compatibility_date = "2025-10-08"
+compatibility_flags = [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+]
+
+# 静的資産の設定
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[observability]
+enabled = true
+
+# D1データベースの設定
+[[d1_databases]]
+binding = "DB"
+database_name = "i-score-db"
+database_id = "fdcb7241-930e-4ef5-97d2-08f6358faff4"
+
+# 環境変数の設定
+[vars]
+BETTER_AUTH_URL = "https://i-score.insomnia-scorer.workers.dev"
+NEXT_PUBLIC_BETTER_AUTH_URL = "https://i-score.insomnia-scorer.workers.dev"
+
+# ソースマップのアップロード
+upload_source_maps = true
