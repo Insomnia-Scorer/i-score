@@ -2,22 +2,22 @@
 //export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
+import { Hono } from 'hono';
+import { handle } from 'hono/vercel'; // Next.js App Routerとの互換性のために使用
 import { getAuth } from "@/lib/auth";
-import { toNextJsHandler } from "better-auth/next-js";
 
-export default {
-  async fetch(request: Request, env: any) {
-    const d1 = env.DB;
-    const auth = getAuth(d1);
-    const authHandler = toNextJsHandler(auth);
+// 型定義
+type Bindings = {
+  DB: D1Database;
+};
 
-    const method = request.method.toUpperCase();
-    
-    // 型安全にメソッドを特定して実行
-    if (method in authHandler) {
-      return (authHandler as any)[method](request);
-    }
+const app = new Hono<{ Bindings: Bindings }>().basePath('/api/auth');
 
-    return new Response(`Method ${method} Not Allowed`, { status: 405 });
-  }
-}
+// 全ての認証リクエストをHonoが受け取る
+app.all('/*', async (c) => {
+  // Honoのコンテキスト (c.env) からは確実に DB が取得できます
+  const auth = getAuth(c.env.DB);
+  
+  // Better Auth のハンドラーを実行
+  return auth.handler(c.req.raw);
+});

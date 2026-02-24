@@ -7,7 +7,7 @@ import { drizzle } from "drizzle-orm/d1"; // D1用drizzle
 import * as schema from "@/db/schema"; // schema全体をインポート
 
 // 💡 関数化して、外部から D1 インスタンスを受け取れるようにします
-export const getAuth = (d1: D1Database) => {
+export const getAuth = (d1: D1Database, env?: any) => {
   // D1 インスタンスを Drizzle インスタンスに変換
   const db = drizzle(d1);
 
@@ -31,12 +31,12 @@ export const getAuth = (d1: D1Database) => {
     ],
     socialProviders: {
       google: {
-          clientId: process.env.GOOGLE_CLIENT_ID || "",
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        clientId: env?.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: env?.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || "",
       },
       line: {
-          clientId: process.env.LINE_CLIENT_ID || "",
-          clientSecret: process.env.LINE_CLIENT_SECRET || "",
+        clientId: env?.LINE_CLIENT_ID || process.env.LINE_CLIENT_ID || "",
+        clientSecret: env?.LINE_CLIENT_SECRET || process.env.LINE_CLIENT_SECRET || "",
       }
     }
   });

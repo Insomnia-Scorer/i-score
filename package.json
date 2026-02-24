@@ -19,6 +19,7 @@
 		"better-auth": "^1.4.18",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"hono": "^4.12.2",
 		"lucide-react": "^0.575.0",
 		"next": "^16.1.6",
 		"next-themes": "^0.4.6",
@@ -47,17 +48,17 @@
 		"wrangler": "^4.67.0"
 	},
 	"private": true,
-"scripts": {
-        "build": "next build --webpack",
-        "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
-        "check": "npm run build && tsc",
-        "deploy": "opennextjs-cloudflare build && npx wrangler deploy .open-next/worker.js --config wrangler.toml",
-        "dev": "next dev",
-        "lint": "next lint",
-        "preview": "opennextjs-cloudflare build && npx wrangler preview .open-next/worker.js --config wrangler.toml",
-        "start": "next start",
-        "db:exec": "wrangler d1 execute i-score-db",
-        "db:mig:remote": "wrangler d1 migrations apply i-score-db --remote",
-        "db:mig:local": "wrangler d1 migrations apply i-score-db --local"
-    }
+	"scripts": {
+		"build": "next build --webpack",
+		"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
+		"check": "npm run build && tsc",
+		"deploy": "opennextjs-cloudflare build && npx wrangler deploy .open-next/worker.js --config wrangler.toml",
+		"dev": "next dev",
+		"lint": "next lint",
+		"preview": "opennextjs-cloudflare build && npx wrangler preview .open-next/worker.js --config wrangler.toml",
+		"start": "next start",
+		"db:exec": "wrangler d1 execute i-score-db",
+		"db:mig:remote": "wrangler d1 migrations apply i-score-db --remote",
+		"db:mig:local": "wrangler d1 migrations apply i-score-db --local"
+	}
 }
