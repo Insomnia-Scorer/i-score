@@ -11,7 +11,7 @@ export default function Home() {
 
   if (!session) return null;
 
-  const { name, email, role } = session.user;
+  const { name, email, role } = session.user as any;
   const roleVariant = role === "admin" ? "destructive" : "secondary";
 
   return (

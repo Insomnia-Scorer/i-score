@@ -22,9 +22,9 @@ export default function AdminPage() {
   }, [session, isPending, router]);
 
   if (isPending) return <div className="p-10 text-center">読み込み中...</div>;
-  if (!session || session.user.role !== "admin") return null;
+  if (!session || (session.user as any).role !== "admin") return null;
 
-  const { name, email } = session.user;
+  const { name, email } = session.user as any;
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center pt-12 p-4 md:p-8">

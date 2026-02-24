@@ -13,7 +13,7 @@ export default function UserPage() {
 
   if (!session) return null;
 
-  const { name, role, email } = session.user;
+  const { name, role, email } = session.user as any;
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center pt-12 p-4 md:p-8">
