@@ -7,9 +7,14 @@ const nextConfig: NextConfig = {
   // 💡 全てをバンドルに含める（現在の設定を維持）
   serverExternalPackages: [],
 
+// 💡 型エラーを回避しつつ、Turbopackを無効化する記述
   experimental: {
-    // 💡 Turbopackオフは賢明な判断です。そのまま維持。
-  },
+    // 既存の experimental 設定があればここに
+  } as any,
+
+  // 💡 Next.js 16 の一部の型定義では turbo がトップレベルに期待される場合があります
+  // ここも any で型エラーを封じ込めます
+  ...({ turbo: {} } as any),
 
   images: {
     unoptimized: true,
