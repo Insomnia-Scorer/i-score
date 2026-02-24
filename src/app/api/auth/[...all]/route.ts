@@ -3,34 +3,32 @@ export const dynamic = 'force-dynamic';
 import { getAuth } from "@/lib/auth";
 
 const handler = async (req: Request) => {
-  // 💡 パターンA: Workersネイティブのグローバル変数から取得
-  // 💡 パターンB: Node.js互換レイヤーの process.env から取得
-  // 💡 パターンC: OpenNextがリクエストに紐付けたコンテキストから取得
-  
-  const globalEnv = (globalThis as any).env;
+  // 1. 標準的な取得（一応残す）
   const processEnv = process.env as any;
-  
-  // D1を探す (優先順位: グローバル > process.env)
-  const d1 = globalEnv?.DB || processEnv?.DB;
+  let d1 = (globalThis as any).env?.DB || processEnv?.DB;
+
+  // 💡 2. 真の解決策: OpenNextの内部ストレージから強制取得
+  if (!d1) {
+    const als = (globalThis as any).__openNextAls;
+    if (als) {
+      // OpenNext v3+ の内部コンテキストにアクセス
+      const store = als.getStore();
+      d1 = store?.env?.DB;
+    }
+  }
+
+  // 💡 3. 最後の手段: リクエストオブジェクトに隠されている場合がある
+  if (!d1) {
+    d1 = (req as any).context?.env?.DB;
+  }
 
   if (!d1) {
-    // 最終手段：OpenNextの内部ストレージ（AsyncLocalStorage）を覗き見る
-    const als = (globalThis as any).__openNextAls;
-    const store = als?.getStore();
-    const finalD1 = store?.env?.DB || (req as any).context?.env?.DB;
-
-    if (!finalD1) {
-      return new Response(JSON.stringify({
-        error: "D1_BINDING_MISSING",
-        message: "Wrangler recognizes DB, but OpenNext dropped it.",
-        availableGlobalKeys: Object.keys(globalThis).filter(k => k.includes('env') || k.startsWith('__')),
-        availableProcessKeys: Object.keys(processEnv).filter(k => !k.startsWith('NEXT_'))
-      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-    }
-    
-    // 見つかった場合はそれを使用
-    const auth = getAuth(finalD1, processEnv);
-    return auth.handler(req);
+    // これでダメなら、もはや Cloudflare 側のバインディング自体が死んでいます
+    return new Response(JSON.stringify({
+      error: "CRITICAL_D1_MISSING",
+      hint: "Dashboard > Settings > Bindings で DB が存在するか、再度目視してください。",
+      alsDetected: !!(globalThis as any).__openNextAls
+    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 
   const auth = getAuth(d1, processEnv);
