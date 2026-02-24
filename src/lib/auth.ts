@@ -5,37 +5,56 @@ import { admin } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1"; // D1用drizzle
 import * as schema from "@/db/schema"; // schema全体をインポート
 
-// 💡 関数化して、外部から D1 インスタンスを受け取れるようにします
-export const getAuth = (d1: D1Database, env?: any) => {
-  // D1 インスタンスを Drizzle インスタンスに変換
-  const db = drizzle(d1);
+let authCache: ReturnType<typeof betterAuth> | null = null;
+let lastD1: D1Database | null = null;
 
-  return betterAuth({
+export const getAuth = (d1: D1Database, env?: any) => {
+  // 💡 パフォーマンス最適化: ID が同じならキャッシュを返す (CPU 制限対策)
+  if (authCache && lastD1 === d1) {
+    return authCache;
+  }
+
+  const db = drizzle(d1);
+  authCache = betterAuth({
     emailAndPassword: {
       enabled: true,
+    },
+    user: {
+      additionalFields: {
+        role: {
+          type: "string",
+          defaultValue: "user",
+          input: false, // ユーザーによる直接入力を禁止
+        },
+      },
     },
     database: drizzleAdapter(db, {
       provider: "sqlite",
       schema: schema,
     }),
-    // 防衛ライン③: セッション管理
     session: {
       expiresIn: 60 * 10,
       updateAge: 60 * 1,
     },
-    // 防衛ライン④: 認可 (Role管理)
     plugins: [
       admin(),
     ],
     socialProviders: {
-      google: {
-        clientId: env?.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "",
-        clientSecret: env?.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || "",
-      },
-      line: {
-        clientId: env?.LINE_CLIENT_ID || process.env.LINE_CLIENT_ID || "",
-        clientSecret: env?.LINE_CLIENT_SECRET || process.env.LINE_CLIENT_SECRET || "",
-      }
+      ...(env?.GOOGLE_CLIENT_ID || (typeof process !== "undefined" && process.env.GOOGLE_CLIENT_ID) ? {
+        google: {
+          clientId: env?.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "",
+          clientSecret: env?.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || "",
+        },
+      } : {}),
+      ...(env?.LINE_CLIENT_ID || (typeof process !== "undefined" && process.env.LINE_CLIENT_ID) ? {
+        line: {
+          clientId: env?.LINE_CLIENT_ID || process.env.LINE_CLIENT_ID || "",
+          clientSecret: env?.LINE_CLIENT_SECRET || process.env.LINE_CLIENT_SECRET || "",
+        },
+      } : {}),
     }
   });
+
+  lastD1 = d1;
+  return authCache;
 };
