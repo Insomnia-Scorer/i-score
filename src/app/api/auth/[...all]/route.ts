@@ -5,27 +5,27 @@ export const dynamic = 'force-dynamic';
 import { getAuth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
-const handler = async (req: Request, ctx: any) => {
-    const env = ctx.env;
+const handler = async (req: Request) => {
+  const d1 = (process.env as any).DB as D1Database;
 
-    if (!env?.DB) {
-        return new Response("D1 Database (DB) not found in env", { status: 500 });
-    }
+  if (!d1) {
+    return new Response("D1 Database (DB) not found in process.env", { status: 500 });
+  }
 
-    const auth = getAuth(env.DB);
-    const authHandler = toNextJsHandler(auth);
+  const auth = getAuth(d1);
+  const authHandler = toNextJsHandler(auth);
 
-    // 💡 リクエストのメソッド（GET/POSTなど）に合わせて適切なハンドラーを呼び出す
-    const method = req.method.toUpperCase();
+  // 💡 ここが修正ポイントです
+  // authHandler は { GET, POST, ... } というオブジェクトなので、
+  // リクエストのメソッドに応じて適切な関数を呼び出します
+  const method = req.method.toUpperCase();
+  
+  // 型安全にメソッドを特定して実行
+  if (method in authHandler) {
+    return (authHandler as any)[method](req);
+  }
 
-    // TypeScriptの型エラーを回避しつつ、メソッドを振り分けます
-    if (method === "GET") return authHandler.GET(req);
-    if (method === "POST") return authHandler.POST(req);
-    if (method === "PATCH") return authHandler.PATCH(req);
-    if (method === "PUT") return authHandler.PUT(req);
-    if (method === "DELETE") return authHandler.DELETE(req);
-
-    return new Response("Method Not Allowed", { status: 405 });
+  return new Response(`Method ${method} Not Allowed`, { status: 405 });
 };
 
 export const GET = handler;
