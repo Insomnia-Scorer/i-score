@@ -14,7 +14,19 @@ declare global {
 }
 
 const handler = async (req: Request, context: any) => {
-// 💡 外部ライブラリを使わない D1 取得の決定版
+  // すべてのグローバルプロパティをスキャン
+  const allKeys = Object.getOwnPropertyNames(globalThis);
+  const cloudflareEnv = (globalThis as any).process?.env || (globalThis as any).env;
+
+  return new Response(JSON.stringify({
+    message: "Environment Scan",
+    hasDB: !!(cloudflareEnv?.DB),
+    allGlobalKeys: allKeys.filter(k => !k.includes('Reflect') && !k.includes('Object')), // 絞り込み
+    envKeys: cloudflareEnv ? Object.keys(cloudflareEnv) : "not found"
+  }, null, 2), { headers: { "content-type": "application/json" } });
+
+  /*
+  // 💡 外部ライブラリを使わない D1 取得の決定版
   // OpenNext (opennextjs-cloudflare) は Workers の `env` を
   // globalThis.env または process.env にマッピングしようとします。
   const d1 = (process.env as any).DB || (globalThis as any).env?.DB;
@@ -44,6 +56,7 @@ const handler = async (req: Request, context: any) => {
   }
 
   return new Response(`Method ${method} Not Allowed`, { status: 405 });
+  */
 };
 
 export const GET = handler;
