@@ -1,7 +1,4 @@
 // src/app/(protected)/admin/page.tsx
-//export const runtime = 'edge';
-export const dynamic = "force-dynamic";
-
 export default async function AdminPage() {
   // 💡 テンプレートのように、直接 D1 (process.env.DB) を触ってみる
   const db = (process.env as any).DB as D1Database;
