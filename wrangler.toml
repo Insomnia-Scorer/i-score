@@ -15,7 +15,7 @@ binding = "ASSETS"
 enabled = true
 
 # D1データベースの設定
-[d1_databases]
+[[d1_databases]]
 binding = "DB"
 database_name = "i-score-db"
 database_id = "fdcb7241-930e-4ef5-97d2-08f6358faff4"
