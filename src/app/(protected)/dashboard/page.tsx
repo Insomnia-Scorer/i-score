@@ -109,7 +109,7 @@ export default function DashboardPage() {
             </div>
           ) : matches.length > 0 ? (
             matches.map((match) => (
-              <Link key={match.id} href={`/matches/${match.id}`} className="block group">
+              <Link key={match.id} href={`/matches/score?id=${match.id}`} className="block group">
                 <Card className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.98] overflow-hidden relative">
                   {/* 左側のステータスカラーバー */}
                   <div className={cn(

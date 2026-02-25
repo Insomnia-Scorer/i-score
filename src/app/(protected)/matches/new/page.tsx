@@ -46,7 +46,7 @@ export default function NewMatchPage() {
       if (result.success) {
         toast.success("試合を作成しました。");
         // 送信後はスコア入力画面へ遷移
-        router.push(`/matches/${result.matchId}`);
+        router.push(`/matches/score?id=${result.matchId}`);
       } else {
         toast.error(result.error || "試合の作成に失敗しました。");
       }
