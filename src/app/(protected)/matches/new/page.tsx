@@ -26,33 +26,38 @@ export default function NewMatchPage() {
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const data = {
-      opponent: formData.get("opponent") as string,
-      date: formData.get("date") as string,
-      location: formData.get("location") as string,
-      matchType,
-      battingOrder,
-    };
+    const opponent = formData.get("opponent") as string;
+    const date = formData.get("date") as string;
+    const location = formData.get("location") as string;
 
     try {
+      // 💡 Hono の API エンドポイントに向かって POST リクエストを送信
       const response = await fetch('/api/matches', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          opponent,
+          date,
+          location,
+          matchType,
+          battingOrder,
+        }),
       });
 
-      const result = await response.json() as { success: boolean; matchId?: string; error?: string };
+      const result = await response.json();
 
-      if (result.success) {
-        toast.success("試合を作成しました。");
-        // 送信後はスコア入力画面へ遷移
-        router.push(`/matches/score?id=${result.matchId}`);
+      if (response.ok && result.success) {
+        // 保存成功後、作成したばかりの試合のスコア入力画面へ遷移
+        router.push(`../matches/${result.matchId}`);
       } else {
-        toast.error(result.error || "試合の作成に失敗しました。");
+        alert("エラーが発生しました: " + (result.error || "不明なエラー"));
+        setIsLoading(false);
       }
     } catch (error) {
-      toast.error("ネットワークエラーが発生しました。");
-    } finally {
+      console.error("通信エラー:", error);
+      alert("通信エラーが発生しました。ネットワークを確認してください。");
       setIsLoading(false);
     }
   };
