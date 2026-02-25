@@ -89,11 +89,8 @@ function HeaderContent() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/login">ログイン</Link>
-              </Button>
               <Button size="sm" asChild>
-                <Link href="/signup">登録</Link>
+                <Link href="/login">ログイン</Link>
               </Button>
             </div>
           )}
