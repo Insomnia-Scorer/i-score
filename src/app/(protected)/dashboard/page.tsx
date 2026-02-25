@@ -34,7 +34,7 @@ export default function DashboardPage() {
           <CardContent>
             {/* 💡 ボタンも角丸(rounded-xl)にして高さを出し、押しやすく */}
             <Button className="w-full rounded-xl h-12 text-base font-bold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]" asChild>
-              <Link href="/matches/new">
+              <Link href="../matches/new">
                 試合作成へ進む <ChevronRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
