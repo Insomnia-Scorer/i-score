@@ -1,5 +1,6 @@
 // src/db/schema.ts
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
 export const user = sqliteTable("user", {
     id: text("id").primaryKey(),
@@ -51,4 +52,30 @@ export const verification = sqliteTable("verification", {
     updatedAt: integer("updated_at", { mode: "timestamp" }),
 });
 
-export const schema = { user, session, account, verification };
+export const matches = sqliteTable("matches", {
+    // 💡 idはランダムな文字列（UUIDやCUID）を使用
+    id: text("id").primaryKey(),
+
+    // フォームで入力する項目
+    opponent: text("opponent").notNull(), // 対戦相手
+    date: text("date").notNull(), // 試合日 (YYYY-MM-DD形式)
+    location: text("location"), // 場所（任意なので notNull を外す）
+    matchType: text("match_type").notNull(), // 'practice' または 'official'
+    battingOrder: text("batting_order").notNull(), // 'first'(先攻) または 'second'(後攻)
+
+    // 試合の進行状態を管理するカラム（後々スコア入力画面で使います）
+    status: text("status").notNull().default("scheduled"), // 'scheduled', 'in_progress', 'finished'
+
+    // 作成日時
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+});
+
+export const schema = {
+    user,
+    session,
+    account,
+    verification,
+    matches
+};
