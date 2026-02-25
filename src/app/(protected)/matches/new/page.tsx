@@ -1,144 +1,170 @@
-// src/app/(protected)/dashboard/page.tsx
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, History, Trophy, Calendar, ChevronRight, MapPin } from "lucide-react";
+// src/app/(protected)/matches/new/page.tsx
+"use client";
 
-export default function DashboardPage() {
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Calendar, MapPin, Shield, Swords, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export default function NewMatchPage() {
+  const router = useRouter();
+  
+  // 💡 スマホでタップしやすいように、状態として管理する項目
+  const [matchType, setMatchType] = useState<"practice" | "official">("practice");
+  const [battingOrder, setBattingOrder] = useState<"first" | "second">("first");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // フォーム送信のダミー処理
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    // 💡 実際はここでAPI（Cloudflare Workers/D1）にデータを送信します
+    setTimeout(() => {
+      setIsLoading(false);
+      // 送信後はダッシュボードまたはスコア入力画面へ遷移
+      router.push("/dashboard"); 
+    }, 1000);
+  };
+
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-500">
+    <div className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 space-y-8 animate-in slide-in-from-bottom-4 duration-500 fade-in">
       
-      {/* ページヘッダー */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight">ダッシュボード</h1>
-        <p className="text-muted-foreground font-medium">チームの最新の状況と試合記録を確認しましょう。</p>
+      {/* 💡 ヘッダー：戻るボタンとタイトルをスッキリ配置 */}
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" asChild>
+          <Link href="/dashboard">
+            <ArrowLeft className="h-6 w-6" />
+          </Link>
+        </Button>
+        <h1 className="text-2xl font-extrabold tracking-tight">新しい試合を作成</h1>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* 💡 クイックアクション：カード全体をLinkで囲み、どこをタップしても画面遷移するように変更 */}
-        <Link href="/matches/new" className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl">
-          <Card className="relative overflow-hidden group rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm transition-all hover:shadow-md hover:border-primary/40 active:scale-[0.98] cursor-pointer">
-            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card className="rounded-2xl border-border/50 bg-background/50 shadow-sm overflow-hidden backdrop-blur-sm">
+          <CardContent className="p-6 space-y-8">
             
-            <div className="relative z-10">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl flex items-center gap-3 text-primary">
-                  <div className="p-2 bg-primary/10 rounded-full">
-                    <Plus className="h-5 w-5" />
-                  </div>
-                  新しい試合を記録
-                </CardTitle>
-                <CardDescription className="text-sm font-medium">
-                  スコアブックの入力を開始します
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* 💡 asChildを外し、ただの装飾としてのdivに変更（リンク機能は外側のLinkが担うため） */}
-                <div className="flex items-center justify-center w-full rounded-xl h-12 text-base font-bold shadow-sm bg-primary text-primary-foreground group-hover:bg-primary/90 transition-colors">
-                  試合作成へ進む <ChevronRight className="ml-2 h-5 w-5" />
-                </div>
-              </CardContent>
+            {/* 1. 対戦相手 */}
+            <div className="space-y-3">
+              <label className="text-sm font-bold flex items-center gap-2 text-foreground/80">
+                <Swords className="h-4 w-4 text-primary" /> 対戦相手
+              </label>
+              <Input 
+                required
+                placeholder="例: 多摩川イーグルス" 
+                className="h-14 text-lg rounded-xl px-4 bg-background border-border/50 focus-visible:ring-primary/20 focus-visible:border-primary"
+              />
             </div>
-          </Card>
-        </Link>
 
-        {/* スタッツサマリー */}
-        <Card className="rounded-2xl border-border bg-background shadow-sm lg:col-span-2 flex flex-col justify-center">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-yellow-500" />
-              今シーズンの成績
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-end gap-4">
-            <div className="text-4xl font-extrabold tracking-tighter">
-              12<span className="text-2xl text-muted-foreground font-bold mx-1">勝</span>
-              4<span className="text-2xl text-muted-foreground font-bold mx-1">敗</span>
+            {/* 2. 試合日 & 場所 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label className="text-sm font-bold flex items-center gap-2 text-foreground/80">
+                  <Calendar className="h-4 w-4 text-primary" /> 試合日
+                </label>
+                {/* 💡 スマホのネイティブカレンダー入力(type="date")を活用 */}
+                <Input 
+                  required
+                  type="date" 
+                  defaultValue={new Date().toISOString().split("T")[0]} // 今日をデフォルトに
+                  className="h-14 text-lg rounded-xl px-4 bg-background border-border/50 focus-visible:ring-primary/20 block w-full"
+                />
+              </div>
+              
+              <div className="space-y-3">
+                <label className="text-sm font-bold flex items-center gap-2 text-foreground/80">
+                  <MapPin className="h-4 w-4 text-primary" /> 場所 (任意)
+                </label>
+                <Input 
+                  placeholder="例: 等々力球場" 
+                  className="h-14 text-lg rounded-xl px-4 bg-background border-border/50 focus-visible:ring-primary/20"
+                />
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground font-bold mb-1.5 bg-muted px-2 py-1 rounded-md">勝率 .750</p>
+
+            {/* 3. 試合種別 (セレクトボックスの代わりにタップしやすいボタン) */}
+            <div className="space-y-3">
+              <label className="text-sm font-bold flex items-center gap-2 text-foreground/80">
+                <Trophy className="h-4 w-4 text-primary" /> 試合種別
+              </label>
+              <div className="grid grid-cols-2 gap-3 p-1 bg-muted/50 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setMatchType("practice")}
+                  className={cn(
+                    "h-12 rounded-xl text-sm font-bold transition-all duration-200",
+                    matchType === "practice" 
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  練習試合
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatchType("official")}
+                  className={cn(
+                    "h-12 rounded-xl text-sm font-bold transition-all duration-200",
+                    matchType === "official" 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  公式戦 / 大会
+                </button>
+              </div>
+            </div>
+
+            {/* 4. 先攻・後攻 */}
+            <div className="space-y-3">
+              <label className="text-sm font-bold flex items-center gap-2 text-foreground/80">
+                <Shield className="h-4 w-4 text-primary" /> 先攻・後攻
+              </label>
+              <div className="grid grid-cols-2 gap-3 p-1 bg-muted/50 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setBattingOrder("first")}
+                  className={cn(
+                    "h-12 rounded-xl text-sm font-bold transition-all duration-200",
+                    battingOrder === "first" 
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  先攻 (Bat First)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBattingOrder("second")}
+                  className={cn(
+                    "h-12 rounded-xl text-sm font-bold transition-all duration-200",
+                    battingOrder === "second" 
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  後攻 (Field First)
+                </button>
+              </div>
+            </div>
+
           </CardContent>
         </Card>
-      </div>
 
-      {/* 最近の試合一覧 */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight">
-            <History className="h-5 w-5 text-primary" />
-            最近の試合
-          </h2>
-          <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-foreground font-medium" asChild>
-            <Link href="/matches">すべて見る <ChevronRight className="ml-1 h-4 w-4" /></Link>
+        {/* 💡 送信ボタン：画面下部に大きく固定的なレイアウトで配置 */}
+        <div className="pt-4">
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+            className="w-full h-14 rounded-xl text-lg font-extrabold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            {isLoading ? "準備中..." : "この内容で試合を開始する"}
           </Button>
         </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* 試合カード1 */}
-          <Link href="/matches/1" className="block group">
-            <Card className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.98] overflow-hidden relative">
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500" />
-              <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
-                      <Calendar className="h-3.5 w-3.5" /> 2026年2月22日
-                      <span className="bg-secondary/80 text-secondary-foreground px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider font-extrabold">練習試合</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> 多摩川グラウンド
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-extrabold text-green-700 ring-1 ring-inset ring-green-600/20">
-                    勝利
-                  </span>
-                </div>
-                <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
-                  <div className="text-base font-extrabold w-1/3 text-center truncate">自チーム</div>
-                  <div className="flex items-center justify-center gap-4 w-1/3">
-                    <div className="text-3xl font-black text-primary">5</div>
-                    <div className="text-muted-foreground font-bold">-</div>
-                    <div className="text-3xl font-black text-muted-foreground">2</div>
-                  </div>
-                  <div className="text-base font-bold text-muted-foreground w-1/3 text-center truncate">相手チーム</div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-          
-          {/* 試合カード2 */}
-          <Link href="/matches/2" className="block group">
-            <Card className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.98] overflow-hidden relative">
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-destructive" />
-              <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
-                      <Calendar className="h-3.5 w-3.5" /> 2026年2月15日
-                      <span className="bg-secondary/80 text-secondary-foreground px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider font-extrabold">春季大会</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> 等々力球場
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-extrabold text-destructive ring-1 ring-inset ring-destructive/20">
-                    敗北
-                  </span>
-                </div>
-                <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
-                  <div className="text-base font-extrabold w-1/3 text-center truncate">自チーム</div>
-                  <div className="flex items-center justify-center gap-4 w-1/3">
-                    <div className="text-3xl font-black text-muted-foreground">1</div>
-                    <div className="text-muted-foreground font-bold">-</div>
-                    <div className="text-3xl font-black text-foreground">3</div>
-                  </div>
-                  <div className="text-base font-bold text-muted-foreground w-1/3 text-center truncate">相手チーム</div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-        </div>
-      </div>
+      </form>
     </div>
   );
 }
