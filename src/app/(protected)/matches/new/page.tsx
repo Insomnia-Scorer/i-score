@@ -46,7 +46,12 @@ export default function NewMatchPage() {
         }),
       });
 
-      const result = await response.json();
+      // 💡 どのようなデータが返ってくるか、TypeScriptに型を教えてあげる
+      const result = (await response.json()) as {
+        success: boolean;
+        matchId?: string;
+        error?: string;
+      };
 
       if (response.ok && result.success) {
         // 保存成功後、作成したばかりの試合のスコア入力画面へ遷移
