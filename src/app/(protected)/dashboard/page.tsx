@@ -3,127 +3,86 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Plus, History, Trophy, Calendar, ChevronRight, MapPin } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    // 💡 全体にたっぷりの余白(py-8 px-4)と、最大幅(max-w-5xl)を設定して画面の中央に配置します
+    <div className="container mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-500">
+      
       {/* ページヘッダー */}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold tracking-tight">ダッシュボード</h1>
-        <p className="text-muted-foreground">チームの最新の状況と試合記録を確認しましょう。</p>
+        <p className="text-muted-foreground font-medium">チームの最新の状況と試合記録を確認しましょう。</p>
       </div>
 
-      {/* 💡 クイックアクション（一番目立つように配置） */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="bg-primary/5 border-primary/20 shadow-sm relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2 text-primary">
-              <Plus className="h-5 w-5" />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* 💡 クイックアクション：グラデーションと大きな丸み(rounded-2xl)で特別感を演出 */}
+        <Card className="relative overflow-hidden group rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm transition-all hover:shadow-md hover:border-primary/40">
+          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl flex items-center gap-3 text-primary">
+              <div className="p-2 bg-primary/10 rounded-full">
+                <Plus className="h-5 w-5" />
+              </div>
               新しい試合を記録
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm font-medium">
               スコアブックの入力を開始します
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full rounded-full shadow-sm hover:scale-[1.02] transition-transform" asChild>
+            {/* 💡 ボタンも角丸(rounded-xl)にして高さを出し、押しやすく */}
+            <Button className="w-full rounded-xl h-12 text-base font-bold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]" asChild>
               <Link href="/matches/new">
-                試合作成へ進む <ChevronRight className="ml-2 h-4 w-4" />
+                試合作成へ進む <ChevronRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </CardContent>
         </Card>
 
-        {/* 💡 スタッツサマリー */}
-        <Card className="shadow-sm">
+        {/* 💡 スタッツサマリー：こちらも角丸で統一 */}
+        <Card className="rounded-2xl border-border bg-background shadow-sm lg:col-span-2 flex flex-col justify-center">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
+            <CardTitle className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-yellow-500" />
               今シーズンの成績
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-extrabold">12勝 4敗</div>
-            <p className="text-xs text-muted-foreground mt-1">勝率 .750</p>
+          <CardContent className="flex items-end gap-4">
+            <div className="text-4xl font-extrabold tracking-tighter">
+              12<span className="text-2xl text-muted-foreground font-bold mx-1">勝</span>
+              4<span className="text-2xl text-muted-foreground font-bold mx-1">敗</span>
+            </div>
+            <p className="text-sm text-muted-foreground font-bold mb-1.5 bg-muted px-2 py-1 rounded-md">勝率 .750</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* 💡 最近の試合一覧（ダミーデータでレイアウトを確認） */}
-      <div className="space-y-4">
+      {/* 最近の試合一覧 */}
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <History className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight">
+            <History className="h-5 w-5 text-primary" />
             最近の試合
           </h2>
-          <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
-            <Link href="/matches">すべて見る</Link>
+          <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-foreground font-medium" asChild>
+            <Link href="/matches">すべて見る <ChevronRight className="ml-1 h-4 w-4" /></Link>
           </Button>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {/* 試合カードのモック 1 */}
-          <Card className="hover:bg-muted/50 transition-colors shadow-sm cursor-pointer border-l-4 border-l-green-500">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                    <Calendar className="h-3 w-3" /> 2026年2月22日
-                    <span className="bg-secondary px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider">練習試合</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-3 w-3" /> 多摩川グラウンド
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                    勝利
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between mt-2">
-                <div className="text-lg font-bold">自チーム</div>
-                <div className="text-3xl font-extrabold text-primary">5</div>
-                <div className="text-muted-foreground font-medium px-4">-</div>
-                <div className="text-3xl font-extrabold text-muted-foreground">2</div>
-                <div className="text-lg font-bold text-muted-foreground">相手チーム</div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* 試合カードのモック 2 */}
-           <Card className="hover:bg-muted/50 transition-colors shadow-sm cursor-pointer border-l-4 border-l-red-500">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                    <Calendar className="h-3 w-3" /> 2026年2月15日
-                    <span className="bg-secondary px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider">春季大会</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-3 w-3" /> 等々力球場
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
-                    敗北
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between mt-2">
-                <div className="text-lg font-bold">自チーム</div>
-                <div className="text-3xl font-extrabold text-muted-foreground">1</div>
-                <div className="text-muted-foreground font-medium px-4">-</div>
-                <div className="text-3xl font-extrabold text-foreground">3</div>
-                <div className="text-lg font-bold text-muted-foreground">相手チーム</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
+          {/* 💡 試合カード全体を Link で囲み、カードのどこをタップしても遷移するように変更 */}
+          <Link href="/matches/1" className="block group">
+            <Card className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.98] overflow-hidden relative">
+              {/* 左側のステータスカラーバー */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500" />
+              <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
+                
+                <div className="flex justify-between items-start mb-6">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
+                      <Calendar className="h-3.5 w-3.5" /> 2026年2月22日
+                      <span className="bg-secondary/80 text-secondary-foreground px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider font-extrabold">練習試合</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text
