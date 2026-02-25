@@ -54,7 +54,7 @@ export default function NewMatchPage() {
       };
 
       if (response.ok && result.success) {
-        // 保存成功後、作成したばかりの試合のスコア入力画面へ遷移
+        // 保存成功後、作成したばかりの試合のスコア入力画面へ遷移！
         router.push(`../matches/score?id=${result.matchId}`);
       } else {
         alert("エラーが発生しました: " + (result.error || "不明なエラー"));
