@@ -9,7 +9,7 @@ export default function DashboardPage() {
   return (
     // 💡 全体にたっぷりの余白(py-8 px-4)と、最大幅(max-w-5xl)を設定して画面の中央に配置します
     <div className="container mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-500">
-      
+
       {/* ページヘッダー */}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold tracking-tight">ダッシュボード</h1>
@@ -19,7 +19,7 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* 💡 クイックアクション：グラデーションと大きな丸み(rounded-2xl)で特別感を演出 */}
         <Card className="relative overflow-hidden group rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm transition-all hover:shadow-md hover:border-primary/40">
-          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
           <CardHeader className="pb-4">
             <CardTitle className="text-xl flex items-center gap-3 text-primary">
               <div className="p-2 bg-primary/10 rounded-full">
@@ -78,7 +78,7 @@ export default function DashboardPage() {
               {/* 左側のステータスカラーバー */}
               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500" />
               <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
-                
+
                 <div className="flex justify-between items-start mb-6">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
@@ -93,7 +93,7 @@ export default function DashboardPage() {
                     勝利
                   </span>
                 </div>
-                
+
                 {/* 💡 スコア部分を専用の背景色(bg-muted/30)で囲み、情報を見やすく整理 */}
                 <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
                   <div className="text-base font-extrabold w-1/3 text-center truncate">自チーム</div>
@@ -108,12 +108,12 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </Link>
-          
+
           <Link href="/matches/2" className="block group">
             <Card className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.98] overflow-hidden relative">
               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-destructive" />
               <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
-                
+
                 <div className="flex justify-between items-start mb-6">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
@@ -128,7 +128,7 @@ export default function DashboardPage() {
                     敗北
                   </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
                   <div className="text-base font-extrabold w-1/3 text-center truncate">自チーム</div>
                   <div className="flex items-center justify-center gap-4 w-1/3">
