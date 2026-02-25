@@ -1,10 +1,15 @@
-"use client";
 // src/app/page.tsx
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, BarChart3, ChevronRight } from "lucide-react";
+import { Trophy, Users, BarChart3, ChevronRight, LayoutDashboard, Loader2 } from "lucide-react";
+import { authClient } from "@/lib/auth-client"; // 💡 Better Authのクライアントを追加
 
 export default function Home() {
+    // 💡 セッション状態（ログインしているかどうか）と、読み込み中状態を取得
+    const { data: session, isPending } = authClient.useSession();
+
     return (
         <div className="flex flex-col min-h-screen">
             {/* Hero Section */}
@@ -13,20 +18,41 @@ export default function Home() {
                     <div className="max-w-3xl mx-auto text-center space-y-8">
                         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">
                             野球の「今」を、<br />
-                            <span className="text-primary italic">次世代</span>の形に。
+                            <span className="text-primary italic">次世代</span> の形に。
                         </h1>
                         <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
                             i-Score は、直感的な操作で野球のスコアを記録・分析できる最新のプラットフォームです。草野球から本格的なリーグまで、あらゆる試合をデータ化。
                         </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                            <Button size="lg" className="h-14 px-8 text-lg font-bold rounded-full" asChild>
-                                <Link href="/signup">
-                                    今すぐ始める <ChevronRight className="ml-2 h-5 w-5" />
-                                </Link>
-                            </Button>
-                            <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold rounded-full bg-transparent border-slate-700 text-white hover:bg-slate-900" asChild>
-                                <Link href="/login">ログイン</Link>
-                            </Button>
+                        
+                        {/* 💡 ボタンエリア：ログイン状態によって表示を切り替える */}
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 min-h-[56px]">
+                            {isPending ? (
+                                // 読み込み中はローディングアイコンを表示（ボタンがチラつくのを防ぐ）
+                                <Button size="lg" disabled className="h-14 px-8 text-lg font-bold rounded-full bg-slate-800 text-slate-400">
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    確認中...
+                                </Button>
+                            ) : session ? (
+                                // ログインしている場合：ダッシュボードへのリンクを表示
+                                <Button size="lg" className="h-14 px-8 text-lg font-bold rounded-full shadow-lg hover:scale-105 transition-transform" asChild>
+                                    <Link href="/dashboard">
+                                        ダッシュボードへ進む <LayoutDashboard className="ml-2 h-5 w-5" />
+                                    </Link>
+                                </Button>
+                            ) : (
+                                // ログインしていない場合：ログイン（新規登録）ボタンを表示
+                                <>
+                                    <Button size="lg" className="h-14 px-8 text-lg font-bold rounded-full shadow-lg hover:scale-105 transition-transform" asChild>
+                                        {/* 💡 signupは削除したのでloginに統一 */}
+                                        <Link href="/login">
+                                            今すぐ始める <ChevronRight className="ml-2 h-5 w-5" />
+                                        </Link>
+                                    </Button>
+                                    <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold rounded-full bg-transparent border-slate-700 text-white hover:bg-slate-800 transition-colors" asChild>
+                                        <Link href="/login">ログイン</Link>
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
