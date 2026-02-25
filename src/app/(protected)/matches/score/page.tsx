@@ -35,16 +35,55 @@ function MatchScoreContent() {
     const [match, setMatch] = useState<Match | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // カウント状態の管理（簡易版）
+    // カウント状態の管理
     const [balls, setBalls] = useState(0);
     const [strikes, setStrikes] = useState(0);
     const [outs, setOuts] = useState(0);
     const [inning, setInning] = useState(1);
     const [isTop, setIsTop] = useState(true);
 
+    // 💡 新追加：野球のルール連動ロジック
+    const handleOut = () => {
+        if (outs === 2) {
+            // 3アウトチェンジ
+            setOuts(0);
+            setBalls(0);
+            setStrikes(0);
+            if (isTop) {
+                setIsTop(false); // 表 -> 裏
+            } else {
+                setIsTop(true); // 裏 -> 次の回の表
+                setInning(i => i + 1);
+            }
+        } else {
+            setOuts(o => o + 1);
+        }
+    };
+
+    const handleStrike = () => {
+        if (strikes === 2) {
+            // 見逃し/空振り三振（3ストライク）
+            setBalls(0);
+            setStrikes(0);
+            handleOut(); // アウト処理を呼び出す
+        } else {
+            setStrikes(s => s + 1);
+        }
+    };
+
+    const handleBall = () => {
+        if (balls === 3) {
+            // 四球（フォアボール）
+            setBalls(0);
+            setStrikes(0);
+            // ※将来的にはここで「1塁にランナーを進める」処理を追加します
+        } else {
+            setBalls(b => b + 1);
+        }
+    };
+
     useEffect(() => {
         if (!matchId) return;
-
         const fetchMatch = async () => {
             try {
                 const response = await fetch(`/api/matches/${matchId}`);
@@ -142,17 +181,17 @@ function MatchScoreContent() {
 
                 {/* ダイヤモンド表示 */}
                 <div className="relative w-64 h-64 rotate-45 border-4 border-slate-800/50 rounded-lg scale-90 sm:scale-100">
-                    {/* ベース（2塁、3塁、1塁） */}
+                    {/* ベース */}
                     <div className="absolute -top-3 -left-3 h-8 w-8 bg-slate-900 border-4 border-slate-800 -rotate-45 flex items-center justify-center text-[10px] font-bold text-slate-700">2</div>
                     <div className="absolute -bottom-3 -left-3 h-8 w-8 bg-slate-900 border-4 border-slate-800 -rotate-45 flex items-center justify-center text-[10px] font-bold text-slate-700">3</div>
                     <div className="absolute -top-3 -right-3 h-8 w-8 bg-slate-900 border-4 border-slate-800 -rotate-45 flex items-center justify-center text-[10px] font-bold text-slate-700">1</div>
 
-                    {/* ホームベース（下部）*/}
+                    {/* ホームベース */}
                     <div className="absolute -bottom-4 -right-4 h-10 w-10 bg-primary/20 border-4 border-primary/50 -rotate-45 flex items-center justify-center">
                         <div className="w-4 h-4 bg-primary rounded-sm animate-pulse" />
                     </div>
 
-                    {/* ピッチャーズプレート（中央） */}
+                    {/* ピッチャーズプレート */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-2 bg-slate-800" />
                 </div>
 
@@ -177,23 +216,24 @@ function MatchScoreContent() {
             {/* 3. 操作エリア：アクションボタン */}
             <footer className="bg-slate-900 border-t border-slate-800 p-6 pb-10">
                 <div className="grid grid-cols-4 gap-3 mb-6">
+                    {/* 💡 ボタンの onClick を、新しく作った関数に置き換え */}
                     <Button
                         className="flex flex-col h-20 rounded-2xl bg-slate-800 hover:bg-slate-700 border-none group"
-                        onClick={() => setBalls(b => (b + 1) % 4)}
+                        onClick={handleBall}
                     >
                         <span className="text-green-500 font-black text-xl group-active:scale-125 transition-transform">B</span>
                         <span className="text-[10px] font-bold text-slate-400">BALL</span>
                     </Button>
                     <Button
                         className="flex flex-col h-20 rounded-2xl bg-slate-800 hover:bg-slate-700 border-none group"
-                        onClick={() => setStrikes(s => (s + 1) % 3)}
+                        onClick={handleStrike}
                     >
                         <span className="text-yellow-500 font-black text-xl group-active:scale-125 transition-transform">S</span>
                         <span className="text-[10px] font-bold text-slate-400">STRIKE</span>
                     </Button>
                     <Button
                         className="flex flex-col h-20 rounded-2xl bg-slate-800 hover:bg-slate-700 border-none group"
-                        onClick={() => setOuts(o => (o + 1) % 3)}
+                        onClick={handleOut}
                     >
                         <span className="text-red-500 font-black text-xl group-active:scale-125 transition-transform">O</span>
                         <span className="text-[10px] font-bold text-slate-400">OUT</span>
