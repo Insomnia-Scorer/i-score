@@ -85,4 +85,66 @@ export default function DashboardPage() {
                       <Calendar className="h-3.5 w-3.5" /> 2026年2月22日
                       <span className="bg-secondary/80 text-secondary-foreground px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider font-extrabold">練習試合</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> 多摩川グラウンド
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-extrabold text-green-700 ring-1 ring-inset ring-green-600/20">
+                    勝利
+                  </span>
+                </div>
+                
+                {/* 💡 スコア部分を専用の背景色(bg-muted/30)で囲み、情報を見やすく整理 */}
+                <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
+                  <div className="text-base font-extrabold w-1/3 text-center truncate">自チーム</div>
+                  <div className="flex items-center justify-center gap-4 w-1/3">
+                    <div className="text-3xl font-black text-primary">5</div>
+                    <div className="text-muted-foreground font-bold">-</div>
+                    <div className="text-3xl font-black text-muted-foreground">2</div>
+                  </div>
+                  <div className="text-base font-bold text-muted-foreground w-1/3 text-center truncate">相手チーム</div>
+                </div>
+
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/matches/2" className="block group">
+            <Card className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.98] overflow-hidden relative">
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-destructive" />
+              <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
+                
+                <div className="flex justify-between items-start mb-6">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
+                      <Calendar className="h-3.5 w-3.5" /> 2026年2月15日
+                      <span className="bg-secondary/80 text-secondary-foreground px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider font-extrabold">春季大会</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> 等々力球場
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-extrabold text-destructive ring-1 ring-inset ring-destructive/20">
+                    敗北
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
+                  <div className="text-base font-extrabold w-1/3 text-center truncate">自チーム</div>
+                  <div className="flex items-center justify-center gap-4 w-1/3">
+                    <div className="text-3xl font-black text-muted-foreground">1</div>
+                    <div className="text-muted-foreground font-bold">-</div>
+                    <div className="text-3xl font-black text-foreground">3</div>
+                  </div>
+                  <div className="text-base font-bold text-muted-foreground w-1/3 text-center truncate">相手チーム</div>
+                </div>
+
+              </CardContent>
+            </Card>
+          </Link>
+
+        </div>
+      </div>
+    </div>
+  );
+}
