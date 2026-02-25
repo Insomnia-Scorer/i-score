@@ -1,9 +1,14 @@
-// src/app/actions/match.ts
+// src/app/action/match.ts
 "use server";
 
-import { db } from "@/db"; // 💡 D1データベースのインスタンスをインポート（環境に合わせてパスを調整してください）
+import { getDb } from "@/db/drizzle";
 import { matches } from "@/db/schema";
 
+/**
+ * 💡 試合作成のサーバーアクション
+ * 注意: 現在の構成 (output: 'export') ではサーバーアクションは利用できません。
+ * 本機能は Hono API (/api/matches) 経由で実装されています。
+ */
 export async function createMatchAction(data: {
     opponent: string;
     date: string;
@@ -12,15 +17,14 @@ export async function createMatchAction(data: {
     battingOrder: string;
 }) {
     try {
-        // 💡 Cloudflare Workers でも動く標準の UUID 生成
+        const db = getDb();
         const matchId = crypto.randomUUID();
 
-        // D1 データベースへ挿入
         await db.insert(matches).values({
             id: matchId,
             opponent: data.opponent,
             date: data.date,
-            location: data.location || null, // 空文字の場合は null に
+            location: data.location || null,
             matchType: data.matchType,
             battingOrder: data.battingOrder,
             status: "scheduled",
@@ -28,7 +32,7 @@ export async function createMatchAction(data: {
 
         return { success: true, matchId };
     } catch (error) {
-        console.error("試合の作成に失敗しました:", error);
-        return { success: false, error: "データベースの保存に失敗しました" };
+        console.error("Failed to create match:", error);
+        return { success: false, error: "データベースへの保存に失敗しました" };
     }
 }

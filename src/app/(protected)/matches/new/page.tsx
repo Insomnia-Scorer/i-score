@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Calendar, MapPin, Shield, Swords, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { createMatchAction } from "@/app/actions/match";
 import { toast } from "sonner";
 
 export default function NewMatchPage() {
@@ -36,11 +35,18 @@ export default function NewMatchPage() {
     };
 
     try {
-      const result = await createMatchAction(data);
+      const response = await fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json() as { success: boolean; matchId?: string; error?: string };
 
       if (result.success) {
         toast.success("試合を作成しました。");
-        router.push("/dashboard");
+        // 送信後はスコア入力画面へ遷移
+        router.push(`/matches/${result.matchId}`);
       } else {
         toast.error(result.error || "試合の作成に失敗しました。");
       }
