@@ -15,34 +15,32 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* 💡 クイックアクション：クリックできない問題を修正 */}
-        <Card className="relative overflow-hidden group rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm transition-all hover:shadow-md hover:border-primary/40">
-          
-          {/* 💡 修正箇所1： pointer-events-none を追加してクリックを貫通させる */}
-          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          
-          {/* 💡 修正箇所2： 中身を relative z-10 で手前に持ってくる */}
-          <div className="relative z-10">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl flex items-center gap-3 text-primary">
-                <div className="p-2 bg-primary/10 rounded-full">
-                  <Plus className="h-5 w-5" />
-                </div>
-                新しい試合を記録
-              </CardTitle>
-              <CardDescription className="text-sm font-medium">
-                スコアブックの入力を開始します
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full rounded-xl h-12 text-base font-bold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]" asChild>
-                <Link href="/matches/new">
+        {/* 💡 クイックアクション：カード全体をLinkで囲み、どこをタップしても画面遷移するように変更 */}
+        <Link href="/matches/new" className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl">
+          <Card className="relative overflow-hidden group rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm transition-all hover:shadow-md hover:border-primary/40 active:scale-[0.98] cursor-pointer">
+            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+            
+            <div className="relative z-10">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-3 text-primary">
+                  <div className="p-2 bg-primary/10 rounded-full">
+                    <Plus className="h-5 w-5" />
+                  </div>
+                  新しい試合を記録
+                </CardTitle>
+                <CardDescription className="text-sm font-medium">
+                  スコアブックの入力を開始します
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* 💡 asChildを外し、ただの装飾としてのdivに変更（リンク機能は外側のLinkが担うため） */}
+                <div className="flex items-center justify-center w-full rounded-xl h-12 text-base font-bold shadow-sm bg-primary text-primary-foreground group-hover:bg-primary/90 transition-colors">
                   試合作成へ進む <ChevronRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </CardContent>
-          </div>
-        </Card>
+                </div>
+              </CardContent>
+            </div>
+          </Card>
+        </Link>
 
         {/* スタッツサマリー */}
         <Card className="rounded-2xl border-border bg-background shadow-sm lg:col-span-2 flex flex-col justify-center">
