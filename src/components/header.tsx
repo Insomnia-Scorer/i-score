@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation"; // 💡 usePathname を追加
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
@@ -14,8 +15,13 @@ import {
   Home, 
   ClipboardList 
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils"; // 💡 クラス結合用に追加
+import { cn } from "@/lib/utils";
+
+// 💡 メニューの項目を配列で管理してスッキリさせます
+const NAV_ITEMS = [
+  { name: "ホーム", href: "/", icon: Home },
+  { name: "スコア登録", href: "/dashboard", icon: ClipboardList },
+];
 
 export function Header() {
   const [mounted, setMounted] = React.useState(false);
@@ -26,13 +32,12 @@ export function Header() {
 
   if (!mounted) {
     return (
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md text-foreground">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
           <div className="flex items-center gap-4">
-            {/* モバイル用ハンバーガーのプレースホルダー */}
             <div className="md:hidden h-10 w-10" />
-            <Link href="/" className="flex items-center space-x-2 transition-opacity hover:opacity-80">
-              <span className="font-bold text-2xl tracking-tighter text-primary">i-Score</span>
+            <Link href="/" className="flex items-center space-x-2">
+              <span className="font-extrabold text-2xl tracking-tighter text-primary">i-Score</span>
             </Link>
           </div>
           <div className="h-8 w-8" />
@@ -47,8 +52,8 @@ export function Header() {
 function HeaderContent() {
   const { data: session } = authClient.useSession();
   const router = useRouter();
+  const pathname = usePathname(); // 💡 現在のURLパスを取得
   
-  // 💡 モバイルメニューの開閉状態
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const closeMenu = () => setIsMobileMenuOpen(false);
 
@@ -66,62 +71,68 @@ function HeaderContent() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground">
+      {/* 💡 PC・モバイル共通ヘッダー： backdrop-blur-md で美しいすりガラスに */}
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md text-foreground transition-all duration-300">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
 
-          {/* 左側：ハンバーガーボタン & ロゴ */}
           <div className="flex items-center gap-4">
-            
-            {/* 💡 モバイルのみ表示される「≡」ボタン */}
+            {/* モバイル用「≡」ボタン */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-2 -ml-2 rounded-md text-foreground hover:bg-muted transition-colors"
+              className="md:hidden p-2 -ml-2 rounded-full text-foreground hover:bg-muted/80 transition-all active:scale-95"
               aria-label="メニューを開く"
             >
               <Menu className="h-6 w-6" />
             </button>
 
-            <Link href="/" className="flex items-center space-x-2 transition-opacity hover:opacity-80">
-              <span className="font-bold text-2xl tracking-tighter text-primary">
+            <Link href="/" className="flex items-center space-x-2 group">
+              <span className="font-extrabold text-2xl tracking-tighter text-primary group-hover:opacity-80 transition-opacity">
                 i-Score
               </span>
             </Link>
 
-            {/* 💡 PC用ナビゲーション (md以上で表示) */}
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium ml-4">
-              <Link href="/" className="transition-colors hover:text-primary flex items-center gap-2">
-                <Home className="h-4 w-4" /> ホーム
-              </Link>
-              {session && (
-                <Link href="/dashboard" className="transition-colors hover:text-primary flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4" /> スコア登録
-                </Link>
-              )}
+            {/* 💡 PC用ナビゲーション */}
+            <nav className="hidden md:flex items-center gap-2 ml-6 text-sm font-medium">
+              {NAV_ITEMS.map((item) => {
+                // セッションがない時は「スコア登録」を隠す
+                if (item.href === "/dashboard" && !session) return null;
+                const isActive = pathname === item.href;
+                
+                return (
+                  <Link 
+                    key={item.href}
+                    href={item.href} 
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200",
+                      isActive 
+                        ? "bg-primary/10 text-primary" 
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" /> 
+                    {item.name}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
 
-          {/* 右側：ユーザーメニュー & テーマ */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <ThemeToggle />
-
             {session ? (
               <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full border border-border">
-                  <UserCircle className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{session.user.name}</span>
+                <div className="hidden sm:flex items-center gap-2 bg-background/50 backdrop-blur-sm px-4 py-1.5 rounded-full border border-border/50 shadow-sm">
+                  <UserCircle className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">{session.user.name}</span>
                 </div>
-                {/* 💡 PC用のログアウトボタン */}
-                <Button variant="ghost" size="icon" onClick={handleLogout} className="hidden sm:flex text-muted-foreground hover:text-destructive">
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="hidden sm:flex text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors">
                   <LogOut className="h-5 w-5" />
                 </Button>
               </div>
             ) : (
-               // 💡 ログインしていない時のボタン
-              <div className="flex items-center gap-2">
-                <Button size="sm" asChild>
-                  <Link href="/login">ログイン</Link>
-                </Button>
-              </div>
+              <Button size="sm" className="rounded-full px-6 shadow-sm transition-transform hover:scale-105" asChild>
+                <Link href="/login">ログイン</Link>
+              </Button>
             )}
           </div>
         </div>
@@ -131,73 +142,79 @@ function HeaderContent() {
           💡 モバイル用スライドメニュー (Drawer)
       ========================================= */}
       
-      {/* 1. 背景の半透明オーバーレイ（メニューが開いている時だけ表示・クリックで閉じる） */}
+      {/* 背景オーバーレイ */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity md:hidden"
+          className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity md:hidden"
           onClick={closeMenu}
         />
       )}
 
-      {/* 2. 左からスライドしてくるメニュー本体 */}
+      {/* 💡 スライドメニュー本体： bg-background/95 と backdrop-blur-xl で高級感を演出 */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-[70] flex w-3/4 max-w-sm flex-col bg-background shadow-2xl transition-transform duration-300 ease-in-out md:hidden",
+          "fixed inset-y-0 left-0 z-[70] flex w-[280px] flex-col bg-background/95 backdrop-blur-xl border-r border-border/50 shadow-2xl transition-transform duration-300 ease-out md:hidden",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* メニューのヘッダー部分 */}
-        <div className="flex h-16 items-center justify-between border-b px-6">
-          <span className="font-bold text-xl text-primary tracking-tighter">i-Score</span>
+        <div className="flex h-16 items-center justify-between px-6 pt-2">
+          <span className="font-extrabold text-2xl text-primary tracking-tighter">i-Score</span>
           <button 
             onClick={closeMenu}
-            className="p-2 -mr-2 rounded-md text-muted-foreground hover:bg-muted"
+            className="p-2 -mr-2 rounded-full bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* メニューのリンク一覧 */}
-        <div className="flex flex-1 flex-col overflow-y-auto py-4">
+        <div className="flex flex-1 flex-col overflow-y-auto py-6">
           <nav className="flex flex-col gap-2 px-4">
-            <Link 
-              href="/" 
-              onClick={closeMenu}
-              className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium hover:bg-muted transition-colors"
-            >
-              <Home className="h-5 w-5 text-muted-foreground" /> ホーム
-            </Link>
-            
-            {session && (
-              <Link 
-                href="/dashboard" 
-                onClick={closeMenu}
-                className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium hover:bg-muted transition-colors"
-              >
-                <ClipboardList className="h-5 w-5 text-muted-foreground" /> スコア登録
-              </Link>
-            )}
+            {NAV_ITEMS.map((item) => {
+              if (item.href === "/dashboard" && !session) return null;
+              const isActive = pathname === item.href;
+              
+              return (
+                <Link 
+                  key={item.href}
+                  href={item.href} 
+                  onClick={closeMenu}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-4 py-3.5 text-base font-semibold transition-all duration-200",
+                    isActive 
+                      ? "bg-primary text-primary-foreground shadow-md transform scale-[1.02]" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.98]"
+                  )}
+                >
+                  <item.icon className={cn("h-5 w-5", isActive ? "text-primary-foreground" : "text-muted-foreground")} /> 
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
-        {/* メニューのフッター（ログアウト/ユーザー情報） */}
+        {/* 💡 リッチなユーザープロフィールカード */}
         {session && (
-          <div className="border-t p-4 space-y-4">
-            <div className="flex items-center gap-3 px-3">
-              <UserCircle className="h-8 w-8 text-muted-foreground" />
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">{session.user.name}</span>
-                <span className="text-xs text-muted-foreground">ログイン中</span>
+          <div className="p-4 pb-8">
+            <div className="rounded-2xl bg-muted/50 border border-border/50 p-4 space-y-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <UserCircle className="h-6 w-6" />
+                </div>
+                <div className="flex flex-col overflow-hidden">
+                  <span className="text-sm font-bold truncate">{session.user.name}</span>
+                  <span className="text-xs text-muted-foreground truncate">{session.user.email}</span>
+                </div>
               </div>
+              <Button 
+                variant="outline" 
+                className="w-full rounded-xl border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                ログアウト
+              </Button>
             </div>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-3 h-5 w-5" />
-              ログアウト
-            </Button>
           </div>
         )}
       </div>
