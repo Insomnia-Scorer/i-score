@@ -1,5 +1,6 @@
 "use client";
 
+import { AppLayout } from "@/components /app -layout";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import React from "react";
@@ -24,7 +25,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   return (
     <>
-      {children}
+      <AppLayout>{children}</AppLayout>AppLayout>
     </>
   );
 }
