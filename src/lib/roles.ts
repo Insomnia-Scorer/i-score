@@ -18,6 +18,12 @@ export type Role = typeof ROLES[keyof typeof ROLES];
 // 💡 各アクションに対する権限チェック用のヘルパー関数
 // これを作っておくと、後々の画面やAPIの制御が劇的に楽になります
 
+// 0. チームに承認されたメンバーか？（pending以外ならOK）
+export const isApprovedMember = (role?: string | null): boolean => {
+  if (!role) return false;
+  return role !== ROLES.PENDING;
+};
+
 // 1. システム管理（IT担当）ができるか
 export const canManageSystem = (role?: string | null): boolean => {
   return role === ROLES.ADMIN;
