@@ -27,7 +27,7 @@ export default function DashboardPage() {
       try {
         const response = await fetch('/api/matches');
         if (!response.ok) throw new Error('Failed to fetch matches');
-        const data = await response.json();
+        const data = await response.json() as Match[];
         setMatches(data);
       } catch (error) {
         console.error("試合データの取得に失敗しました:", error);
