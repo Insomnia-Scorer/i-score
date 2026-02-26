@@ -2,10 +2,10 @@
 import { Hono } from 'hono'
 import { getAuth } from "@/lib/auth"
 import { drizzle } from 'drizzle-orm/d1'
-// 💡 atBats と pitches を追加でインポートします
 import { matches, atBats, pitches } from '@/db/schema'
-// 💡 and と isNull を追加でインポートします
 import { desc, eq, and, isNull } from 'drizzle-orm'
+// 💡 先ほど作った権限チェック関数をインポート！
+import { canEditScore } from '@/lib/roles'
 
 const app = new Hono<{ Bindings: { DB: D1Database, ASSETS: Fetcher } }>()
 
@@ -15,14 +15,14 @@ app.all('/api/auth/*', async (c) => {
     return auth.handler(c.req.raw)
 })
 
-// 試合一覧取得
+// 試合一覧取得（※閲覧は全員OK）
 app.get('/api/matches', async (c) => {
     const db = drizzle(c.env.DB)
     const result = await db.select().from(matches).orderBy(desc(matches.createdAt))
     return c.json(result)
 })
 
-// 試合詳細取得
+// 試合詳細取得（※閲覧は全員OK）
 app.get('/api/matches/:id', async (c) => {
     const id = c.req.param('id')
     const db = drizzle(c.env.DB)
@@ -34,8 +34,16 @@ app.get('/api/matches/:id', async (c) => {
     return c.json(result)
 })
 
-// 試合の新規作成
+// 💡 試合の新規作成（※権限チェック追加！）
 app.post('/api/matches', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    
+    // スコア編集権限（admin, manager, coach, scorer）がない場合は弾く
+    if (!session || !canEditScore(session.user.role)) {
+        return c.json({ error: '試合を作成する権限がありません' }, 403)
+    }
+
     const body = await c.req.json()
     const db = drizzle(c.env.DB)
     const matchId = crypto.randomUUID()
@@ -57,14 +65,21 @@ app.post('/api/matches', async (c) => {
     }
 })
 
-// 💡 【新規追加】1球ごとの記録（ピッチング）を保存するAPI
+// 💡 1球ごとの記録（ピッチング）を保存するAPI（※権限チェック追加！）
 app.post('/api/matches/:id/pitches', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    
+    // スコア編集権限がない場合は弾く
+    if (!session || !canEditScore(session.user.role)) {
+        return c.json({ error: 'スコアを記録する権限がありません' }, 403)
+    }
+
     const matchId = c.req.param('id')
     const body = await c.req.json()
     const db = drizzle(c.env.DB)
 
     try {
-        // 1. まず、現在の「進行中の打席（resultが空）」を探す
         let currentAtBat = await db.select().from(atBats)
             .where(
                 and(
@@ -75,7 +90,6 @@ app.post('/api/matches/:id/pitches', async (c) => {
                 )
             ).get()
 
-        // 2. もし進行中の打席がなければ、新しく「打席」を開始する
         if (!currentAtBat) {
             const atBatId = crypto.randomUUID()
             await db.insert(atBats).values({
@@ -84,7 +98,6 @@ app.post('/api/matches/:id/pitches', async (c) => {
                 inning: body.inning,
                 isTop: body.isTop,
             })
-            // 後続の処理のために仮のオブジェクトを作っておく
             currentAtBat = { 
                 id: atBatId, 
                 matchId, 
@@ -96,18 +109,16 @@ app.post('/api/matches/:id/pitches', async (c) => {
             }
         }
 
-        // 3. その打席に対して、今回の「1球」を記録する
         const pitchId = crypto.randomUUID()
         await db.insert(pitches).values({
             id: pitchId,
             atBatId: currentAtBat.id,
-            pitchNumber: body.pitchNumber, // その打席の何球目か
-            result: body.result, // 'strike', 'ball', 'foul' など
-            ballsBefore: body.ballsBefore, // 投げる前のボールカウント
-            strikesBefore: body.strikesBefore, // 投げる前のストライクカウント
+            pitchNumber: body.pitchNumber,
+            result: body.result,
+            ballsBefore: body.ballsBefore,
+            strikesBefore: body.strikesBefore,
         })
 
-        // 打席が終わった場合（三振や四球など）は、打席テーブルの結果も更新する
         if (body.atBatResult) {
              await db.update(atBats)
                 .set({ result: body.atBatResult })
