@@ -52,11 +52,12 @@ export const verification = sqliteTable("verification", {
     updatedAt: integer("updated_at", { mode: "timestamp" }),
 });
 
+// 試合テーブル
 export const matches = sqliteTable("matches", {
     // 💡 idはランダムな文字列（UUIDやCUID）を使用
     id: text("id").primaryKey(),
-
     // フォームで入力する項目
+    teamId: text('team_id').notNull().references(() => teams.id), // どのチームの試合かを紐づけ
     opponent: text("opponent").notNull(), // 対戦相手
     date: text("date").notNull(), // 試合日 (YYYY-MM-DD形式)
     location: text("location"), // 場所（任意なので notNull を外す）
@@ -74,41 +75,58 @@ export const matches = sqliteTable("matches", {
 
 // 💡 打席（At Bat）テーブル
 export const atBats = sqliteTable("at_bats", {
-  id: text("id").primaryKey(),
-  matchId: text("match_id").notNull().references(() => matches.id, { onDelete: "cascade" }), // 試合が消えたら連動して消える
-  
-  inning: integer("inning").notNull(), // 何回か (1, 2, 3...)
-  isTop: integer("is_top", { mode: "boolean" }).notNull(), // 表(true)か裏(false)か
-  
-  batterName: text("batter_name"), // 打者の名前（将来的に選手マスタと紐づけることも可能）
-  
-  // 打席の結果（打席が完了した時に記録）
-  // 例: 'strikeout', 'walk', 'single', 'ground_out' など
-  result: text("result"), 
-  
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(strftime('%s', 'now'))`),
+    id: text("id").primaryKey(),
+    matchId: text("match_id").notNull().references(() => matches.id, { onDelete: "cascade" }), // 試合が消えたら連動して消える
+
+    inning: integer("inning").notNull(), // 何回か (1, 2, 3...)
+    isTop: integer("is_top", { mode: "boolean" }).notNull(), // 表(true)か裏(false)か
+
+    batterName: text("batter_name"), // 打者の名前（将来的に選手マスタと紐づけることも可能）
+
+    // 打席の結果（打席が完了した時に記録）
+    // 例: 'strikeout', 'walk', 'single', 'ground_out' など
+    result: text("result"),
+
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
 });
 
 // 💡 1球ごとの投球（Pitch）テーブル
 export const pitches = sqliteTable("pitches", {
-  id: text("id").primaryKey(),
-  atBatId: text("at_bat_id").notNull().references(() => atBats.id, { onDelete: "cascade" }),
-  
-  pitchNumber: integer("pitch_number").notNull(), // その打席の何球目か (1, 2, 3...)
-  
-  // 投球の結果
-  // 例: 'ball', 'strike_looking'(見逃し), 'strike_swinging'(空振り), 'foul', 'in_play' など
-  result: text("result").notNull(), 
-  
-  // 投球前のカウント状態（分析用）
-  ballsBefore: integer("balls_before").notNull().default(0),
-  strikesBefore: integer("strikes_before").notNull().default(0),
-  
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(strftime('%s', 'now'))`),
+    id: text("id").primaryKey(),
+    atBatId: text("at_bat_id").notNull().references(() => atBats.id, { onDelete: "cascade" }),
+
+    pitchNumber: integer("pitch_number").notNull(), // その打席の何球目か (1, 2, 3...)
+
+    // 投球の結果
+    // 例: 'ball', 'strike_looking'(見逃し), 'strike_swinging'(空振り), 'foul', 'in_play' など
+    result: text("result").notNull(),
+
+    // 投球前のカウント状態（分析用）
+    ballsBefore: integer("balls_before").notNull().default(0),
+    strikesBefore: integer("strikes_before").notNull().default(0),
+
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+});
+
+// 💡 新規追加：チームを管理するテーブル
+export const teams = sqliteTable('teams', {
+    id: text('id').primaryKey(), // チームID
+    name: text('name').notNull(), // チーム名（例：川崎中央シニアA）
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+// 💡 新規追加：ユーザーとチームを紐づける中間テーブル
+// 「Aさんは、川崎シニアでは監督(manager)だけど、別のチームでは保護者(viewer)」という管理が可能になります。
+export const teamMembers = sqliteTable('team_members', {
+    id: text('id').primaryKey(),
+    teamId: text('team_id').notNull().references(() => teams.id),
+    userId: text('user_id').notNull().references(() => user.id),
+    role: text('role').notNull(), // 💡 ここにチーム内での権限（manager, scorerなど）が入ります
+    joinedAt: integer('joined_at', { mode: 'timestamp' }).notNull(),
 });
 
 export const schema = {
@@ -118,5 +136,7 @@ export const schema = {
     verification,
     matches,
     atBats,
-    pitches
+    pitches,
+    teams,
+    teamMembers,
 };
