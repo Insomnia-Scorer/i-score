@@ -3,32 +3,35 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; // 💡 usePathname を追加
+import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+// 💡 ロールチェック用の関数を追加インポート
+import { canManageTeam } from "@/lib/roles";
 import { 
   UserCircle, 
   LogOut, 
   Menu, 
   X, 
   Home, 
-  ClipboardList 
+  ClipboardList,
+  Users // 💡 メンバー管理用のアイコンを追加
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// 💡 メニューの項目を配列で管理してスッキリさせます
-const NAV_ITEMS = [
-  { name: "ホーム", href: "/", icon: Home },
-  { name: "スコア登録", href: "/dashboard", icon: ClipboardList },
-];
-
 export function Header() {
   const [mounted, setMounted] = React.useState(false);
+  const pathname = usePathname();
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 💡 スコア入力画面ではヘッダーを完全に隠して画面を広く使う
+  if (pathname?.includes("/matches/score")) {
+    return null;
+  }
 
   if (!mounted) {
     return (
@@ -52,10 +55,22 @@ export function Header() {
 function HeaderContent() {
   const { data: session } = authClient.useSession();
   const router = useRouter();
-  const pathname = usePathname(); // 💡 現在のURLパスを取得
+  const pathname = usePathname();
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const closeMenu = () => setIsMobileMenuOpen(false);
+
+  // 💡 現在のユーザー権限を取得し、管理者かどうか判定
+  const userRole = (session?.user as unknown as { role?: string })?.role;
+  const isManager = canManageTeam(userRole);
+
+  // 💡 セッション状態や権限に応じて動的にメニューを生成するように変更
+  const navItems = [
+    { name: "ホーム", href: "/", icon: Home, show: true },
+    { name: "ダッシュボード", href: "/dashboard", icon: ClipboardList, show: !!session },
+    // 💡 管理者・監督のみ表示されるメニュー
+    { name: "メンバー管理", href: "/admin", icon: Users, show: !!session && isManager },
+  ];
 
   const handleLogout = async () => {
     await authClient.signOut({
@@ -71,12 +86,10 @@ function HeaderContent() {
 
   return (
     <>
-      {/* 💡 PC・モバイル共通ヘッダー： backdrop-blur-md で美しいすりガラスに */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md text-foreground transition-all duration-300">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
 
           <div className="flex items-center gap-4">
-            {/* モバイル用「≡」ボタン */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="md:hidden p-2 -ml-2 rounded-full text-foreground hover:bg-muted/80 transition-all active:scale-95"
@@ -91,11 +104,10 @@ function HeaderContent() {
               </span>
             </Link>
 
-            {/* 💡 PC用ナビゲーション */}
+            {/* PC用ナビゲーション */}
             <nav className="hidden md:flex items-center gap-2 ml-6 text-sm font-medium">
-              {NAV_ITEMS.map((item) => {
-                // セッションがない時は「スコア登録」を隠す
-                if (item.href === "/dashboard" && !session) return null;
+              {navItems.map((item) => {
+                if (!item.show) return null; // 💡 show が false のものはスキップ
                 const isActive = pathname === item.href;
                 
                 return (
@@ -123,7 +135,7 @@ function HeaderContent() {
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2 bg-background/50 backdrop-blur-sm px-4 py-1.5 rounded-full border border-border/50 shadow-sm">
                   <UserCircle className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold">{session.user.name}</span>
+                  <span className="text-sm font-semibold truncate max-w-[120px]">{session.user.name}</span>
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleLogout} className="hidden sm:flex text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors">
                   <LogOut className="h-5 w-5" />
@@ -137,10 +149,6 @@ function HeaderContent() {
           </div>
         </div>
       </header>
-
-      {/* =========================================
-          💡 モバイル用スライドメニュー (Drawer)
-      ========================================= */}
       
       {/* 背景オーバーレイ */}
       {isMobileMenuOpen && (
@@ -150,7 +158,7 @@ function HeaderContent() {
         />
       )}
 
-      {/* 💡 スライドメニュー本体： bg-background/95 と backdrop-blur-xl で高級感を演出 */}
+      {/* スライドメニュー本体 */}
       <div
         className={cn(
           "fixed inset-y-0 left-0 z-[70] flex w-[280px] flex-col bg-background/95 backdrop-blur-xl border-r border-border/50 shadow-2xl transition-transform duration-300 ease-out md:hidden",
@@ -169,8 +177,8 @@ function HeaderContent() {
 
         <div className="flex flex-1 flex-col overflow-y-auto py-6">
           <nav className="flex flex-col gap-2 px-4">
-            {NAV_ITEMS.map((item) => {
-              if (item.href === "/dashboard" && !session) return null;
+            {navItems.map((item) => {
+              if (!item.show) return null; // 💡 show が false のものはスキップ
               const isActive = pathname === item.href;
               
               return (
@@ -193,12 +201,12 @@ function HeaderContent() {
           </nav>
         </div>
 
-        {/* 💡 リッチなユーザープロフィールカード */}
+        {/* ユーザープロフィールカード */}
         {session && (
           <div className="p-4 pb-8">
             <div className="rounded-2xl bg-muted/50 border border-border/50 p-4 space-y-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <UserCircle className="h-6 w-6" />
                 </div>
                 <div className="flex flex-col overflow-hidden">
