@@ -4,7 +4,6 @@ import { getAuth } from "@/lib/auth"
 import { drizzle } from 'drizzle-orm/d1'
 import { matches, atBats, pitches } from '@/db/schema'
 import { desc, eq, and, isNull } from 'drizzle-orm'
-// 💡 先ほど作った権限チェック関数をインポート！
 import { canEditScore } from '@/lib/roles'
 
 const app = new Hono<{ Bindings: { DB: D1Database, ASSETS: Fetcher } }>()
@@ -34,13 +33,15 @@ app.get('/api/matches/:id', async (c) => {
     return c.json(result)
 })
 
-// 💡 試合の新規作成（※権限チェック追加！）
+// 試合の新規作成（※権限チェック追加！）
 app.post('/api/matches', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     
-    // スコア編集権限（admin, manager, coach, scorer）がない場合は弾く
-    if (!session || !canEditScore(session.user.role)) {
+    // 💡 TypeScriptエラー解消：明示的に型をキャストしてroleを取得
+    const userRole = (session?.user as unknown as { role?: string })?.role
+    
+    if (!session || !canEditScore(userRole)) {
         return c.json({ error: '試合を作成する権限がありません' }, 403)
     }
 
@@ -65,13 +66,15 @@ app.post('/api/matches', async (c) => {
     }
 })
 
-// 💡 1球ごとの記録（ピッチング）を保存するAPI（※権限チェック追加！）
+// 1球ごとの記録（ピッチング）を保存するAPI（※権限チェック追加！）
 app.post('/api/matches/:id/pitches', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     
-    // スコア編集権限がない場合は弾く
-    if (!session || !canEditScore(session.user.role)) {
+    // 💡 TypeScriptエラー解消：明示的に型をキャストしてroleを取得
+    const userRole = (session?.user as unknown as { role?: string })?.role
+    
+    if (!session || !canEditScore(userRole)) {
         return c.json({ error: 'スコアを記録する権限がありません' }, 403)
     }
 
@@ -86,7 +89,7 @@ app.post('/api/matches/:id/pitches', async (c) => {
                     eq(atBats.matchId, matchId),
                     eq(atBats.inning, body.inning),
                     eq(atBats.isTop, body.isTop),
-                    isNull(atBats.result) // まだ結果が出ていない（進行中）の打席
+                    isNull(atBats.result)
                 )
             ).get()
 
