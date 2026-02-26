@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-// 💡 isApprovedMember を追加
 import { canEditScore, isApprovedMember } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,7 +24,6 @@ export default function DashboardPage() {
 
   const { data: session, isPending: isSessionLoading } = authClient.useSession();
   
-  // 💡 ここが TypeScript エラーの解決策！
   // (session.user as any) などを経由して、明示的に role を string として取得します
   const userRole = (session?.user as unknown as { role?: string })?.role;
   
