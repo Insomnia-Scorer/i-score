@@ -72,10 +72,51 @@ export const matches = sqliteTable("matches", {
         .default(sql`(strftime('%s', 'now'))`),
 });
 
+// 💡 打席（At Bat）テーブル
+export const atBats = sqliteTable("at_bats", {
+  id: text("id").primaryKey(),
+  matchId: text("match_id").notNull().references(() => matches.id, { onDelete: "cascade" }), // 試合が消えたら連動して消える
+  
+  inning: integer("inning").notNull(), // 何回か (1, 2, 3...)
+  isTop: integer("is_top", { mode: "boolean" }).notNull(), // 表(true)か裏(false)か
+  
+  batterName: text("batter_name"), // 打者の名前（将来的に選手マスタと紐づけることも可能）
+  
+  // 打席の結果（打席が完了した時に記録）
+  // 例: 'strikeout', 'walk', 'single', 'ground_out' など
+  result: text("result"), 
+  
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s', 'now'))`),
+});
+
+// 💡 1球ごとの投球（Pitch）テーブル
+export const pitches = sqliteTable("pitches", {
+  id: text("id").primaryKey(),
+  atBatId: text("at_bat_id").notNull().references(() => atBats.id, { onDelete: "cascade" }),
+  
+  pitchNumber: integer("pitch_number").notNull(), // その打席の何球目か (1, 2, 3...)
+  
+  // 投球の結果
+  // 例: 'ball', 'strike_looking'(見逃し), 'strike_swinging'(空振り), 'foul', 'in_play' など
+  result: text("result").notNull(), 
+  
+  // 投球前のカウント状態（分析用）
+  ballsBefore: integer("balls_before").notNull().default(0),
+  strikesBefore: integer("strikes_before").notNull().default(0),
+  
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s', 'now'))`),
+});
+
 export const schema = {
     user,
     session,
     account,
     verification,
-    matches
+    matches,
+    atBats,
+    pitches
 };
