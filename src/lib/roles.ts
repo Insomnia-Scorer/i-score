@@ -2,13 +2,14 @@
 
 // 💡 7つのロールを厳密に定義
 export const ROLES = {
-  ADMIN: "admin",
-  MANAGER: "manager",
-  COACH: "coach",
-  SCORER: "scorer",
-  STAFF: "staff",
-  PLAYER: "player",
-  VIEWER: "viewer",
+  ADMIN: "admin", // IT管理者
+  MANAGER: "manager", // 代表・監督
+  COACH: "coach", // コーチ
+  SCORER: "scorer", // スコアラー
+  STAFF: "staff", // 保護者・スタッフ
+  PLAYER: "player", // 選手
+  VIEWER: "viewer", // OB・関係者
+  PENDING: "pending", // 認証待ちの仮ユーザー（デフォルト）
 } as const;
 
 // TypeScript用の型（'admin' | 'manager' | 'coach' ... となります）
