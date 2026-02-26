@@ -25,17 +25,17 @@ export const canManageSystem = (role?: string | null): boolean => {
 // 2. チーム管理（代表・監督・IT担当）ができるか
 export const canManageTeam = (role?: string | null): boolean => {
   if (!role) return false;
-  return [ROLES.ADMIN, ROLES.MANAGER].includes(role as Role);
+  return ([ROLES.ADMIN, ROLES.MANAGER] as string[]).includes(role as Role);
 };
 
 // 3. スコアの入力・編集（管理者、監督、コーチ、スコアラー）ができるか
 export const canEditScore = (role?: string | null): boolean => {
   if (!role) return false;
-  return [ROLES.ADMIN, ROLES.MANAGER, ROLES.COACH, ROLES.SCORER].includes(role as Role);
+  return ([ROLES.ADMIN, ROLES.MANAGER, ROLES.COACH, ROLES.SCORER] as string[]).includes(role as Role);
 };
 
 // 4. チーム内部情報の閲覧（スタッフ以上）ができるか
 export const canViewInternalData = (role?: string | null): boolean => {
   if (!role) return false;
-  return [ROLES.ADMIN, ROLES.MANAGER, ROLES.COACH, ROLES.SCORER, ROLES.STAFF].includes(role as Role);
+  return ([ROLES.ADMIN, ROLES.MANAGER, ROLES.COACH, ROLES.SCORER, ROLES.STAFF] as string[]).includes(role as Role);
 };
