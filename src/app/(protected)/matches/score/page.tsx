@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     ArrowLeft,
-    ChevronLeft,
-    ChevronRight,
     Settings,
-    Users,
-    Info,
-    RotateCcw,
     Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,7 +37,30 @@ function MatchScoreContent() {
     const [inning, setInning] = useState(1);
     const [isTop, setIsTop] = useState(true);
 
-    // 💡 新追加：野球のルール連動ロジック
+    // 💡 新規追加：1球ごとにバックエンド（Cloudflare Workers）へ送信する共通関数
+    const recordPitchAPI = async (pitchResult: string, atBatResult: string | null = null) => {
+        if (!matchId) return;
+        
+        try {
+            await fetch(`/api/matches/${matchId}/pitches`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    inning,
+                    isTop,
+                    pitchNumber: balls + strikes + 1, // 現在のBとSの数から何球目かを計算
+                    result: pitchResult,
+                    ballsBefore: balls,
+                    strikesBefore: strikes,
+                    atBatResult: atBatResult // 三振や四球など、打席が終わった場合のみ値が入る
+                }),
+            });
+        } catch (error) {
+            console.error("投球の記録に失敗しました:", error);
+        }
+    };
+
+    // 💡 アウトの処理（3アウトでチェンジ）
     const handleOut = () => {
         if (outs === 2) {
             // 3アウトチェンジ
@@ -52,7 +70,7 @@ function MatchScoreContent() {
             if (isTop) {
                 setIsTop(false); // 表 -> 裏
             } else {
-                setIsTop(true); // 裏 -> 次の回の表
+                setIsTop(true);  // 裏 -> 次の回の表
                 setInning(i => i + 1);
             }
         } else {
@@ -60,28 +78,36 @@ function MatchScoreContent() {
         }
     };
 
-    const handleStrike = () => {
+    // 💡 ストライクの処理（裏でAPIを叩く）
+    const handleStrike = async () => {
         if (strikes === 2) {
-            // 見逃し/空振り三振（3ストライク）
+            // 3ストライク目（三振）
+            await recordPitchAPI('strike', 'strikeout'); // 打席結果も「strikeout」として送る
             setBalls(0);
             setStrikes(0);
-            handleOut(); // アウト処理を呼び出す
+            handleOut(); 
         } else {
+            // 通常のストライク
+            await recordPitchAPI('strike');
             setStrikes(s => s + 1);
         }
     };
 
-    const handleBall = () => {
+    // 💡 ボールの処理（裏でAPIを叩く）
+    const handleBall = async () => {
         if (balls === 3) {
-            // 四球（フォアボール）
+            // 4ボール目（四球）
+            await recordPitchAPI('ball', 'walk'); // 打席結果も「walk」として送る
             setBalls(0);
             setStrikes(0);
-            // ※将来的にはここで「1塁にランナーを進める」処理を追加します
         } else {
+            // 通常のボール
+            await recordPitchAPI('ball');
             setBalls(b => b + 1);
         }
     };
 
+    // 試合データの初回読み込み
     useEffect(() => {
         if (!matchId) return;
         const fetchMatch = async () => {
@@ -216,7 +242,6 @@ function MatchScoreContent() {
             {/* 3. 操作エリア：アクションボタン */}
             <footer className="bg-slate-900 border-t border-slate-800 p-6 pb-10">
                 <div className="grid grid-cols-4 gap-3 mb-6">
-                    {/* 💡 ボタンの onClick を、新しく作った関数に置き換え */}
                     <Button
                         className="flex flex-col h-20 rounded-2xl bg-slate-800 hover:bg-slate-700 border-none group"
                         onClick={handleBall}
