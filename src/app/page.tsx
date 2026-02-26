@@ -17,13 +17,12 @@ export default function Home() {
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-3xl mx-auto text-center space-y-8">
                         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">
-                            野球の「今」を、<br />
-                            <span className="text-primary italic">次世代</span> の形に。
+                            野球の「今」を<br /><span className="text-primary italic">次世代</span> の形に
                         </h1>
                         <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
                             i-Score は、直感的な操作で野球のスコアを記録・分析できる最新のプラットフォームです。草野球から本格的なリーグまで、あらゆる試合をデータ化。
                         </p>
-                        
+
                         {/* 💡 ボタンエリア：ログイン状態によって表示を切り替える */}
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 min-h-[56px]">
                             {isPending ? (
