@@ -36,6 +36,13 @@
       "when": 1772143366109,
       "tag": "0004_fluffy_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1772231415327,
+      "tag": "0005_easy_jigsaw",
+      "breakpoints": true
     }
   ]
 }
