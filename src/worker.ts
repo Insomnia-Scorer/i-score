@@ -285,6 +285,36 @@ app.get('/api/matches/:id/lineup', async (c) => {
     }
 });
 
+// 💡 スターティングメンバー（打順）を一括保存するAPI
+app.put('/api/matches/:id/lineup', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    const userRole = (session?.user as unknown as { role?: string })?.role
+
+    if (!session || !canEditScore(userRole)) return c.json({ error: '権限がありません' }, 403)
+
+    const matchId = c.req.param('id');
+    const lineups = await c.req.json(); // [{ playerId, battingOrder, position }, ...] の配列
+
+    try {
+        // まず既存のスタメンデータをクリア（上書きのため）
+        await c.env.DB.prepare(`DELETE FROM match_lineups WHERE match_id = ?`).bind(matchId).run();
+
+        // 新しいスタメンを1件ずつ保存
+        for (const lineup of lineups) {
+            const lineupId = crypto.randomUUID();
+            await c.env.DB.prepare(
+                `INSERT INTO match_lineups (id, match_id, player_id, batting_order, position) VALUES (?, ?, ?, ?, ?)`
+            ).bind(lineupId, matchId, lineup.playerId, lineup.battingOrder, lineup.position).run();
+        }
+
+        return c.json({ success: true });
+    } catch (e) {
+        console.error("スタメン保存エラー:", e);
+        return c.json({ error: 'スタメンの保存に失敗しました' }, 500);
+    }
+});
+
 // ==========================================
 // 💡 ユーザー管理 API
 // ==========================================
