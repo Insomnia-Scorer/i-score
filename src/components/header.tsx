@@ -166,7 +166,7 @@ function HeaderContent() {
       {/* スライドメニュー本体 */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-[70] flex w-[280px] flex-col bg-background/95 backdrop-blur-xl border-r border-border/50 shadow-2xl transition-transform duration-300 ease-out md:hidden",
+          "fixed inset-y-0 left-0 z-[70] flex w-[300px] flex-col bg-background/95 backdrop-blur-xl border-r border-border/50 shadow-2xl transition-transform duration-300 ease-out md:hidden",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
