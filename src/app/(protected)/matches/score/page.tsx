@@ -36,7 +36,7 @@ function MatchScoreContent() {
     const [selfScore, setSelfScore] = useState(0);
     const [guestScore, setGuestScore] = useState(0);
     const [inning, setInning] = useState(1);
-    const [isTop, setIsTop] = useState(true);
+    const [isTop, setIsTop] = useState(true); 
 
     const [balls, setBalls] = useState(0);
     const [strikes, setStrikes] = useState(0);
@@ -61,10 +61,10 @@ function MatchScoreContent() {
     // 💡 魔法のUndo（1球戻る）関数
     const handleUndo = async () => {
         if (history.length === 0) return;
-
+        
         // 履歴から一番新しいもの（直前の状態）を取り出す
         const previousState = history[history.length - 1];
-
+        
         // 画面の状態をすべて復元！
         setSelfScore(previousState.selfScore);
         setGuestScore(previousState.guestScore);
@@ -76,7 +76,7 @@ function MatchScoreContent() {
         setFirstBase(previousState.firstBase);
         setSecondBase(previousState.secondBase);
         setThirdBase(previousState.thirdBase);
-
+        
         // 履歴配列から一番後ろを消す
         setHistory(prev => prev.slice(0, -1));
 
@@ -97,7 +97,7 @@ function MatchScoreContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    inning, isTop,
+                    inning, isTop, 
                     pitchNumber: balls + strikes + 1,
                     result: pitchResult, ballsBefore: balls, strikesBefore: strikes, atBatResult
                 }),
@@ -180,7 +180,7 @@ function MatchScoreContent() {
         saveStateToHistory();
         const hitTypes = { 1: 'single', 2: 'double', 3: 'triple', 4: 'home_run' };
         await recordPitchAPI('in_play', hitTypes[bases]);
-
+        
         let runs = 0; let newFirst = false; let newSecond = false; let newThird = false;
 
         if (bases === 1) {
@@ -303,7 +303,7 @@ function MatchScoreContent() {
 
             {/* 操作エリア */}
             <footer className="bg-slate-900 border-t border-slate-800 p-3 sm:p-5 pb-6 shrink-0 space-y-2">
-
+                
                 {/* 1段目：カウント */}
                 <div className="grid grid-cols-4 gap-2">
                     <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-slate-800 hover:bg-slate-700 border-none group" onClick={handleBall}>
@@ -315,9 +315,9 @@ function MatchScoreContent() {
                     <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-slate-800 hover:bg-slate-700 border-none group" onClick={handleManualOut}>
                         <span className="text-red-500 font-black text-xl group-active:scale-125 transition-transform">O</span>
                     </Button>
-
+                    
                     {/* 💡 ココが変化！「FIX」ボタンが「1球戻る」ボタンになりました */}
-                    <Button
+                    <Button 
                         onClick={handleUndo}
                         disabled={history.length === 0} // 履歴がなければ押せないようにする
                         className="flex flex-col h-14 sm:h-16 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 font-black shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"

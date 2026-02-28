@@ -6,6 +6,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { canEditScore, isApprovedMember, ROLES } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Plus, History, Trophy, Calendar, ChevronRight, MapPin, Loader2, Users, CheckCircle2 } from "lucide-react";
 
@@ -169,7 +170,7 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground">あなたの役割（ロール）</label>
-                <select
+                <Select
                   className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer font-medium"
                   value={newTeamRole}
                   onChange={(e) => setNewTeamRole(e.target.value)}
@@ -178,7 +179,7 @@ export default function DashboardPage() {
                   <option value={ROLES.COACH}>コーチ (Coach)</option>
                   <option value={ROLES.SCORER}>スコアラー (Scorer)</option>
                   <option value={ROLES.STAFF}>スタッフ (Staff)</option>
-                </select>
+                </Select>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3 text-green-500" /> あなたは発起人として記録されます
                 </p>
@@ -211,7 +212,7 @@ export default function DashboardPage() {
         {/* チーム切り替えドロップダウン */}
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-muted-foreground hidden sm:inline">対象チーム:</span>
-          <select
+          <Select
             className="flex h-11 w-full sm:w-64 rounded-xl border border-input bg-background px-4 py-2 text-sm font-bold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer shadow-sm"
             value={selectedTeamId}
             onChange={(e) => setSelectedTeamId(e.target.value)}
@@ -221,7 +222,7 @@ export default function DashboardPage() {
                 {team.name} {team.isFounder ? '(設立)' : ''}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 

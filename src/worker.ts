@@ -259,6 +259,32 @@ app.delete('/api/matches/:id/pitches/last', async (c) => {
     }
 })
 
+// 💡 スターティングメンバー（打順）を保存するAPI
+app.patch('/api/matches/:id/lineup', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    const userRole = (session?.user as unknown as { role?: string })?.role
+    
+    if (!session || !canEditScore(userRole)) return c.json({ error: '権限がありません' }, 403)
+
+    const matchId = c.req.param('id')
+    const body = await c.req.json()
+    const db = drizzle(c.env.DB)
+
+    try {
+        await db.update(matches)
+            .set({ 
+                battingOrder: JSON.stringify(body.lineup) // 💡 配列を文字列（JSON）にして保存
+            })
+            .where(eq(matches.id, matchId))
+            
+        return c.json({ success: true })
+    } catch (e) {
+        console.error("オーダー保存エラー:", e)
+        return c.json({ success: false, error: 'オーダーの保存に失敗しました' }, 500)
+    }
+})
+
 // ==========================================
 // 💡 ユーザー管理 API
 // ==========================================
@@ -294,4 +320,5 @@ export default {
         if (url.pathname.startsWith('/api/')) return app.fetch(request, env, ctx)
         return env.ASSETS.fetch(request)
     }
+
 }
