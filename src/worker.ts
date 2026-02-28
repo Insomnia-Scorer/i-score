@@ -78,9 +78,12 @@ app.post('/api/teams', async (c) => {
 app.get('/api/teams/:teamId/players', async (c) => {
     const teamId = c.req.param('teamId');
     try {
-        // CASTを使って、背番号を数字として正しく並び替えます（例：1, 2, 10 の順）
+        // 💡 修正: フロントエンドが認識できるように `uniform_number as uniformNumber` と名前を変換して返します
         const { results } = await c.env.DB.prepare(
-            `SELECT * FROM players WHERE team_id = ? ORDER BY CAST(uniform_number AS INTEGER) ASC`
+            `SELECT id, team_id, name, uniform_number as uniformNumber, created_at 
+             FROM players 
+             WHERE team_id = ? 
+             ORDER BY CAST(uniform_number AS INTEGER) ASC`
         ).bind(teamId).all();
 
         return c.json(results);
