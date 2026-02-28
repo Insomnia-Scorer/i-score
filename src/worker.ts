@@ -260,30 +260,24 @@ app.delete('/api/matches/:id/pitches/last', async (c) => {
 })
 
 // 💡 スターティングメンバー（打順）を保存するAPI
-app.patch('/api/matches/:id/lineup', async (c) => {
-    const auth = getAuth(c.env.DB, c.env)
-    const session = await auth.api.getSession({ headers: c.req.raw.headers })
-    const userRole = (session?.user as unknown as { role?: string })?.role
-    
-    if (!session || !canEditScore(userRole)) return c.json({ error: '権限がありません' }, 403)
-
-    const matchId = c.req.param('id')
-    const body = await c.req.json()
-    const db = drizzle(c.env.DB)
-
+app.get('/api/matches/:id/lineup', async (c) => {
+    const matchId = c.req.param('id');
     try {
-        await db.update(matches)
-            .set({ 
-                battingOrder: JSON.stringify(body.lineup) // 💡 配列を文字列（JSON）にして保存
-            })
-            .where(eq(matches.id, matchId))
-            
-        return c.json({ success: true })
+        // JOINを使って、playersテーブルから名前(playerName)と背番号(uniformNumber)を引っ張ってきます
+        const { results } = await c.env.DB.prepare(`
+                SELECT ml.*, p.name as playerName, p.uniform_number as uniformNumber
+                FROM match_lineups ml
+                JOIN players p ON ml.player_id = p.id
+                WHERE ml.match_id = ? 
+                ORDER BY ml.batting_order ASC
+            `).bind(matchId).all();
+
+        return c.json(results);
     } catch (e) {
-        console.error("オーダー保存エラー:", e)
-        return c.json({ success: false, error: 'オーダーの保存に失敗しました' }, 500)
+        console.error("スタメン取得エラー:", e);
+        return c.json({ error: 'スタメンの取得に失敗しました' }, 500);
     }
-})
+});
 
 // ==========================================
 // 💡 ユーザー管理 API
