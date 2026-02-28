@@ -308,21 +308,21 @@ function MatchScoreContent() {
                     </div>
                 </div>
 
-                {/* 💡 中央：ストライクゾーン（配球図） */}
+                {/* 💡 中央：配球図全体（ボール球も記録できるように枠外を拡張！） */}
                 <div
-                    className="relative w-[50vw] max-w-[200px] aspect-[3/4] mt-8 mx-auto border-2 border-border bg-muted/10 rounded-lg cursor-crosshair touch-none overflow-visible shadow-inner"
+                    className="relative w-[75vw] max-w-[280px] aspect-[4/5] mt-6 mx-auto bg-muted/5 rounded-2xl cursor-crosshair touch-none overflow-hidden shadow-inner border-2 border-border/50"
                     onClick={handleZoneClick}
                 >
-                    {/* ストライクゾーンの9分割線 */}
-                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-30 pointer-events-none">
+                    {/* 実際のストライクゾーンの枠（キャンバスの中央に配置） */}
+                    <div className="absolute top-[15%] left-[20%] right-[20%] bottom-[20%] border-2 border-foreground/50 grid grid-cols-3 grid-rows-3 pointer-events-none bg-primary/5">
                         {[...Array(9)].map((_, i) => (
-                            <div key={i} className="border border-foreground/50" />
+                            <div key={i} className="border border-foreground/30" />
                         ))}
                     </div>
 
-                    {/* ホームベースの図形（下部） */}
-                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/4 aspect-[2/1] pointer-events-none">
-                        <svg viewBox="0 0 100 50" className="w-full h-full fill-background stroke-border stroke-2">
+                    {/* ホームベースの図形（キャンバスの下部に配置） */}
+                    <div className="absolute bottom-[3%] left-1/2 -translate-x-1/2 w-[60%] aspect-[2/1] pointer-events-none">
+                        <svg viewBox="0 0 100 50" className="w-full h-full fill-background stroke-foreground/50 stroke-2">
                             <polygon points="0,0 100,0 100,25 50,50 0,25" />
                         </svg>
                     </div>
@@ -333,7 +333,7 @@ function MatchScoreContent() {
                             className="absolute w-6 h-6 -ml-3 -mt-3 bg-yellow-400 rounded-full border-2 border-zinc-900 shadow-[0_0_15px_rgba(250,204,21,0.6)] z-20 flex items-center justify-center animate-in zoom-in pointer-events-none"
                             style={{ left: `${pitchX * 100}%`, top: `${pitchY * 100}%` }}
                         >
-                            {/* ボールの中の縫い目の装飾など（任意） */}
+                            {/* ボールの縫い目の装飾 */}
                             <div className="w-full h-[2px] bg-red-600/50 absolute rotate-45"></div>
                             <div className="w-full h-[2px] bg-red-600/50 absolute -rotate-45"></div>
                         </div>
@@ -341,9 +341,9 @@ function MatchScoreContent() {
 
                     {/* ガイダンスの文字 */}
                     {pitchX === null && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span className="text-xs font-bold text-muted-foreground/50 bg-background/50 px-2 py-1 rounded-full backdrop-blur-sm">
-                                タップしてコースを記録
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                            <span className="text-xs font-bold text-muted-foreground bg-background/90 px-3 py-1.5 rounded-full backdrop-blur-md shadow-sm">
+                                コースをタップ
                             </span>
                         </div>
                     )}
