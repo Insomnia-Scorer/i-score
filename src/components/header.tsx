@@ -135,7 +135,7 @@ function HeaderContent() {
           </div>
 
           <div className="flex items-center gap-4">
-            <ThemeToggle /><ThemeSwitcher />
+            <ThemeToggle />
             {session ? (
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2 bg-background/50 backdrop-blur-sm px-4 py-1.5 rounded-full border border-border/50 shadow-sm">
@@ -230,6 +230,7 @@ function HeaderContent() {
                 <LogOut className="mr-2 h-4 w-4" />
                 ログアウト
               </Button>
+              <ThemeSwitcher />
             </div>
           </div>
         )}
