@@ -100,8 +100,8 @@ function HeaderContent() {
             </button>
 
             {/* PC用ヘッダー部分 */}
-            <Link href="/" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
-              <LogoIcon className="h-8 w-8 transition-transform group-hover:scale-110 duration-300" />
+            <Link href="/" className="flex items-center gap-2.5 group transition-opacity hover:opacity-80">
+              <LogoIcon className="h-10 w-10 transition-transform group-hover:scale-110 duration-300" />
               {/* 💡 italic を追加して画像の世界観に合わせる */}
               <span className="font-black italic text-2xl tracking-tighter text-foreground group-hover:text-primary transition-colors">
                 i-Score
@@ -170,8 +170,8 @@ function HeaderContent() {
         )}
       >
         <div className="flex h-16 items-center justify-between px-6 pt-2">
-          <div className="flex items-center gap-2">
-            <LogoIcon className="h-7 w-7" />
+          <div className="flex items-center gap-2.5">
+            <LogoIcon className="h-9 w-9" />
             <span className="font-black text-2xl tracking-tighter">i-Score</span>
           </div>
           <button
