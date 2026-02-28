@@ -172,7 +172,7 @@ function HeaderContent() {
         <div className="flex h-16 items-center justify-between px-6 pt-2">
           <div className="flex items-center gap-1">
             <LogoIcon className="h-9 w-9" />
-            <span className="font-black text-2xl tracking-tighter">i-Score</span>
+            <span className="font-black italic text-2xl tracking-tighter">i-Score</span>
           </div>
           <button
             onClick={closeMenu}
