@@ -15,10 +15,10 @@ app.all('/api/auth/*', async (c) => {
 })
 
 // ==========================================
-// 💡 新規追加：チーム管理 API
+// 💡 チーム管理 API
 // ==========================================
 
-// 1. 自分の所属チーム一覧を取得
+// 💡 自分の所属チーム一覧を取得
 app.get('/api/teams', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
@@ -40,7 +40,7 @@ app.get('/api/teams', async (c) => {
     return c.json(myTeams)
 })
 
-// 2. チームの新規作成（作成時に自分のロールを指定）
+// 💡 チームの新規作成（作成時に自分のロールを指定）
 app.post('/api/teams', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
@@ -75,10 +75,10 @@ app.post('/api/teams', async (c) => {
 })
 
 // ==========================================
-// 💡 変更：試合関連 API（teamId と season に対応）
+// 💡 試合関連 API
 // ==========================================
 
-// 試合一覧取得（※特定のチームに絞り込む）
+// 💡 試合一覧取得（※特定のチームに絞り込む）
 app.get('/api/matches', async (c) => {
     const teamId = c.req.query('teamId')
     if (!teamId) return c.json({ error: 'Team ID is required' }, 400)
@@ -90,7 +90,7 @@ app.get('/api/matches', async (c) => {
     return c.json(result)
 })
 
-// 試合詳細取得
+// 💡 試合詳細取得
 app.get('/api/matches/:id', async (c) => {
     const id = c.req.param('id')
     const db = drizzle(c.env.DB)
@@ -99,7 +99,7 @@ app.get('/api/matches/:id', async (c) => {
     return c.json(result)
 })
 
-// 試合の新規作成（※teamId と season を必須に！）
+// 💡 試合の新規作成（※teamId と season を必須に！）
 app.post('/api/matches', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
@@ -133,7 +133,7 @@ app.post('/api/matches', async (c) => {
     }
 })
 
-// 1球ごとの記録（ピッチング）保存
+// 💡 1球ごとの記録（ピッチング）保存
 app.post('/api/matches/:id/pitches', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
@@ -170,7 +170,7 @@ app.post('/api/matches/:id/pitches', async (c) => {
     }
 })
 
-// 💡 新規追加：試合終了（ステータス更新）API
+// 💡 試合終了（ステータス更新）API
 app.patch('/api/matches/:id/finish', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
@@ -195,7 +195,38 @@ app.patch('/api/matches/:id/finish', async (c) => {
     }
 })
 
-// ユーザー管理 API（※前回作成したものを維持）
+// 💡 Undo（1球戻る）のための、最後の投球削除API
+app.delete('/api/matches/:id/pitches/last', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    const userRole = (session?.user as unknown as { role?: string })?.role
+
+    if (!session || !canEditScore(userRole)) return c.json({ error: '権限がありません' }, 403)
+
+    const matchId = c.req.param('id')
+
+    try {
+        // 💡 D1の生SQL機能を使って、この試合の最新の1球だけを狙い撃ちで削除！
+        await c.env.DB.prepare(`
+            DELETE FROM pitches 
+            WHERE id = (
+                SELECT id FROM pitches 
+                WHERE matchId = ? 
+                ORDER BY createdAt DESC 
+                LIMIT 1
+            )
+        `).bind(matchId).run()
+
+        return c.json({ success: true })
+    } catch (e) {
+        console.error("Undoエラー:", e)
+        return c.json({ success: false, error: '削除に失敗しました' }, 500)
+    }
+})
+
+// ==========================================
+// 💡 ユーザー管理 API
+// ==========================================
 app.get('/api/users', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })

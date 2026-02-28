@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Settings, Check } from "lucide-react";
+import { ArrowLeft, Settings, RotateCcw } from "lucide-react"; // 💡 RotateCcw（戻るアイコン）を追加！
 import { cn } from "@/lib/utils";
 
 interface Match {
@@ -16,6 +16,14 @@ interface Match {
     matchType: string;
     status: string;
     season: string;
+}
+
+// 💡 Undo用の状態を保存する「型」
+interface GameStateSnapshot {
+    selfScore: number; guestScore: number;
+    inning: number; isTop: boolean;
+    balls: number; strikes: number; outs: number;
+    firstBase: boolean; secondBase: boolean; thirdBase: boolean;
 }
 
 function MatchScoreContent() {
@@ -37,6 +45,50 @@ function MatchScoreContent() {
     const [firstBase, setFirstBase] = useState(false);
     const [secondBase, setSecondBase] = useState(false);
     const [thirdBase, setThirdBase] = useState(false);
+
+    // 💡 履歴を保存する配列ステート
+    const [history, setHistory] = useState<GameStateSnapshot[]>([]);
+
+    // 💡 現在の状態を履歴の「スナップショット」として保存する関数
+    const saveStateToHistory = () => {
+        setHistory(prev => [...prev, {
+            selfScore, guestScore, inning, isTop,
+            balls, strikes, outs,
+            firstBase, secondBase, thirdBase
+        }]);
+    };
+
+    // 💡 魔法のUndo（1球戻る）関数
+    const handleUndo = async () => {
+        if (history.length === 0) return;
+
+        // 履歴から一番新しいもの（直前の状態）を取り出す
+        const previousState = history[history.length - 1];
+
+        // 画面の状態をすべて復元！
+        setSelfScore(previousState.selfScore);
+        setGuestScore(previousState.guestScore);
+        setInning(previousState.inning);
+        setIsTop(previousState.isTop);
+        setBalls(previousState.balls);
+        setStrikes(previousState.strikes);
+        setOuts(previousState.outs);
+        setFirstBase(previousState.firstBase);
+        setSecondBase(previousState.secondBase);
+        setThirdBase(previousState.thirdBase);
+
+        // 履歴配列から一番後ろを消す
+        setHistory(prev => prev.slice(0, -1));
+
+        // バックエンドのAPIを叩いて、データベースの「最後の1球」を消す
+        if (matchId) {
+            try {
+                await fetch(`/api/matches/${matchId}/pitches/last`, { method: 'DELETE' });
+            } catch (error) {
+                console.error("投球データの削除に失敗しました:", error);
+            }
+        }
+    };
 
     const recordPitchAPI = async (pitchResult: string, atBatResult: string | null = null) => {
         if (!matchId) return;
@@ -61,13 +113,11 @@ function MatchScoreContent() {
         else setSelfScore(s => s + runs);
     };
 
-    // 💡 アウト処理の共通化（3アウトチェンジの判定）
     const processOuts = (addedOuts: number) => {
         const newOuts = outs + addedOuts;
         if (newOuts >= 3) {
-            // 3アウトチェンジ
             setOuts(0); setBalls(0); setStrikes(0);
-            setFirstBase(false); setSecondBase(false); setThirdBase(false); // ランナーリセット
+            setFirstBase(false); setSecondBase(false); setThirdBase(false);
             if (isTop) setIsTop(false);
             else { setIsTop(true); setInning(i => i + 1); }
         } else {
@@ -75,16 +125,32 @@ function MatchScoreContent() {
         }
     };
 
-    // 💡 手動アウト（Oボタンを押した時）
-    const handleManualOut = () => {
-        processOuts(1);
+    const handleFinishMatch = async () => {
+        if (!window.confirm("試合を終了してダッシュボードに戻りますか？\n（※後からでも修正可能です）")) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/matches/${matchId}/finish`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ myScore: selfScore, opponentScore: guestScore })
+            });
+            if (response.ok) router.push('/dashboard');
+            else alert("試合の終了処理に失敗しました");
+        } catch (error) {
+            console.error("終了処理エラー:", error);
+        }
     };
 
+    // 💡 各アクションの「先頭」で saveStateToHistory() を呼ぶように追加！
+    const handleManualOut = () => { saveStateToHistory(); processOuts(1); };
+
     const handleStrike = async () => {
+        saveStateToHistory();
         if (strikes === 2) {
             await recordPitchAPI('strike', 'strikeout');
             setBalls(0); setStrikes(0);
-            processOuts(1); // 三振アウト
+            processOuts(1);
         } else {
             await recordPitchAPI('strike');
             setStrikes(s => s + 1);
@@ -92,18 +158,14 @@ function MatchScoreContent() {
     };
 
     const handleWalk = async () => {
+        saveStateToHistory();
         await recordPitchAPI('ball', 'walk');
         let runs = 0;
-        let newFirst = true;
-        let newSecond = secondBase;
-        let newThird = thirdBase;
+        let newFirst = true; let newSecond = secondBase; let newThird = thirdBase;
 
         if (firstBase) {
             newSecond = true;
-            if (secondBase) {
-                newThird = true;
-                if (thirdBase) runs++;
-            }
+            if (secondBase) { newThird = true; if (thirdBase) runs++; }
         }
         setFirstBase(newFirst); setSecondBase(newSecond); setThirdBase(newThird);
         addScore(runs); setBalls(0); setStrikes(0);
@@ -111,88 +173,43 @@ function MatchScoreContent() {
 
     const handleBall = async () => {
         if (balls === 3) await handleWalk();
-        else { await recordPitchAPI('ball'); setBalls(b => b + 1); }
+        else { saveStateToHistory(); await recordPitchAPI('ball'); setBalls(b => b + 1); }
     };
 
     const handleHit = async (bases: 1 | 2 | 3 | 4) => {
+        saveStateToHistory();
         const hitTypes = { 1: 'single', 2: 'double', 3: 'triple', 4: 'home_run' };
         await recordPitchAPI('in_play', hitTypes[bases]);
 
-        let runs = 0;
-        let newFirst = false; let newSecond = false; let newThird = false;
+        let runs = 0; let newFirst = false; let newSecond = false; let newThird = false;
 
         if (bases === 1) {
-            if (thirdBase) runs++;
-            if (secondBase) newThird = true;
-            if (firstBase) newSecond = true;
-            newFirst = true;
+            if (thirdBase) runs++; if (secondBase) newThird = true; if (firstBase) newSecond = true; newFirst = true;
         } else if (bases === 2) {
-            if (thirdBase) runs++;
-            if (secondBase) runs++;
-            if (firstBase) newThird = true;
-            newSecond = true;
+            if (thirdBase) runs++; if (secondBase) runs++; if (firstBase) newThird = true; newSecond = true;
         } else if (bases === 3) {
-            if (thirdBase) runs++;
-            if (secondBase) runs++;
-            if (firstBase) runs++;
-            newThird = true;
+            if (thirdBase) runs++; if (secondBase) runs++; if (firstBase) runs++; newThird = true;
         } else if (bases === 4) {
-            if (thirdBase) runs++;
-            if (secondBase) runs++;
-            if (firstBase) runs++;
-            runs++;
+            if (thirdBase) runs++; if (secondBase) runs++; if (firstBase) runs++; runs++;
         }
 
         setFirstBase(newFirst); setSecondBase(newSecond); setThirdBase(newThird);
         addScore(runs); setBalls(0); setStrikes(0);
     };
 
-    // 💡 新規：打ってアウトの処理（ゴロ、フライ、併殺打）
     const handleInPlayOut = async (outType: 'groundout' | 'flyout' | 'double_play') => {
+        saveStateToHistory();
         await recordPitchAPI('in_play', outType);
-
         let addedOuts = 1;
-
         if (outType === 'double_play') {
-            // 併殺打：ランナーがいる場合のみ有効
             if (firstBase || secondBase || thirdBase) {
-                addedOuts = 2; // 一気に2アウト！
-
-                // 簡易的な処理：フォース状態になりやすい1塁ランナーを優先して消す
+                addedOuts = 2;
                 if (firstBase) setFirstBase(false);
                 else if (secondBase) setSecondBase(false);
                 else if (thirdBase) setThirdBase(false);
             }
         }
-
-        // バッターのアウト処理とカウントリセット
-        setBalls(0);
-        setStrikes(0);
-        processOuts(addedOuts);
-    };
-
-    // 💡 試合終了処理
-    const handleFinishMatch = async () => {
-        // 確認ダイアログを出す
-        if (!window.confirm("試合を終了してダッシュボードに戻りますか？\n（※後からでも修正可能です）")) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/matches/${matchId}/finish`, {
-                method: 'PATCH',
-            });
-
-            if (response.ok) {
-                // 成功したらダッシュボードへ帰還！
-                router.push('/dashboard');
-            } else {
-                alert("試合の終了処理に失敗しました");
-            }
-        } catch (error) {
-            console.error("終了処理エラー:", error);
-            alert("通信エラーが発生しました");
-        }
+        setBalls(0); setStrikes(0); processOuts(addedOuts);
     };
 
     useEffect(() => {
@@ -233,11 +250,7 @@ function MatchScoreContent() {
                         <Button variant="ghost" size="icon" className="text-slate-400 hover:bg-slate-800 rounded-full hidden sm:flex">
                             <Settings className="h-5 w-5" />
                         </Button>
-                        <Button
-                            onClick={handleFinishMatch}
-                            size="sm"
-                            className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full px-4 shadow-sm transition-all active:scale-95"
-                        >
+                        <Button onClick={handleFinishMatch} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full px-4 shadow-sm transition-all active:scale-95">
                             試合終了
                         </Button>
                     </div>
@@ -262,6 +275,7 @@ function MatchScoreContent() {
 
             {/* メインエリア：ダイヤモンド & カウント */}
             <main className="flex-1 relative p-4 flex flex-col items-center justify-center overflow-hidden min-h-[220px]">
+                {/* ... (既存のカウントとダイヤモンド表示はそのまま) ... */}
                 <div className="absolute top-2 left-4 space-y-3 z-10 bg-slate-900/50 p-3 rounded-xl backdrop-blur-sm border border-slate-800/50">
                     <div className="flex gap-1.5 items-center">
                         <span className="w-4 text-[10px] font-black text-slate-500">B</span>
@@ -287,7 +301,7 @@ function MatchScoreContent() {
                 </div>
             </main>
 
-            {/* 操作エリア（4段構成に拡張！） */}
+            {/* 操作エリア */}
             <footer className="bg-slate-900 border-t border-slate-800 p-3 sm:p-5 pb-6 shrink-0 space-y-2">
 
                 {/* 1段目：カウント */}
@@ -301,9 +315,15 @@ function MatchScoreContent() {
                     <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-slate-800 hover:bg-slate-700 border-none group" onClick={handleManualOut}>
                         <span className="text-red-500 font-black text-xl group-active:scale-125 transition-transform">O</span>
                     </Button>
-                    <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-primary text-primary-foreground font-black shadow-md">
-                        <Check className="h-5 w-5 mb-0.5" />
-                        <span className="text-[10px]">FIX</span>
+
+                    {/* 💡 ココが変化！「FIX」ボタンが「1球戻る」ボタンになりました */}
+                    <Button
+                        onClick={handleUndo}
+                        disabled={history.length === 0} // 履歴がなければ押せないようにする
+                        className="flex flex-col h-14 sm:h-16 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 font-black shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+                    >
+                        <RotateCcw className="h-4 w-4 mb-0.5" />
+                        <span className="text-[10px]">1球戻る</span>
                     </Button>
                 </div>
 
@@ -322,7 +342,7 @@ function MatchScoreContent() {
                     <Button variant="outline" className="h-10 sm:h-12 rounded-lg border-slate-700 bg-slate-800/50 text-slate-300 font-bold hover:bg-slate-700 active:scale-95 transition-all text-xs sm:text-sm">盗塁/進塁</Button>
                 </div>
 
-                {/* 💡 4段目：アウトのバリエーション（新設！） */}
+                {/* 4段目：アウトのバリエーション */}
                 <div className="grid grid-cols-3 gap-2">
                     <Button onClick={() => handleInPlayOut('groundout')} variant="outline" className="h-10 sm:h-12 rounded-lg border-red-900/40 bg-red-950/30 text-red-400 font-bold hover:bg-red-900/50 active:scale-95 transition-all text-xs sm:text-sm">ゴロアウト</Button>
                     <Button onClick={() => handleInPlayOut('flyout')} variant="outline" className="h-10 sm:h-12 rounded-lg border-red-900/40 bg-red-950/30 text-red-400 font-bold hover:bg-red-900/50 active:scale-95 transition-all text-xs sm:text-sm">フライ/直直</Button>
