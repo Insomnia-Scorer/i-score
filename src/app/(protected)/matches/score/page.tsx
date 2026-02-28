@@ -313,18 +313,18 @@ function MatchScoreContent() {
                     className="relative w-[75vw] max-w-[280px] aspect-[4/5] mt-6 mx-auto bg-muted/5 rounded-2xl cursor-crosshair touch-none overflow-hidden shadow-inner border-2 border-border/50"
                     onClick={handleZoneClick}
                 >
-                    {/* 実際のストライクゾーンの枠（下部を少しだけ削って隙間を作る） */}
+                    {/* 実際のストライクゾーンの枠 */}
                     <div className="absolute top-[10%] bottom-[32%] left-[22%] right-[22%] border-2 border-foreground/50 grid grid-cols-3 grid-rows-3 pointer-events-none bg-primary/5 shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-none">
                         {[...Array(9)].map((_, i) => (
                             <div key={i} className="border border-foreground/30" />
                         ))}
                     </div>
 
-                    {/* 💡 ホームベースの図形（キャッチャー視点に修正し、少し下に離す） */}
-                    <div className="absolute top-[73%] left-[22%] right-[22%] pointer-events-none opacity-70">
-                        <svg viewBox="0 0 100 50" className="w-full h-auto fill-background stroke-foreground/70 stroke-[3px]">
-                            {/* キャッチャー視点：上(50,0)がピッチャー側、下辺がキャッチャー側 */}
-                            <polygon points="50,0 100,25 100,50 0,50 0,25" />
+                    {/* 💡 ホームベースの図形（球審視点：下向きに尖る ＆ 遠近感で薄く） */}
+                    <div className="absolute top-[73%] left-[22%] right-[22%] pointer-events-none opacity-60">
+                        {/* 縦幅(viewBoxのY)を小さくして、パース(遠近感)がかかって薄く見えるように調整 */}
+                        <svg viewBox="0 0 100 30" className="w-full h-auto fill-background stroke-foreground/70 stroke-[2.5px] drop-shadow-sm">
+                            <polygon points="2,2 98,2 98,12 50,28 2,12" />
                         </svg>
                     </div>
 
@@ -334,7 +334,6 @@ function MatchScoreContent() {
                             className="absolute w-6 h-6 -ml-3 -mt-3 bg-yellow-400 rounded-full border-2 border-zinc-900 shadow-[0_0_15px_rgba(250,204,21,0.6)] z-20 flex items-center justify-center animate-in zoom-in pointer-events-none"
                             style={{ left: `${pitchX * 100}%`, top: `${pitchY * 100}%` }}
                         >
-                            {/* ボールの縫い目の装飾 */}
                             <div className="w-full h-[2px] bg-red-600/50 absolute rotate-45"></div>
                             <div className="w-full h-[2px] bg-red-600/50 absolute -rotate-45"></div>
                         </div>
