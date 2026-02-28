@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogoIcon } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 // 💡 ロールチェック用の関数を追加インポート
@@ -134,7 +135,7 @@ function HeaderContent() {
           </div>
 
           <div className="flex items-center gap-4">
-            <ThemeToggle />
+            <ThemeToggle /><ThemeSwitcher />
             {session ? (
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2 bg-background/50 backdrop-blur-sm px-4 py-1.5 rounded-full border border-border/50 shadow-sm">
