@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 // 💡 ロールチェック用の関数を追加インポート
 import { canManageTeam } from "@/lib/roles";
-import { 
-  UserCircle, 
-  LogOut, 
-  Menu, 
-  X, 
-  Home, 
+import {
+  UserCircle,
+  LogOut,
+  Menu,
+  X,
+  Home,
   ClipboardList,
   Users // 💡 メンバー管理用のアイコンを追加
 } from "lucide-react";
@@ -57,7 +57,7 @@ function HeaderContent() {
   const { data: session } = authClient.useSession();
   const router = useRouter();
   const pathname = usePathname();
-  
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const closeMenu = () => setIsMobileMenuOpen(false);
 
@@ -99,9 +99,11 @@ function HeaderContent() {
               <Menu className="h-6 w-6" />
             </button>
 
+            {/* PC用ヘッダー部分 */}
             <Link href="/" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
-              <LogoIcon className="h-7 w-7 sm:h-8 sm:w-8 transition-transform group-hover:scale-110 duration-300" />
-              <span className="font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/70">
+              <LogoIcon className="h-8 w-8 transition-transform group-hover:scale-110 duration-300" />
+              {/* 💡 italic を追加して画像の世界観に合わせる */}
+              <span className="font-black italic text-2xl tracking-tighter text-foreground group-hover:text-primary transition-colors">
                 i-Score
               </span>
             </Link>
@@ -111,19 +113,19 @@ function HeaderContent() {
               {navItems.map((item) => {
                 if (!item.show) return null; // 💡 show が false のものはスキップ
                 const isActive = pathname === item.href;
-                
+
                 return (
-                  <Link 
+                  <Link
                     key={item.href}
-                    href={item.href} 
+                    href={item.href}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200",
-                      isActive 
-                        ? "bg-primary/10 text-primary" 
+                      isActive
+                        ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    <item.icon className="h-4 w-4" /> 
+                    <item.icon className="h-4 w-4" />
                     {item.name}
                   </Link>
                 );
@@ -151,10 +153,10 @@ function HeaderContent() {
           </div>
         </div>
       </header>
-      
+
       {/* 背景オーバーレイ */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity md:hidden"
           onClick={closeMenu}
         />
@@ -172,7 +174,7 @@ function HeaderContent() {
             <LogoIcon className="h-7 w-7" />
             <span className="font-black text-2xl tracking-tighter">i-Score</span>
           </div>
-          <button 
+          <button
             onClick={closeMenu}
             className="p-2 -mr-2 rounded-full bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95"
           >
@@ -185,20 +187,20 @@ function HeaderContent() {
             {navItems.map((item) => {
               if (!item.show) return null; // 💡 show が false のものはスキップ
               const isActive = pathname === item.href;
-              
+
               return (
-                <Link 
+                <Link
                   key={item.href}
-                  href={item.href} 
+                  href={item.href}
                   onClick={closeMenu}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-4 py-3.5 text-base font-semibold transition-all duration-200",
-                    isActive 
-                      ? "bg-primary text-primary-foreground shadow-md transform scale-[1.02]" 
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md transform scale-[1.02]"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.98]"
                   )}
                 >
-                  <item.icon className={cn("h-5 w-5", isActive ? "text-primary-foreground" : "text-muted-foreground")} /> 
+                  <item.icon className={cn("h-5 w-5", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
                   {item.name}
                 </Link>
               );
@@ -219,8 +221,8 @@ function HeaderContent() {
                   <span className="text-xs text-muted-foreground truncate">{session.user.email}</span>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full rounded-xl border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
                 onClick={handleLogout}
               >
