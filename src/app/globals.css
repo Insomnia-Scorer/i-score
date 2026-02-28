@@ -47,3 +47,51 @@ body {
     color: var(--foreground);
     font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* ⚾️ パターン1：ブルー（爽やかなスポーツブルー・横浜や中日風） */
+.theme-blue {
+    --primary: #0284c7; /* Sky 600 */
+    --primary-foreground: #ffffff;
+    --ring: #0284c7;
+}
+.dark .theme-blue, .theme-blue.dark {
+    --primary: #0ea5e9; /* ダークモード時は少し明るく */
+    --primary-foreground: #ffffff;
+    --ring: #0ea5e9;
+}
+
+/* ⚾️ パターン2：レッド（情熱の赤・広島やエンゼルス風） */
+.theme-red {
+    --primary: #e11d48; /* Rose 600 */
+    --primary-foreground: #ffffff;
+    --ring: #e11d48;
+}
+.dark .theme-red, .theme-red.dark {
+    --primary: #fb7185;
+    --primary-foreground: #18181b; /* 背景が明るい赤なので文字は黒に */
+    --ring: #fb7185;
+}
+
+/* ⚾️ パターン3：グリーン（芝生・ヤクルトやアスレチックス風） */
+.theme-green {
+    --primary: #16a34a; /* Green 600 */
+    --primary-foreground: #ffffff;
+    --ring: #16a34a;
+}
+.dark .theme-green, .theme-green.dark {
+    --primary: #4ade80;
+    --primary-foreground: #18181b;
+    --ring: #4ade80;
+}
+
+/* ⚾️ パターン4：オレンジ（夕焼け・巨人やオリオールズ風） */
+.theme-orange {
+    --primary: #ea580c; /* Orange 600 */
+    --primary-foreground: #ffffff;
+    --ring: #ea580c;
+}
+.dark .theme-orange, .theme-orange.dark {
+    --primary: #fb923c;
+    --primary-foreground: #18181b;
+    --ring: #fb923c;
+}
