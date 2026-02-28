@@ -74,6 +74,41 @@ app.post('/api/teams', async (c) => {
     }
 })
 
+// 💡 チームの所属選手一覧を取得するAPI（背番号順に並べて返します）
+app.get('/api/teams/:teamId/players', async (c) => {
+    const teamId = c.req.param('teamId');
+    try {
+        // CASTを使って、背番号を数字として正しく並び替えます（例：1, 2, 10 の順）
+        const { results } = await c.env.DB.prepare(
+            `SELECT * FROM players WHERE team_id = ? ORDER BY CAST(uniform_number AS INTEGER) ASC`
+        ).bind(teamId).all();
+
+        return c.json(results);
+    } catch (e) {
+        console.error("選手取得エラー:", e);
+        return c.json({ error: '選手の取得に失敗しました' }, 500);
+    }
+});
+
+// 💡 チームに新しい選手を登録するAPI
+app.post('/api/teams/:teamId/players', async (c) => {
+    const teamId = c.req.param('teamId');
+    const body = await c.req.json();
+    const playerId = crypto.randomUUID();
+
+    try {
+        // データベースに背番号と名前を保存
+        await c.env.DB.prepare(
+            `INSERT INTO players (id, team_id, name, uniform_number, created_at) VALUES (?, ?, ?, ?, ?)`
+        ).bind(playerId, teamId, body.name, body.uniformNumber, Date.now()).run();
+
+        return c.json({ success: true, id: playerId });
+    } catch (e) {
+        console.error("選手登録エラー:", e);
+        return c.json({ error: '選手の登録に失敗しました' }, 500);
+    }
+});
+
 // ==========================================
 // 💡 試合関連 API
 // ==========================================

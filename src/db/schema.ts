@@ -164,6 +164,28 @@ export const teamMembers = sqliteTable('team_members', {
     joinedAt: integer('joined_at', { mode: 'timestamp' }).notNull(),
 });
 
+// ==========================================
+// 💡 チームに所属する選手名簿（ロースター）テーブル
+// ==========================================
+export const players = sqliteTable('players', {
+    id: text('id').primaryKey(),
+    teamId: text('team_id').notNull().references(() => teams.id),
+    name: text('name').notNull(),
+    uniformNumber: text('uniform_number').notNull(), // 背番号（"00"などの選手もいるためtext型が安全です）
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
+
+// ==========================================
+// 💡 各試合のスタメン・打順テーブル
+// ==========================================
+export const matchLineups = sqliteTable('match_lineups', {
+    id: text('id').primaryKey(),
+    matchId: text('match_id').notNull().references(() => matches.id),
+    playerId: text('player_id').notNull().references(() => players.id),
+    battingOrder: integer('batting_order').notNull(), // 打順（1〜9番、DHなどで10番以降も）
+    position: text('position').notNull(), // 守備位置（'1'~'9', 'DH'など）
+});
+
 export const schema = {
     user,
     session,
@@ -174,4 +196,6 @@ export const schema = {
     pitches,
     teams,
     teamMembers,
+    players,
+    matchLineups,
 };
