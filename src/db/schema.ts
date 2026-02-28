@@ -1,5 +1,5 @@
 // src/db/schema.ts
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // ==========================================
@@ -126,6 +126,9 @@ export const pitches = sqliteTable("pitches", {
     ballsBefore: integer("balls_before").notNull().default(0),
     // 
     strikesBefore: integer("strikes_before").notNull().default(0),
+    // 💡 ここから下の2行を追加！ (ストライクゾーンに対する相対座標 0.0〜1.0)
+    zoneX: real("zone_x"),
+    zoneY: real("zone_y"),
     // 作成日時
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()

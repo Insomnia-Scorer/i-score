@@ -6,6 +6,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { canManageTeam, ROLES, Role } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Shield, Users, Loader2, CheckCircle2 } from "lucide-react";
 
@@ -56,7 +57,7 @@ export default function AdminDashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
       });
-      
+
       if (response.ok) {
         // ローカルのステートも更新して画面に反映
         setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
@@ -114,7 +115,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <select
+                <Select
                   disabled={updatingId === user.id}
                   value={user.role}
                   onChange={(e) => handleRoleChange(user.id, e.target.value)}
@@ -128,8 +129,8 @@ export default function AdminDashboardPage() {
                   <option value={ROLES.COACH}>コーチ (Coach)</option>
                   <option value={ROLES.MANAGER}>監督 (Manager)</option>
                   <option value={ROLES.ADMIN}>IT担当 (Admin)</option>
-                </select>
-                
+                </Select>
+
                 {updatingId === user.id ? (
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 ) : (

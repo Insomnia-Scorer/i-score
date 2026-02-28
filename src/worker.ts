@@ -191,8 +191,14 @@ app.post('/api/matches/:id/pitches', async (c) => {
 
         const pitchId = crypto.randomUUID()
         await db.insert(pitches).values({
-            id: pitchId, atBatId: currentAtBat.id, pitchNumber: body.pitchNumber,
-            result: body.result, ballsBefore: body.ballsBefore, strikesBefore: body.strikesBefore,
+            id: pitchId,
+            atBatId: currentAtBat.id,
+            pitchNumber: body.pitchNumber,
+            result: body.result,
+            ballsBefore: body.ballsBefore,
+            strikesBefore: body.strikesBefore,
+            zoneX: body.zoneX ?? null,
+            zoneY: body.zoneY ?? null,
         })
 
         if (body.atBatResult) {

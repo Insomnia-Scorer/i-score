@@ -13,12 +13,8 @@ interface Match {
     location: string | null; matchType: string; status: string; season: string;
 }
 
-// 💡 スタメン選手の型
 interface LineupPlayer {
-    batting_order: number;
-    playerName: string;
-    uniformNumber: string;
-    position: string;
+    batting_order: number; playerName: string; uniformNumber: string; position: string;
 }
 
 interface GameStateSnapshot {
@@ -26,7 +22,7 @@ interface GameStateSnapshot {
     inning: number; isTop: boolean;
     balls: number; strikes: number; outs: number;
     firstBase: boolean; secondBase: boolean; thirdBase: boolean;
-    myBatterIndex: number; // 💡 Undo用に現在の打順も記憶する！
+    myBatterIndex: number;
 }
 
 function MatchScoreContent() {
@@ -49,9 +45,12 @@ function MatchScoreContent() {
     const [secondBase, setSecondBase] = useState(false);
     const [thirdBase, setThirdBase] = useState(false);
 
-    // 💡 スタメンと現在の打順ステート
     const [myLineup, setMyLineup] = useState<LineupPlayer[]>([]);
-    const [myBatterIndex, setMyBatterIndex] = useState(0); // 0〜8 (1番〜9番)
+    const [myBatterIndex, setMyBatterIndex] = useState(0);
+
+    // 💡 新機能：タップした投球コースの座標（0.0〜1.0）
+    const [pitchX, setPitchX] = useState<number | null>(null);
+    const [pitchY, setPitchY] = useState<number | null>(null);
 
     const [history, setHistory] = useState<GameStateSnapshot[]>([]);
 
@@ -59,8 +58,7 @@ function MatchScoreContent() {
         setHistory(prev => [...prev, {
             selfScore, guestScore, inning, isTop,
             balls, strikes, outs,
-            firstBase, secondBase, thirdBase,
-            myBatterIndex // 💡 履歴に保存
+            firstBase, secondBase, thirdBase, myBatterIndex
         }]);
     };
 
@@ -71,7 +69,8 @@ function MatchScoreContent() {
         setInning(prev.inning); setIsTop(prev.isTop);
         setBalls(prev.balls); setStrikes(prev.strikes); setOuts(prev.outs);
         setFirstBase(prev.firstBase); setSecondBase(prev.secondBase); setThirdBase(prev.thirdBase);
-        setMyBatterIndex(prev.myBatterIndex); // 💡 打順も元に戻る！
+        setMyBatterIndex(prev.myBatterIndex);
+        setPitchX(null); setPitchY(null); // 💡 Undo時も座標をリセット
 
         setHistory(h => h.slice(0, -1));
 
@@ -90,15 +89,17 @@ function MatchScoreContent() {
                 body: JSON.stringify({
                     inning, isTop,
                     pitchNumber: balls + strikes + 1,
-                    result: pitchResult, ballsBefore: balls, strikesBefore: strikes, atBatResult
+                    result: pitchResult, ballsBefore: balls, strikesBefore: strikes, atBatResult,
+                    zoneX: pitchX, zoneY: pitchY // 💡 APIに座標を一緒に送信！
                 }),
             });
         } catch (e) { console.error(e); }
+        // 💡 送信が終わったら、次の球のために座標をリセットする
+        setPitchX(null);
+        setPitchY(null);
     };
 
-    // 💡 打席完了時に次のバッターへ進める関数
     const advanceBatter = () => {
-        // 自チームの攻撃（裏）の時だけ打順を進める
         if (!isTop && myLineup.length > 0) {
             setMyBatterIndex(prev => (prev + 1) % myLineup.length);
         }
@@ -137,7 +138,7 @@ function MatchScoreContent() {
     const handleManualOut = () => {
         saveStateToHistory();
         processOuts(1);
-        advanceBatter(); // 💡 アウトになったら次へ
+        advanceBatter();
     };
 
     const handleStrike = async () => {
@@ -146,7 +147,7 @@ function MatchScoreContent() {
             await recordPitchAPI('strike', 'strikeout');
             setBalls(0); setStrikes(0);
             processOuts(1);
-            advanceBatter(); // 💡 三振で次へ
+            advanceBatter();
         } else {
             await recordPitchAPI('strike');
             setStrikes(s => s + 1);
@@ -162,7 +163,7 @@ function MatchScoreContent() {
         if (firstBase) { newSecond = true; if (secondBase) { newThird = true; if (thirdBase) runs++; } }
         setFirstBase(newFirst); setSecondBase(newSecond); setThirdBase(newThird);
         addScore(runs); setBalls(0); setStrikes(0);
-        advanceBatter(); // 💡 四死球で次へ
+        advanceBatter();
     };
 
     const handleBall = async () => {
@@ -184,7 +185,7 @@ function MatchScoreContent() {
 
         setFirstBase(newFirst); setSecondBase(newSecond); setThirdBase(newThird);
         addScore(runs); setBalls(0); setStrikes(0);
-        advanceBatter(); // 💡 ヒットで次へ
+        advanceBatter();
     };
 
     const handleInPlayOut = async (outType: 'groundout' | 'flyout' | 'double_play') => {
@@ -198,21 +199,29 @@ function MatchScoreContent() {
             }
         }
         setBalls(0); setStrikes(0); processOuts(addedOuts);
-        advanceBatter(); // 💡 ゴロ・フライで次へ
+        advanceBatter();
+    };
+
+    // 💡 画面のタップイベントから座標（0.0〜1.0）を計算する関数
+    const handleZoneClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        // クリックした位置が枠内の何％の場所か（0.0 〜 1.0）を算出
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        setPitchX(x);
+        setPitchY(y);
     };
 
     useEffect(() => {
         if (!matchId) return;
         const fetchData = async () => {
             try {
-                // 試合情報を取得
                 const matchRes = await fetch(`/api/matches/${matchId}`);
                 if (matchRes.ok) setMatch(await matchRes.json());
 
-                // スタメン情報を取得
                 const lineupRes = await fetch(`/api/matches/${matchId}/lineup`);
                 if (lineupRes.ok) {
-                    const lineupData = await lineupRes.json() as LineupPlayer[];
+                    const lineupData = (await lineupRes.json()) as LineupPlayer[];
                     setMyLineup(lineupData);
                 }
             } catch (e) { console.error(e); }
@@ -224,12 +233,11 @@ function MatchScoreContent() {
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-background text-foreground">読み込み中...</div>;
     if (!match) return <div className="p-8 text-center bg-background text-foreground h-screen flex flex-col items-center justify-center"><p>試合が見つかりません</p><Button asChild variant="outline" className="mt-4"><Link href="/dashboard">戻る</Link></Button></div>;
 
-    // 現在のバッター情報
     const currentBatter = myLineup.length > 0 ? myLineup[myBatterIndex] : null;
 
     return (
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-            <header className="bg-muted/30 border-b border-border p-4 shrink-0">
+            <header className="bg-muted/30 border-b border-border p-4 shrink-0 z-10">
                 <div className="flex items-center justify-between mb-4">
                     <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" asChild>
                         <Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
@@ -261,7 +269,6 @@ function MatchScoreContent() {
                         <div className="text-4xl font-black text-primary">{selfScore}</div>
                     </div>
 
-                    {/* 💡 現在のバッター表示バー（自チームの攻撃の時だけ表示） */}
                     {!isTop && currentBatter && (
                         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
                             <User className="h-3 w-3" />
@@ -272,7 +279,9 @@ function MatchScoreContent() {
             </header>
 
             <main className="flex-1 relative p-4 flex flex-col items-center justify-center overflow-hidden min-h-[220px]">
-                <div className="absolute top-2 left-4 space-y-3 z-10 bg-muted/30 p-3 rounded-xl backdrop-blur-sm border border-border">
+
+                {/* 左上：カウント表示（ストライク・ボール） */}
+                <div className="absolute top-4 left-4 space-y-3 z-10 bg-muted/30 p-3 rounded-xl backdrop-blur-sm border border-border shadow-sm">
                     <div className="flex gap-1.5 items-center">
                         <span className="w-4 text-[10px] font-black text-muted-foreground">B</span>
                         {[...Array(3)].map((_, i) => <div key={i} className={cn("h-4 w-4 rounded-full border-2 border-border transition-colors", i < balls ? "bg-green-500 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" : "bg-background")} />)}
@@ -287,21 +296,71 @@ function MatchScoreContent() {
                     </div>
                 </div>
 
-                <div className="relative w-48 h-48 sm:w-64 sm:h-64 rotate-45 border-4 border-border rounded-lg transition-all mt-6">
-                    <div className={cn("absolute -top-3 -left-3 h-8 w-8 border-4 border-border -rotate-45 flex items-center justify-center text-[10px] font-bold transition-all duration-300", secondBase ? "bg-yellow-400 text-zinc-900 border-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] scale-110" : "bg-muted text-muted-foreground")}>2</div>
-                    <div className={cn("absolute -bottom-3 -left-3 h-8 w-8 border-4 border-border -rotate-45 flex items-center justify-center text-[10px] font-bold transition-all duration-300", thirdBase ? "bg-yellow-400 text-zinc-900 border-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] scale-110" : "bg-muted text-muted-foreground")}>3</div>
-                    <div className={cn("absolute -top-3 -right-3 h-8 w-8 border-4 border-border -rotate-45 flex items-center justify-center text-[10px] font-bold transition-all duration-300", firstBase ? "bg-yellow-400 text-zinc-900 border-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] scale-110" : "bg-muted text-muted-foreground")}>1</div>
-                    <div className="absolute -bottom-4 -right-4 h-10 w-10 bg-primary/20 border-4 border-primary/50 -rotate-45 flex items-center justify-center">
-                        <div className="w-4 h-4 bg-primary rounded-sm animate-pulse" />
+                {/* 右上：塁状況（ランナー）表示 */}
+                <div className="absolute top-4 right-4 z-10 bg-muted/30 p-4 rounded-xl backdrop-blur-sm border border-border shadow-sm flex items-center justify-center w-[100px] h-[100px]">
+                    <div className="relative w-12 h-12 rotate-45 border-[3px] border-border rounded-sm transition-all">
+                        <div className={cn("absolute -top-1.5 -left-1.5 h-3 w-3 border-2 border-border rounded-sm -rotate-45 transition-all duration-300", secondBase ? "bg-yellow-400 border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)] scale-150" : "bg-muted")} />
+                        <div className={cn("absolute -bottom-1.5 -left-1.5 h-3 w-3 border-2 border-border rounded-sm -rotate-45 transition-all duration-300", thirdBase ? "bg-yellow-400 border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)] scale-150" : "bg-muted")} />
+                        <div className={cn("absolute -top-1.5 -right-1.5 h-3 w-3 border-2 border-border rounded-sm -rotate-45 transition-all duration-300", firstBase ? "bg-yellow-400 border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)] scale-150" : "bg-muted")} />
+                        <div className="absolute -bottom-2 -right-2 h-4 w-4 bg-primary/20 border-2 border-primary/50 -rotate-45 rounded-sm flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-sm animate-pulse" />
+                        </div>
                     </div>
+                </div>
+
+                {/* 💡 中央：ストライクゾーン（配球図） */}
+                <div
+                    className="relative w-[50vw] max-w-[200px] aspect-[3/4] mt-8 mx-auto border-2 border-border bg-muted/10 rounded-lg cursor-crosshair touch-none overflow-visible shadow-inner"
+                    onClick={handleZoneClick}
+                >
+                    {/* ストライクゾーンの9分割線 */}
+                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-30 pointer-events-none">
+                        {[...Array(9)].map((_, i) => (
+                            <div key={i} className="border border-foreground/50" />
+                        ))}
+                    </div>
+
+                    {/* ホームベースの図形（下部） */}
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/4 aspect-[2/1] pointer-events-none">
+                        <svg viewBox="0 0 100 50" className="w-full h-full fill-background stroke-border stroke-2">
+                            <polygon points="0,0 100,0 100,25 50,50 0,25" />
+                        </svg>
+                    </div>
+
+                    {/* 💡 タップした位置にボールのマークを表示 */}
+                    {pitchX !== null && pitchY !== null && (
+                        <div
+                            className="absolute w-6 h-6 -ml-3 -mt-3 bg-yellow-400 rounded-full border-2 border-zinc-900 shadow-[0_0_15px_rgba(250,204,21,0.6)] z-20 flex items-center justify-center animate-in zoom-in pointer-events-none"
+                            style={{ left: `${pitchX * 100}%`, top: `${pitchY * 100}%` }}
+                        >
+                            {/* ボールの中の縫い目の装飾など（任意） */}
+                            <div className="w-full h-[2px] bg-red-600/50 absolute rotate-45"></div>
+                            <div className="w-full h-[2px] bg-red-600/50 absolute -rotate-45"></div>
+                        </div>
+                    )}
+
+                    {/* ガイダンスの文字 */}
+                    {pitchX === null && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="text-xs font-bold text-muted-foreground/50 bg-background/50 px-2 py-1 rounded-full backdrop-blur-sm">
+                                タップしてコースを記録
+                            </span>
+                        </div>
+                    )}
                 </div>
             </main>
 
-            <footer className="bg-muted/20 border-t border-border p-3 sm:p-5 pb-6 shrink-0 space-y-2">
+            <footer className="bg-muted/20 border-t border-border p-3 sm:p-5 pb-6 shrink-0 space-y-2 z-10 relative">
                 <div className="grid grid-cols-4 gap-2">
-                    <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-muted/50 hover:bg-muted border-none group" onClick={handleBall}><span className="text-green-500 font-black text-xl group-active:scale-125 transition-transform">B</span></Button>
-                    <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-muted/50 hover:bg-muted border-none group" onClick={handleStrike}><span className="text-yellow-500 font-black text-xl group-active:scale-125 transition-transform">S</span></Button>
-                    <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-muted/50 hover:bg-muted border-none group" onClick={handleManualOut}><span className="text-red-500 font-black text-xl group-active:scale-125 transition-transform">O</span></Button>
+                    <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-muted/50 hover:bg-muted border-none group" onClick={handleBall}>
+                        <span className="text-green-500 font-black text-xl group-active:scale-125 transition-transform">B</span>
+                    </Button>
+                    <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-muted/50 hover:bg-muted border-none group" onClick={handleStrike}>
+                        <span className="text-yellow-500 font-black text-xl group-active:scale-125 transition-transform">S</span>
+                    </Button>
+                    <Button className="flex flex-col h-14 sm:h-16 rounded-xl bg-muted/50 hover:bg-muted border-none group" onClick={handleManualOut}>
+                        <span className="text-red-500 font-black text-xl group-active:scale-125 transition-transform">O</span>
+                    </Button>
                     <Button onClick={handleUndo} disabled={history.length === 0} className="flex flex-col h-14 sm:h-16 rounded-xl bg-muted/50 border border-border hover:bg-muted text-foreground font-black shadow-sm disabled:opacity-40 transition-all active:scale-95">
                         <RotateCcw className="h-4 w-4 mb-0.5" />
                         <span className="text-[10px]">1球戻る</span>
