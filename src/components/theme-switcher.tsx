@@ -10,6 +10,9 @@ const themes = [
   { name: "theme-red", color: "bg-[#e11d48]" },
   { name: "theme-green", color: "bg-[#16a34a]" },
   { name: "theme-orange", color: "bg-[#ea580c]" },
+  { name: "theme-teal", color: "bg-[#0d9488]" },
+  { name: "theme-purple", color: "bg-[#7c3aed]" },
+  { name: "theme-indigo", color: "bg-[#4338ca]" },
 ];
 
 export function ThemeSwitcher() {
