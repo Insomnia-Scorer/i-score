@@ -95,3 +95,39 @@ body {
     --primary-foreground: #18181b;
     --ring: #fb923c;
 }
+
+/* ⚾️ パターン5：ティール（海と風・マリナーズやマーリンズ風） */
+.theme-teal {
+    --primary: #0d9488; /* Teal 600 */
+    --primary-foreground: #ffffff;
+    --ring: #0d9488;
+}
+.dark .theme-teal, .theme-teal.dark {
+    --primary: #2dd4bf; /* Teal 400 */
+    --primary-foreground: #18181b;
+    --ring: #2dd4bf;
+}
+
+/* ⚾️ パターン6：パープル（高貴と力強さ・ロッキーズ風） */
+.theme-purple {
+    --primary: #7c3aed; /* Violet 600 */
+    --primary-foreground: #ffffff;
+    --ring: #7c3aed;
+}
+.dark .theme-purple, .theme-purple.dark {
+    --primary: #a78bfa; /* Violet 400 */
+    --primary-foreground: #18181b;
+    --ring: #a78bfa;
+}
+
+/* ⚾️ パターン7：インディゴ（伝統の深い紺・侍ジャパンやヤンキース風） */
+.theme-indigo {
+    --primary: #4338ca; /* Indigo 600 */
+    --primary-foreground: #ffffff;
+    --ring: #4338ca;
+}
+.dark .theme-indigo, .theme-indigo.dark {
+    --primary: #818cf8; /* Indigo 400 */
+    --primary-foreground: #18181b;
+    --ring: #818cf8;
+}
