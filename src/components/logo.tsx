@@ -14,44 +14,40 @@ export function LogoIcon({ className, ...props }: LogoProps) {
       className={cn("shrink-0", className)}
       {...props}
     >
-      <defs>
-        {/* 💡 画像の「鋭い切れ込み」を再現するためのマスク（切り抜き）設定 */}
-        <mask id="dynamic-slash">
-          {/* 全体を白（表示）で塗りつぶす */}
-          <rect width="100" height="100" fill="white" />
+      {/* 💡 ご提示いただいた画像の「Icon（アイコンのみ）」を再現しています。
+        Tailwindの text-primary と連動し、テーマカラーで美しく描画されます。
+      */}
 
-          {/* 黒（透明にする部分）で鋭い斜めのラインを描画 */}
-          <path d="M 5 60 Q 40 40 85 10" stroke="black" strokeWidth="8" strokeLinecap="round" fill="none" />
-          <path d="M 15 90 Q 50 70 95 40" stroke="black" strokeWidth="8" strokeLinecap="round" fill="none" />
-
-          {/* 中央の「e」や「ボール」の芯となる空白部分 */}
-          <ellipse cx="45" cy="50" rx="10" ry="14" fill="black" transform="rotate(20 45 50)" />
-        </mask>
-      </defs>
-
-      {/* 1. メインの球体（ブルーのベース部分） */}
-      {/* マスクを適用して、画像の鋭いスウォッシュ（切れ込み）を表現しています */}
-      <circle
-        cx="45"
-        cy="50"
-        r="32"
-        fill="currentColor"
-        className="text-primary"
-        mask="url(#dynamic-slash)"
-      />
-
-      {/* 2. 左下の飛び出したスピード線（軌跡） */}
+      {/* 1. 流線型のメインボディ（eのような軌跡） */}
       <path
-        d="M 22 68 L 6 78"
+        d="M 15 50 C 15 25 35 15 60 20 C 80 25 85 45 75 60 C 60 80 30 80 20 65"
         stroke="currentColor"
-        strokeWidth="6"
+        strokeWidth="12"
         strokeLinecap="round"
         className="text-primary"
       />
 
-      {/* 3. 右上の四芒星（キラキラマーク）✨ */}
+      {/* 2. 中央を貫くスピードライン */}
       <path
-        d="M 80 12 Q 80 26 94 26 Q 80 26 80 40 Q 80 26 66 26 Q 80 26 80 12 Z"
+        d="M 15 55 L 60 40"
+        stroke="currentColor"
+        strokeWidth="12"
+        strokeLinecap="round"
+        className="text-primary"
+      />
+
+      {/* 3. 下部のスウォッシュ（ボールの縫い目のような軌跡） */}
+      <path
+        d="M 10 75 C 30 95 65 95 85 75"
+        stroke="currentColor"
+        strokeWidth="10"
+        strokeLinecap="round"
+        className="text-primary"
+      />
+
+      {/* 4. 右上の四芒星（キラキラマーク）✨ */}
+      <path
+        d="M 85 5 Q 85 20 100 20 Q 85 20 85 35 Q 85 20 70 20 Q 85 20 85 5 Z"
         fill="currentColor"
         className="text-primary"
       />
