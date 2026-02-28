@@ -265,7 +265,7 @@ export default function DashboardPage() {
                 {/* 💡 ここに「選手名簿」へのボタンを追加！ */}
                 <div className="pt-2">
                   <Button asChild variant="secondary" size="sm" className="rounded-xl font-bold bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm">
-                    <Link href="/teams/roster?id=test-team-123">
+                    <Link href={`/teams/roster?id=${currentTeam?.id}`}>
                       <Users className="h-4 w-4 mr-2" />
                       選手名簿の管理
                     </Link>
@@ -350,7 +350,7 @@ export default function DashboardPage() {
                   {/* 💡 ここにボタンエリアを新設！ */}
                   <div className="flex gap-2 mt-4 pt-4 border-t border-border/50 justify-end">
                     <Button asChild variant="outline" size="sm" className="rounded-lg font-bold shadow-sm">
-                      <Link href={`/matches/lineup?id=${match.id}`}>
+                      <Link href={`/matches/lineup?id=${match.id}&teamId=${currentTeam?.id}`}>
                         <ClipboardList className="h-4 w-4 mr-1.5" />
                         スタメン
                       </Link>

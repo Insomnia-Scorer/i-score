@@ -21,7 +21,8 @@ interface LineupEntry { battingOrder: number; playerId: string; position: string
 
 function LineupContent() {
     const searchParams = useSearchParams();
-    const matchId = searchParams.get("id"); // 💡 クエリから取得
+    const matchId = searchParams.get("id");
+    const teamId = searchParams.get("teamId");
     const router = useRouter();
 
     const [players, setPlayers] = useState<Player[]>([]);
@@ -30,10 +31,8 @@ function LineupContent() {
     );
     const [isSaving, setIsSaving] = useState(false);
 
-    const teamId = "test-team-123"; // ※後ほど正式な連携に変更
-
     useEffect(() => {
-        if (!matchId) return;
+        if (!matchId || !teamId) return;
         const fetchPlayers = async () => {
             try {
                 const res = await fetch(`/api/teams/${teamId}/players`);
