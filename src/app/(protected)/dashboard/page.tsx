@@ -17,6 +17,8 @@ interface Match {
   matchType: string;
   status: string;
   season: string;
+  myScore: number;
+  opponentScore: number;
 }
 
 interface Team {
@@ -121,6 +123,16 @@ export default function DashboardPage() {
   const currentTeam = teams.find(t => t.id === selectedTeamId);
   // スコア編集権限があるか（チーム内ロールで判定）
   const canEdit = currentTeam ? canEditScore(currentTeam.myRole) : false;
+
+  // 💡 return の直前（matches を取得したあと）にこのブロックを追加！
+  const completedMatches = matches.filter(match => match.status === 'completed');
+  const wins = completedMatches.filter(match => match.myScore > match.opponentScore).length;
+  const losses = completedMatches.filter(match => match.myScore < match.opponentScore).length;
+  const draws = completedMatches.filter(match => match.myScore === match.opponentScore).length;
+  const totalGames = completedMatches.length;
+
+  // 勝率の計算（試合数が0の場合は0%にする）
+  const winRate = totalGames > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
 
   // =========================================================
   // 💡 パターンA：まだチームに所属していない場合（新規作成画面）
@@ -237,16 +249,50 @@ export default function DashboardPage() {
           </Link>
         )}
 
-        <Card className={`rounded-2xl border-border bg-background shadow-sm flex flex-col justify-center ${canEdit ? 'lg:col-span-2' : 'md:col-span-2 lg:col-span-3'}`}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-yellow-500" /> 今シーズンの成績
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-end gap-4">
-            <div className="text-4xl font-extrabold tracking-tighter opacity-50">
-              --<span className="text-2xl text-muted-foreground font-bold mx-1">勝</span>
-              --<span className="text-2xl text-muted-foreground font-bold mx-1">敗</span>
+        {/* 💡 チーム成績を表示するカード（上部）を丸ごと差し替え！ */}
+        <Card className="border-border/50 shadow-sm bg-gradient-to-br from-slate-900 to-slate-950 text-white overflow-hidden relative">
+          {/* 背景の装飾（うっすらとロゴを透かしたり、グラデーションを置く） */}
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-primary/20 blur-3xl rounded-full pointer-events-none"></div>
+
+          <CardContent className="p-6 sm:p-8 relative z-10">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
+              <div className="space-y-2">
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-extrabold bg-primary/20 text-primary uppercase tracking-wider">
+                  2026 Season
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-black tracking-tight">{currentTeam?.name}</h2>
+                <p className="text-slate-400 font-medium text-sm">
+                  {totalGames}試合消化 / 次の試合に向けて準備中
+                </p>
+              </div>
+
+              {/* 💡 自動計算された成績表示エリア */}
+              <div className="flex items-center gap-4 bg-slate-950/50 p-4 rounded-2xl border border-white/10 shadow-inner w-full sm:w-auto">
+                <div className="text-center px-2">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Wins</div>
+                  <div className="text-3xl font-black text-primary">{wins}</div>
+                </div>
+                <div className="w-px h-10 bg-white/10"></div>
+                <div className="text-center px-2">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Losses</div>
+                  <div className="text-3xl font-black text-slate-300">{losses}</div>
+                </div>
+                {/* 引き分けが1以上ある場合のみ表示 */}
+                {draws > 0 && (
+                  <>
+                    <div className="w-px h-10 bg-white/10"></div>
+                    <div className="text-center px-2">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Draws</div>
+                      <div className="text-3xl font-black text-slate-400">{draws}</div>
+                    </div>
+                  </>
+                )}
+                <div className="w-px h-10 bg-white/10"></div>
+                <div className="text-center px-2">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Win %</div>
+                  <div className="text-3xl font-black text-white">{winRate}<span className="text-sm ml-0.5 text-slate-400">%</span></div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
