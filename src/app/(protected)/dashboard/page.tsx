@@ -8,7 +8,7 @@ import { canEditScore, isApprovedMember, ROLES } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, History, Trophy, Calendar, ChevronRight, MapPin, Loader2, Users, CheckCircle2 } from "lucide-react";
+import { Plus, History, Trophy, Calendar, ChevronRight, MapPin, Loader2, Users, CheckCircle2, ClipboardList } from "lucide-react";
 
 interface Match {
   id: string;
@@ -262,9 +262,15 @@ export default function DashboardPage() {
                   2026 Season
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight">{currentTeam?.name}</h2>
-                <p className="text-slate-400 font-medium text-sm">
-                  {totalGames}試合消化 / 次の試合に向けて準備中
-                </p>
+                {/* 💡 ここに「選手名簿」へのボタンを追加！ */}
+                <div className="pt-2">
+                  <Button asChild variant="secondary" size="sm" className="rounded-xl font-bold bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm">
+                    <Link href="/teams/roster?id=test-team-123">
+                      <Users className="h-4 w-4 mr-2" />
+                      選手名簿の管理
+                    </Link>
+                  </Button>
+                </div>
               </div>
 
               {/* 💡 自動計算された成績表示エリア */}
@@ -314,35 +320,48 @@ export default function DashboardPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {matches.map((match) => (
-              <Link key={match.id} href={`/matches/score?id=${match.id}`} className="block group">
-                <Card className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.98] overflow-hidden relative">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${match.status === 'scheduled' ? 'bg-slate-300' : 'bg-blue-500'}`} />
-                  <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
-                          <Calendar className="h-3.5 w-3.5" />
-                          {new Date(match.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
-                          {/* 💡 シーズン表示を追加 */}
-                          <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-md text-[10px] uppercase font-extrabold ml-2">
-                            {match.season}
-                          </span>
-                        </div>
+              // 💡 外側の <Link> を外し、代わりに <Card> に key を持たせます
+              <Card key={match.id} className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 overflow-hidden relative">
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${match.status === 'scheduled' ? 'bg-slate-300' : 'bg-blue-500'}`} />
+                <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {new Date(match.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-md text-[10px] uppercase font-extrabold ml-2">
+                          {match.season}
+                        </span>
                       </div>
-                      <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-extrabold ring-1 ring-inset bg-blue-50 text-blue-700 ring-blue-600/20">進行中</span>
                     </div>
-                    <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
-                      <div className="text-base font-extrabold w-1/3 text-center truncate">{currentTeam?.name}</div>
-                      <div className="flex items-center justify-center gap-4 w-1/3">
-                        <div className="text-3xl font-black">0</div>
-                        <div className="text-muted-foreground font-bold">-</div>
-                        <div className="text-3xl font-black">0</div>
-                      </div>
-                      <div className="text-base font-bold text-muted-foreground w-1/3 text-center truncate">{match.opponent}</div>
+                    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-extrabold ring-1 ring-inset bg-blue-50 text-blue-700 ring-blue-600/20">進行中</span>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
+                    <div className="text-base font-extrabold w-1/3 text-center truncate">{currentTeam?.name}</div>
+                    <div className="flex items-center justify-center gap-4 w-1/3">
+                      <div className="text-3xl font-black">0</div>
+                      <div className="text-muted-foreground font-bold">-</div>
+                      <div className="text-3xl font-black">0</div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                    <div className="text-base font-bold text-muted-foreground w-1/3 text-center truncate">{match.opponent}</div>
+                  </div>
+
+                  {/* 💡 ここにボタンエリアを新設！ */}
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-border/50 justify-end">
+                    <Button asChild variant="outline" size="sm" className="rounded-lg font-bold shadow-sm">
+                      <Link href={`/matches/lineup?id=${match.id}`}>
+                        <ClipboardList className="h-4 w-4 mr-1.5" />
+                        スタメン
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" className="rounded-lg font-bold bg-primary text-primary-foreground shadow-sm">
+                      <Link href={`/matches/score?id=${match.id}`}>スコア入力</Link>
+                    </Button>
+                  </div>
+
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
