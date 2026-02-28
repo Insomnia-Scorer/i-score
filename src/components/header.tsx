@@ -4,6 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { LogoIcon } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
@@ -98,8 +99,9 @@ function HeaderContent() {
               <Menu className="h-6 w-6" />
             </button>
 
-            <Link href="/" className="flex items-center space-x-2 group">
-              <span className="font-extrabold text-2xl tracking-tighter text-primary group-hover:opacity-80 transition-opacity">
+            <Link href="/" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
+              <LogoIcon className="h-7 w-7 sm:h-8 sm:w-8 transition-transform group-hover:scale-110 duration-300" />
+              <span className="font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/70">
                 i-Score
               </span>
             </Link>
@@ -166,7 +168,10 @@ function HeaderContent() {
         )}
       >
         <div className="flex h-16 items-center justify-between px-6 pt-2">
-          <span className="font-extrabold text-2xl text-primary tracking-tighter">i-Score</span>
+          <div className="flex items-center gap-2">
+            <LogoIcon className="h-7 w-7" />
+            <span className="font-black text-2xl tracking-tighter">i-Score</span>
+          </div>
           <button 
             onClick={closeMenu}
             className="p-2 -mr-2 rounded-full bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95"
