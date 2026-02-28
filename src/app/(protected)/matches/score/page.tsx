@@ -308,28 +308,27 @@ function MatchScoreContent() {
                     </div>
                 </div>
 
-                {/* 💡 中央：配球図全体（ボール球も記録できるように枠外を拡張！） */}
+                {/* 💡 中央：配球図全体 */}
                 <div
                     className="relative w-[75vw] max-w-[280px] aspect-[4/5] mt-6 mx-auto bg-muted/5 rounded-2xl cursor-crosshair touch-none overflow-hidden shadow-inner border-2 border-border/50"
                     onClick={handleZoneClick}
                 >
-                    {/* 実際のストライクゾーンの枠（少し縦長に確保） */}
-                    {/* 💡 leftとrightで横幅を調整、topとbottomで縦幅を調整しています */}
-                    <div className="absolute top-[10%] bottom-[30%] left-[22%] right-[22%] border-2 border-foreground/50 grid grid-cols-3 grid-rows-3 pointer-events-none bg-primary/5">
+                    {/* 実際のストライクゾーンの枠（下部を少しだけ削って隙間を作る） */}
+                    <div className="absolute top-[10%] bottom-[32%] left-[22%] right-[22%] border-2 border-foreground/50 grid grid-cols-3 grid-rows-3 pointer-events-none bg-primary/5 shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-none">
                         {[...Array(9)].map((_, i) => (
                             <div key={i} className="border border-foreground/30" />
                         ))}
                     </div>
 
-                    {/* ホームベースの図形（ストライクゾーンの下辺にピッタリ合わせる） */}
-                    {/* 💡 topをストライクゾーンのbottom(100%-30%=70%)と合わせ、幅も揃えます */}
-                    <div className="absolute top-[70%] left-[22%] right-[22%] pointer-events-none">
-                        <svg viewBox="0 0 100 50" className="w-full h-auto fill-background stroke-foreground/50 stroke-[3px]">
-                            <polygon points="0,0 100,0 100,25 50,50 0,25" />
+                    {/* 💡 ホームベースの図形（キャッチャー視点に修正し、少し下に離す） */}
+                    <div className="absolute top-[73%] left-[22%] right-[22%] pointer-events-none opacity-70">
+                        <svg viewBox="0 0 100 50" className="w-full h-auto fill-background stroke-foreground/70 stroke-[3px]">
+                            {/* キャッチャー視点：上(50,0)がピッチャー側、下辺がキャッチャー側 */}
+                            <polygon points="50,0 100,25 100,50 0,50 0,25" />
                         </svg>
                     </div>
 
-                    {/* 💡 タップした位置にボールのマークを表示 */}
+                    {/* タップした位置にボールのマークを表示 */}
                     {pitchX !== null && pitchY !== null && (
                         <div
                             className="absolute w-6 h-6 -ml-3 -mt-3 bg-yellow-400 rounded-full border-2 border-zinc-900 shadow-[0_0_15px_rgba(250,204,21,0.6)] z-20 flex items-center justify-center animate-in zoom-in pointer-events-none"
