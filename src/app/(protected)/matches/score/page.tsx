@@ -313,16 +313,18 @@ function MatchScoreContent() {
                     className="relative w-[75vw] max-w-[280px] aspect-[4/5] mt-6 mx-auto bg-muted/5 rounded-2xl cursor-crosshair touch-none overflow-hidden shadow-inner border-2 border-border/50"
                     onClick={handleZoneClick}
                 >
-                    {/* 実際のストライクゾーンの枠（キャンバスの中央に配置） */}
-                    <div className="absolute top-[15%] left-[20%] right-[20%] bottom-[20%] border-2 border-foreground/50 grid grid-cols-3 grid-rows-3 pointer-events-none bg-primary/5">
+                    {/* 実際のストライクゾーンの枠（少し縦長に確保） */}
+                    {/* 💡 leftとrightで横幅を調整、topとbottomで縦幅を調整しています */}
+                    <div className="absolute top-[10%] bottom-[30%] left-[22%] right-[22%] border-2 border-foreground/50 grid grid-cols-3 grid-rows-3 pointer-events-none bg-primary/5">
                         {[...Array(9)].map((_, i) => (
                             <div key={i} className="border border-foreground/30" />
                         ))}
                     </div>
 
-                    {/* ホームベースの図形（キャンバスの下部に配置） */}
-                    <div className="absolute bottom-[3%] left-1/2 -translate-x-1/2 w-[60%] aspect-[2/1] pointer-events-none">
-                        <svg viewBox="0 0 100 50" className="w-full h-full fill-background stroke-foreground/50 stroke-2">
+                    {/* ホームベースの図形（ストライクゾーンの下辺にピッタリ合わせる） */}
+                    {/* 💡 topをストライクゾーンのbottom(100%-30%=70%)と合わせ、幅も揃えます */}
+                    <div className="absolute top-[70%] left-[22%] right-[22%] pointer-events-none">
+                        <svg viewBox="0 0 100 50" className="w-full h-auto fill-background stroke-foreground/50 stroke-[3px]">
                             <polygon points="0,0 100,0 100,25 50,50 0,25" />
                         </svg>
                     </div>
