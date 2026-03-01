@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Settings, RotateCcw, User } from "lucide-react";
+import { ArrowLeft, Settings, RotateCcw, User, Maximize } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Match {
@@ -39,7 +39,7 @@ function MatchScoreContent() {
     const [inning, setInning] = useState(1);
     const [isTop, setIsTop] = useState(true);
 
-    // 💡 新機能：イニングごとのスコア配列（未開始の回は null）
+    // 💡 イニングごとのスコア配列（未開始の回は null）
     const [guestInningScores, setGuestInningScores] = useState<number[]>([0, ...Array(8).fill(null)]);
     const [selfInningScores, setSelfInningScores] = useState<number[]>(Array(9).fill(null));
 
@@ -58,6 +58,19 @@ function MatchScoreContent() {
     const [pitchY, setPitchY] = useState<number | null>(null);
 
     const [history, setHistory] = useState<GameStateSnapshot[]>([]);
+
+    // 💡 フルスクリーンを切り替える関数を追加（useStateの塊の下あたりに）
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log("フルスクリーンにできませんでした", err);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    };
 
     const saveStateToHistory = () => {
         setHistory(prev => [...prev, {
@@ -279,6 +292,10 @@ function MatchScoreContent() {
                         <h1 className="font-black text-sm tracking-tight truncate max-w-[200px]">VS {match.opponent}</h1>
                     </div>
                     <div className="flex items-center gap-2">
+                        {/* 💡 全画面化ボタンを追加 */}
+                        <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleFullScreen}>
+                            <Maximize className="h-5 w-5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><Settings className="h-5 w-5" /></Button>
                         <Button onClick={handleFinishMatch} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full px-4 shadow-sm">試合終了</Button>
                     </div>
