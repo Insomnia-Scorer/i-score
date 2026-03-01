@@ -23,6 +23,8 @@ interface GameStateSnapshot {
     balls: number; strikes: number; outs: number;
     firstBase: boolean; secondBase: boolean; thirdBase: boolean;
     myBatterIndex: number;
+    selfInningScores: number[];  // 💡 Undo用に配列も記憶する
+    guestInningScores: number[]; // 💡 Undo用に配列も記憶する
 }
 
 function MatchScoreContent() {
@@ -37,6 +39,10 @@ function MatchScoreContent() {
     const [inning, setInning] = useState(1);
     const [isTop, setIsTop] = useState(true);
 
+    // 💡 新機能：イニングごとのスコア配列（未開始の回は null）
+    const [guestInningScores, setGuestInningScores] = useState<number[]>([0, ...Array(8).fill(null)]);
+    const [selfInningScores, setSelfInningScores] = useState<number[]>(Array(9).fill(null));
+
     const [balls, setBalls] = useState(0);
     const [strikes, setStrikes] = useState(0);
     const [outs, setOuts] = useState(0);
@@ -48,7 +54,6 @@ function MatchScoreContent() {
     const [myLineup, setMyLineup] = useState<LineupPlayer[]>([]);
     const [myBatterIndex, setMyBatterIndex] = useState(0);
 
-    // 💡 新機能：タップした投球コースの座標（0.0〜1.0）
     const [pitchX, setPitchX] = useState<number | null>(null);
     const [pitchY, setPitchY] = useState<number | null>(null);
 
@@ -58,7 +63,9 @@ function MatchScoreContent() {
         setHistory(prev => [...prev, {
             selfScore, guestScore, inning, isTop,
             balls, strikes, outs,
-            firstBase, secondBase, thirdBase, myBatterIndex
+            firstBase, secondBase, thirdBase, myBatterIndex,
+            selfInningScores: [...selfInningScores],   // 💡 配列をコピーして保存
+            guestInningScores: [...guestInningScores]  // 💡 配列をコピーして保存
         }]);
     };
 
@@ -70,7 +77,9 @@ function MatchScoreContent() {
         setBalls(prev.balls); setStrikes(prev.strikes); setOuts(prev.outs);
         setFirstBase(prev.firstBase); setSecondBase(prev.secondBase); setThirdBase(prev.thirdBase);
         setMyBatterIndex(prev.myBatterIndex);
-        setPitchX(null); setPitchY(null); // 💡 Undo時も座標をリセット
+        setSelfInningScores(prev.selfInningScores);   // 💡 復元
+        setGuestInningScores(prev.guestInningScores); // 💡 復元
+        setPitchX(null); setPitchY(null);
 
         setHistory(h => h.slice(0, -1));
 
@@ -90,11 +99,10 @@ function MatchScoreContent() {
                     inning, isTop,
                     pitchNumber: balls + strikes + 1,
                     result: pitchResult, ballsBefore: balls, strikesBefore: strikes, atBatResult,
-                    zoneX: pitchX, zoneY: pitchY // 💡 APIに座標を一緒に送信！
+                    zoneX: pitchX, zoneY: pitchY
                 }),
             });
         } catch (e) { console.error(e); }
-        // 💡 送信が終わったら、次の球のために座標をリセットする
         setPitchX(null);
         setPitchY(null);
     };
@@ -107,8 +115,23 @@ function MatchScoreContent() {
 
     const addScore = (runs: number) => {
         if (runs <= 0) return;
-        if (isTop) setGuestScore(s => s + runs);
-        else setSelfScore(s => s + runs);
+        if (isTop) {
+            setGuestScore(s => s + runs);
+            // 💡 現在のイニングのマスに得点を加算
+            setGuestInningScores(prev => {
+                const newScores = [...prev];
+                newScores[inning - 1] = (newScores[inning - 1] || 0) + runs;
+                return newScores;
+            });
+        } else {
+            setSelfScore(s => s + runs);
+            // 💡 現在のイニングのマスに得点を加算
+            setSelfInningScores(prev => {
+                const newScores = [...prev];
+                newScores[inning - 1] = (newScores[inning - 1] || 0) + runs;
+                return newScores;
+            });
+        }
     };
 
     const processOuts = (addedOuts: number) => {
@@ -116,8 +139,27 @@ function MatchScoreContent() {
         if (newOuts >= 3) {
             setOuts(0); setBalls(0); setStrikes(0);
             setFirstBase(false); setSecondBase(false); setThirdBase(false);
-            if (isTop) setIsTop(false);
-            else { setIsTop(true); setInning(i => i + 1); }
+            if (isTop) {
+                setIsTop(false);
+                // 💡 チェンジしたら、裏の攻撃マスのnullを0にする
+                setSelfInningScores(prev => {
+                    const newScores = [...prev];
+                    newScores[inning - 1] = 0;
+                    return newScores;
+                });
+            } else {
+                setIsTop(true);
+                setInning(i => {
+                    const next = i + 1;
+                    // 💡 チェンジしたら、次の回の表の攻撃マスを0にする
+                    setGuestInningScores(prev => {
+                        const newScores = [...prev];
+                        newScores[next - 1] = 0;
+                        return newScores;
+                    });
+                    return next;
+                });
+            }
         } else {
             setOuts(newOuts);
         }
@@ -136,34 +178,27 @@ function MatchScoreContent() {
     };
 
     const handleManualOut = () => {
-        saveStateToHistory();
-        processOuts(1);
-        advanceBatter();
+        saveStateToHistory(); processOuts(1); advanceBatter();
     };
 
     const handleStrike = async () => {
         saveStateToHistory();
         if (strikes === 2) {
             await recordPitchAPI('strike', 'strikeout');
-            setBalls(0); setStrikes(0);
-            processOuts(1);
-            advanceBatter();
+            setBalls(0); setStrikes(0); processOuts(1); advanceBatter();
         } else {
-            await recordPitchAPI('strike');
-            setStrikes(s => s + 1);
+            await recordPitchAPI('strike'); setStrikes(s => s + 1);
         }
     };
 
     const handleWalk = async () => {
         saveStateToHistory();
         await recordPitchAPI('ball', 'walk');
-        let runs = 0;
-        let newFirst = true; let newSecond = secondBase; let newThird = thirdBase;
+        let runs = 0; let newFirst = true; let newSecond = secondBase; let newThird = thirdBase;
 
         if (firstBase) { newSecond = true; if (secondBase) { newThird = true; if (thirdBase) runs++; } }
         setFirstBase(newFirst); setSecondBase(newSecond); setThirdBase(newThird);
-        addScore(runs); setBalls(0); setStrikes(0);
-        advanceBatter();
+        addScore(runs); setBalls(0); setStrikes(0); advanceBatter();
     };
 
     const handleBall = async () => {
@@ -184,8 +219,7 @@ function MatchScoreContent() {
         else if (bases === 4) { if (thirdBase) runs++; if (secondBase) runs++; if (firstBase) runs++; runs++; }
 
         setFirstBase(newFirst); setSecondBase(newSecond); setThirdBase(newThird);
-        addScore(runs); setBalls(0); setStrikes(0);
-        advanceBatter();
+        addScore(runs); setBalls(0); setStrikes(0); advanceBatter();
     };
 
     const handleInPlayOut = async (outType: 'groundout' | 'flyout' | 'double_play') => {
@@ -198,18 +232,14 @@ function MatchScoreContent() {
                 if (firstBase) setFirstBase(false); else if (secondBase) setSecondBase(false); else if (thirdBase) setThirdBase(false);
             }
         }
-        setBalls(0); setStrikes(0); processOuts(addedOuts);
-        advanceBatter();
+        setBalls(0); setStrikes(0); processOuts(addedOuts); advanceBatter();
     };
 
-    // 💡 画面のタップイベントから座標（0.0〜1.0）を計算する関数
     const handleZoneClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
-        // クリックした位置が枠内の何％の場所か（0.0 〜 1.0）を算出
         const x = (e.clientX - rect.left) / rect.width;
         const y = (e.clientY - rect.top) / rect.height;
-        setPitchX(x);
-        setPitchY(y);
+        setPitchX(x); setPitchY(y);
     };
 
     useEffect(() => {
@@ -254,23 +284,53 @@ function MatchScoreContent() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 items-center gap-4 bg-muted/20 rounded-2xl p-4 border border-border shadow-inner relative">
-                    <div className="text-center space-y-1">
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Guest (表)</div>
-                        <div className="text-4xl font-black text-muted-foreground/70">{guestScore}</div>
-                    </div>
-                    <div className="flex flex-col items-center justify-center border-x border-border">
-                        <div className="text-xl font-black tracking-tighter">
-                            {inning}<span className="text-[10px] ml-0.5">{isTop ? '回表' : '回裏'}</span>
-                        </div>
-                    </div>
-                    <div className="text-center space-y-1">
-                        <div className="text-[10px] font-bold text-primary uppercase">Self (裏)</div>
-                        <div className="text-4xl font-black text-primary">{selfScore}</div>
+                {/* 💡 本格的なイニングスコアボード */}
+                <div className="bg-muted/20 rounded-2xl pt-2 pb-5 px-3 border border-border shadow-inner relative overflow-x-auto mb-2">
+                    <div className="min-w-[340px]">
+                        <table className="w-full text-center text-sm">
+                            <thead>
+                                <tr className="text-muted-foreground border-b border-border/50 text-[10px] sm:text-xs">
+                                    <th className="text-left font-medium pb-1 pl-2 w-16 sticky left-0 bg-muted/50 backdrop-blur-md">TEAM</th>
+                                    {[...Array(9)].map((_, i) => (
+                                        <th key={i} className={cn("font-medium pb-1 w-7", inning === i + 1 ? "text-primary font-black" : "")}>{i + 1}</th>
+                                    ))}
+                                    <th className="font-black pb-1 w-8 text-primary">R</th>
+                                </tr>
+                            </thead>
+                            <tbody className="font-bold text-xs sm:text-sm">
+                                {/* 先攻 (Guest) */}
+                                <tr className="border-b border-border/10">
+                                    <td className="text-left py-1.5 pl-2 truncate max-w-[80px] sticky left-0 bg-muted/50 backdrop-blur-md">
+                                        <span className="text-muted-foreground text-[10px] mr-1">表</span>
+                                        <span className="truncate inline-block align-bottom max-w-[50px]">{match.opponent}</span>
+                                    </td>
+                                    {[...Array(9)].map((_, i) => (
+                                        <td key={i} className={cn("py-1.5", inning === i + 1 && isTop ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground/70")}>
+                                            {guestInningScores[i] !== null ? guestInningScores[i] : '-'}
+                                        </td>
+                                    ))}
+                                    <td className="py-1.5 text-base text-foreground">{guestScore}</td>
+                                </tr>
+                                {/* 後攻 (Self) */}
+                                <tr>
+                                    <td className="text-left py-1.5 pl-2 truncate max-w-[80px] sticky left-0 bg-muted/50 backdrop-blur-md">
+                                        <span className="text-primary text-[10px] mr-1">裏</span>
+                                        <span className="truncate inline-block align-bottom max-w-[50px]">Self</span>
+                                    </td>
+                                    {[...Array(9)].map((_, i) => (
+                                        <td key={i} className={cn("py-1.5", inning === i + 1 && !isTop ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground/70")}>
+                                            {selfInningScores[i] !== null ? selfInningScores[i] : '-'}
+                                        </td>
+                                    ))}
+                                    <td className="py-1.5 text-base text-primary">{selfScore}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
-                    {!isTop && currentBatter && (
-                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
+                    {/* 💡 現在のバッター表示バー（常に表示に変更） */}
+                    {currentBatter && (
+                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
                             <User className="h-3 w-3" />
                             {currentBatter.batting_order}番 {currentBatter.playerName} <span className="opacity-70 text-[10px]">({currentBatter.position})</span>
                         </div>
@@ -280,7 +340,7 @@ function MatchScoreContent() {
 
             <main className="flex-1 relative p-4 flex flex-col items-center justify-center overflow-hidden min-h-[220px]">
 
-                {/* 左上：カウント表示（ストライク・ボール） */}
+                {/* カウント表示 */}
                 <div className="absolute top-4 left-4 space-y-3 z-10 bg-muted/30 p-3 rounded-xl backdrop-blur-sm border border-border shadow-sm">
                     <div className="flex gap-1.5 items-center">
                         <span className="w-4 text-[10px] font-black text-muted-foreground">B</span>
@@ -296,7 +356,7 @@ function MatchScoreContent() {
                     </div>
                 </div>
 
-                {/* 右上：塁状況（ランナー）表示 */}
+                {/* 塁状況（ランナー）表示 */}
                 <div className="absolute top-4 right-4 z-10 bg-muted/30 p-4 rounded-xl backdrop-blur-sm border border-border shadow-sm flex items-center justify-center w-[100px] h-[100px]">
                     <div className="relative w-12 h-12 rotate-45 border-[3px] border-border rounded-sm transition-all">
                         <div className={cn("absolute -top-1.5 -left-1.5 h-3 w-3 border-2 border-border rounded-sm -rotate-45 transition-all duration-300", secondBase ? "bg-yellow-400 border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)] scale-150" : "bg-muted")} />
@@ -308,27 +368,23 @@ function MatchScoreContent() {
                     </div>
                 </div>
 
-                {/* 💡 中央：配球図全体 */}
+                {/* 中央：配球図全体 */}
                 <div
                     className="relative w-[75vw] max-w-[280px] aspect-[4/5] mt-6 mx-auto bg-muted/5 rounded-2xl cursor-crosshair touch-none overflow-hidden shadow-inner border-2 border-border/50"
                     onClick={handleZoneClick}
                 >
-                    {/* 実際のストライクゾーンの枠 */}
                     <div className="absolute top-[10%] bottom-[32%] left-[22%] right-[22%] border-2 border-foreground/50 grid grid-cols-3 grid-rows-3 pointer-events-none bg-primary/5 shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-none">
                         {[...Array(9)].map((_, i) => (
                             <div key={i} className="border border-foreground/30" />
                         ))}
                     </div>
 
-                    {/* 💡 ホームベースの図形（球審視点：下向きに尖る ＆ 遠近感で薄く） */}
                     <div className="absolute top-[73%] left-[22%] right-[22%] pointer-events-none opacity-60">
-                        {/* 縦幅(viewBoxのY)を小さくして、パース(遠近感)がかかって薄く見えるように調整 */}
                         <svg viewBox="0 0 100 30" className="w-full h-auto fill-background stroke-foreground/70 stroke-[2.5px] drop-shadow-sm">
                             <polygon points="2,2 98,2 98,12 50,28 2,12" />
                         </svg>
                     </div>
 
-                    {/* タップした位置にボールのマークを表示 */}
                     {pitchX !== null && pitchY !== null && (
                         <div
                             className="absolute w-6 h-6 -ml-3 -mt-3 bg-yellow-400 rounded-full border-2 border-zinc-900 shadow-[0_0_15px_rgba(250,204,21,0.6)] z-20 flex items-center justify-center animate-in zoom-in pointer-events-none"
@@ -339,7 +395,6 @@ function MatchScoreContent() {
                         </div>
                     )}
 
-                    {/* ガイダンスの文字 */}
                     {pitchX === null && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                             <span className="text-xs font-bold text-muted-foreground bg-background/90 px-3 py-1.5 rounded-full backdrop-blur-md shadow-sm">

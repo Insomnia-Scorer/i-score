@@ -32,6 +32,9 @@ interface Team {
 export default function DashboardPage() {
   const { data: session, isPending: isSessionLoading } = authClient.useSession();
 
+  // ユーザーのシステムロールを取得
+  const userRole = (session?.user as any)?.role;
+  
   // 状態管理
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
@@ -329,7 +332,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3 group mt-2">
                     <h2 className="text-3xl sm:text-4xl font-black tracking-tight">{currentTeam?.name}</h2>
                     {/* 監督(Manager)や管理者のみ編集・削除ボタンを表示 */}
-                    {canManageTeam(currentTeam?.myRole) && (
+                    {(canManageTeam(currentTeam?.myRole) || userRole === ROLES.ADMIN) && (
                       <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         <Button size="icon-sm" variant="ghost" className="h-8 w-8 text-white/50 hover:text-white hover:bg-white/10 rounded-full" onClick={() => currentTeam && startEditTeam(currentTeam)}>
                           <Edit2 className="h-4 w-4" />
