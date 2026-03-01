@@ -80,20 +80,22 @@ app.patch('/api/teams/:id', async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
+    // 💡 ユーザーのシステム全体でのロールを取得
+    const userRole = (session.user as any).role;
+
     const teamId = c.req.param('id')
     const body = await c.req.json()
     const db = drizzle(c.env.DB)
 
     try {
-        // チーム内の権限チェック（代表/監督/管理者のみ）
         const member = await db.select().from(teamMembers)
             .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, session.user.id))).get()
-
-        if (!member || !canManageTeam(member.role)) {
+        
+        // 💡 修正：システム管理者(admin) または チーム管理者なら許可
+        if (userRole !== 'admin' && (!member || !canManageTeam(member.role))) {
             return c.json({ error: '権限がありません' }, 403)
         }
 
-        // チーム名更新
         await db.update(teams).set({ name: body.name }).where(eq(teams.id, teamId))
         return c.json({ success: true })
     } catch (e) {
@@ -102,26 +104,27 @@ app.patch('/api/teams/:id', async (c) => {
     }
 })
 
-// 💡 チームの削除API（※関連する試合データ等もまとめて綺麗に消去します）
+// 💡 チームの削除API
 app.delete('/api/teams/:id', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
+    // 💡 ユーザーのシステム全体でのロールを取得
+    const userRole = (session.user as any).role;
+
     const teamId = c.req.param('id')
     const db = drizzle(c.env.DB)
 
     try {
-        // 権限チェック
         const member = await db.select().from(teamMembers)
             .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, session.user.id))).get()
-
-        if (!member || !canManageTeam(member.role)) {
+        
+        // 💡 修正：システム管理者(admin) または チーム管理者なら許可
+        if (userRole !== 'admin' && (!member || !canManageTeam(member.role))) {
             return c.json({ error: '権限がありません' }, 403)
         }
 
-        // 💡 関連データを全て綺麗に削除する
-        // スタメン → 投球データ → 打席データ → 試合データ → 選手 → メンバー情報 → チーム本体 の順
         await c.env.DB.prepare(`DELETE FROM match_lineups WHERE match_id IN (SELECT id FROM matches WHERE team_id = ?)`).bind(teamId).run()
         await c.env.DB.prepare(`DELETE FROM pitches WHERE at_bat_id IN (SELECT id FROM at_bats WHERE match_id IN (SELECT id FROM matches WHERE team_id = ?))`).bind(teamId).run()
         await c.env.DB.prepare(`DELETE FROM at_bats WHERE match_id IN (SELECT id FROM matches WHERE team_id = ?)`).bind(teamId).run()
@@ -453,3 +456,4 @@ export default {
     }
 
 }
+
