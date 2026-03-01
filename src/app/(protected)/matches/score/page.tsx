@@ -5,7 +5,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Settings, RotateCcw, User, Maximize } from "lucide-react";
+// 💡 Activity(ピッチャー用) と ChevronRight(Next用) を追加
+import { ArrowLeft, Settings, RotateCcw, User, Maximize, Activity, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Match {
@@ -23,8 +24,10 @@ interface GameStateSnapshot {
     balls: number; strikes: number; outs: number;
     firstBase: boolean; secondBase: boolean; thirdBase: boolean;
     myBatterIndex: number;
-    selfInningScores: number[];  // 💡 Undo用に配列も記憶する
-    guestInningScores: number[]; // 💡 Undo用に配列も記憶する
+    selfInningScores: number[];
+    guestInningScores: number[];
+    selfPitchCount: number;  // 💡 Undo用に投球数も記憶
+    guestPitchCount: number; // 💡 Undo用に投球数も記憶
 }
 
 function MatchScoreContent() {
@@ -39,9 +42,12 @@ function MatchScoreContent() {
     const [inning, setInning] = useState(1);
     const [isTop, setIsTop] = useState(true);
 
-    // 💡 イニングごとのスコア配列（未開始の回は null）
     const [guestInningScores, setGuestInningScores] = useState<number[]>([0, ...Array(8).fill(null)]);
     const [selfInningScores, setSelfInningScores] = useState<number[]>(Array(9).fill(null));
+
+    // 💡 新機能：ピッチャーの投球数カウンター
+    const [selfPitchCount, setSelfPitchCount] = useState(0);
+    const [guestPitchCount, setGuestPitchCount] = useState(0);
 
     const [balls, setBalls] = useState(0);
     const [strikes, setStrikes] = useState(0);
@@ -59,7 +65,6 @@ function MatchScoreContent() {
 
     const [history, setHistory] = useState<GameStateSnapshot[]>([]);
 
-    // 💡 フルスクリーンを切り替える関数を追加（useStateの塊の下あたりに）
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(err => {
@@ -77,8 +82,9 @@ function MatchScoreContent() {
             selfScore, guestScore, inning, isTop,
             balls, strikes, outs,
             firstBase, secondBase, thirdBase, myBatterIndex,
-            selfInningScores: [...selfInningScores],   // 💡 配列をコピーして保存
-            guestInningScores: [...guestInningScores]  // 💡 配列をコピーして保存
+            selfInningScores: [...selfInningScores],
+            guestInningScores: [...guestInningScores],
+            selfPitchCount, guestPitchCount // 💡 保存
         }]);
     };
 
@@ -90,8 +96,10 @@ function MatchScoreContent() {
         setBalls(prev.balls); setStrikes(prev.strikes); setOuts(prev.outs);
         setFirstBase(prev.firstBase); setSecondBase(prev.secondBase); setThirdBase(prev.thirdBase);
         setMyBatterIndex(prev.myBatterIndex);
-        setSelfInningScores(prev.selfInningScores);   // 💡 復元
-        setGuestInningScores(prev.guestInningScores); // 💡 復元
+        setSelfInningScores(prev.selfInningScores);
+        setGuestInningScores(prev.guestInningScores);
+        setSelfPitchCount(prev.selfPitchCount); // 💡 復元
+        setGuestPitchCount(prev.guestPitchCount); // 💡 復元
         setPitchX(null); setPitchY(null);
 
         setHistory(h => h.slice(0, -1));
@@ -105,6 +113,10 @@ function MatchScoreContent() {
     const recordPitchAPI = async (pitchResult: string, atBatResult: string | null = null) => {
         if (!matchId) return;
         try {
+            // 💡 投球されるたびにカウントを＋1する
+            if (isTop) setSelfPitchCount(prev => prev + 1); // 守備時なら自分のピッチャー
+            else setGuestPitchCount(prev => prev + 1);      // 攻撃時なら相手のピッチャー
+
             await fetch(`/api/matches/${matchId}/pitches`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -130,7 +142,6 @@ function MatchScoreContent() {
         if (runs <= 0) return;
         if (isTop) {
             setGuestScore(s => s + runs);
-            // 💡 現在のイニングのマスに得点を加算
             setGuestInningScores(prev => {
                 const newScores = [...prev];
                 newScores[inning - 1] = (newScores[inning - 1] || 0) + runs;
@@ -138,7 +149,6 @@ function MatchScoreContent() {
             });
         } else {
             setSelfScore(s => s + runs);
-            // 💡 現在のイニングのマスに得点を加算
             setSelfInningScores(prev => {
                 const newScores = [...prev];
                 newScores[inning - 1] = (newScores[inning - 1] || 0) + runs;
@@ -154,7 +164,6 @@ function MatchScoreContent() {
             setFirstBase(false); setSecondBase(false); setThirdBase(false);
             if (isTop) {
                 setIsTop(false);
-                // 💡 チェンジしたら、裏の攻撃マスのnullを0にする
                 setSelfInningScores(prev => {
                     const newScores = [...prev];
                     newScores[inning - 1] = 0;
@@ -164,7 +173,6 @@ function MatchScoreContent() {
                 setIsTop(true);
                 setInning(i => {
                     const next = i + 1;
-                    // 💡 チェンジしたら、次の回の表の攻撃マスを0にする
                     setGuestInningScores(prev => {
                         const newScores = [...prev];
                         newScores[next - 1] = 0;
@@ -276,11 +284,16 @@ function MatchScoreContent() {
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-background text-foreground">読み込み中...</div>;
     if (!match) return <div className="p-8 text-center bg-background text-foreground h-screen flex flex-col items-center justify-center"><p>試合が見つかりません</p><Button asChild variant="outline" className="mt-4"><Link href="/dashboard">戻る</Link></Button></div>;
 
+    // 💡 選手情報の取得ロジック
+    // 現在のバッター
     const currentBatter = myLineup.length > 0 ? myLineup[myBatterIndex] : null;
+    // NEXTバッター
+    const nextBatter = myLineup.length > 0 ? myLineup[(myBatterIndex + 1) % myLineup.length] : null;
+    // 自チームのピッチャー（ポジションが「1」「投手」「P」のいずれか。見つからなければ一旦1番を仮表示）
+    const currentPitcher = myLineup.find(p => p.position === '1' || p.position === '投手' || p.position.toUpperCase() === 'P') || myLineup[0];
 
     return (
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-            {/* ヘッダー */}
             <header className="bg-muted/10 border-b border-border p-4 pb-1 shrink-0 z-10">
                 <div className="flex items-center justify-between mb-2">
                     <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted -ml-2" asChild>
@@ -293,7 +306,6 @@ function MatchScoreContent() {
                         <h1 className="font-black text-sm tracking-tight truncate max-w-[200px]">VS {match.opponent}</h1>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2">
-                        {/* 全画面化ボタン */}
                         <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleFullScreen}>
                             <Maximize className="h-4 w-4 text-muted-foreground" />
                         </Button>
@@ -301,8 +313,6 @@ function MatchScoreContent() {
                     </div>
                 </div>
 
-                {/* 💡 イニングスコアボード（左右の余白なし ＋ 浮き出るバッター表示） */}
-                {/* 基準となるrelativeコンテナにマージンを持たせます */}
                 <div className="relative -mx-4 mb-4 mt-2">
                     <div className="bg-background border-y border-border overflow-x-auto scrollbar-hide pb-3">
                         <div className="min-w-[360px] px-2 pt-2">
@@ -317,10 +327,8 @@ function MatchScoreContent() {
                                     </tr>
                                 </thead>
                                 <tbody className="font-bold text-xs sm:text-sm">
-                                    {/* 先攻 (Guest) */}
                                     <tr className="border-b border-border/50">
                                         <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
-                                            {/* 💡 「表」を削除し、チーム名をスッキリ表示 */}
                                             <span className="truncate max-w-[55px] inline-block align-middle">{match.opponent}</span>
                                         </td>
                                         {[...Array(9)].map((_, i) => (
@@ -330,10 +338,8 @@ function MatchScoreContent() {
                                         ))}
                                         <td className="py-2 text-sm text-foreground sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">{guestScore}</td>
                                     </tr>
-                                    {/* 後攻 (Self) */}
                                     <tr>
                                         <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
-                                            {/* 💡 「裏」を削除し、チーム名をスッキリ表示 */}
                                             <span className="truncate max-w-[55px] inline-block align-middle text-primary">Self</span>
                                         </td>
                                         {[...Array(9)].map((_, i) => (
@@ -348,13 +354,37 @@ function MatchScoreContent() {
                         </div>
                     </div>
 
-                    {/* 💡 現在のバッター表示バー（2つ前の「浮き出るバッジ」スタイルに復元！） */}
-                    {currentBatter && (
-                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2 z-20">
-                            <User className="h-3 w-3" />
-                            {currentBatter.batting_order}番 {currentBatter.playerName} <span className="opacity-70 text-[10px]">({currentBatter.position})</span>
-                        </div>
-                    )}
+                    {/* 💡 攻守に応じたバッジの表示切り替えエリア */}
+                    <div className="absolute -bottom-3 left-0 right-0 flex justify-center items-end gap-2 px-2 z-20 pointer-events-none">
+                        {isTop ? (
+                            /* ⚾️ 守備時（表）：ピッチャーと投球数 */
+                            currentPitcher && (
+                                <div className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
+                                    <Activity className="h-3.5 w-3.5" />
+                                    P: {currentPitcher.playerName}
+                                    <span className="bg-blue-800/60 px-1.5 py-0.5 rounded text-[10px] ml-1">{selfPitchCount}球</span>
+                                </div>
+                            )
+                        ) : (
+                            /* ⚾️ 攻撃時（裏）：バッターとNextバッター */
+                            <>
+                                {currentBatter && (
+                                    <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
+                                        <User className="h-3.5 w-3.5" />
+                                        {currentBatter.batting_order}番 {currentBatter.playerName}
+                                    </div>
+                                )}
+                                {nextBatter && (
+                                    <div className="bg-muted text-muted-foreground px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2 opacity-95">
+                                        <span className="text-primary font-black ml-0.5">NEXT</span>
+                                        <ChevronRight className="h-3 w-3 -mx-1 opacity-50" />
+                                        {nextBatter.batting_order}番 {nextBatter.playerName}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+
                 </div>
             </header>
 
