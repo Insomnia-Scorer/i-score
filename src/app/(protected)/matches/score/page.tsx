@@ -281,8 +281,8 @@ function MatchScoreContent() {
     return (
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
             {/* ヘッダー */}
-            <header className="bg-muted/10 border-b border-border p-4 pb-3 shrink-0 z-10">
-                <div className="flex items-center justify-between mb-4">
+            <header className="bg-muted/10 border-b border-border p-4 pb-1 shrink-0 z-10">
+                <div className="flex items-center justify-between mb-2">
                     <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted -ml-2" asChild>
                         <Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
                     </Button>
@@ -293,7 +293,7 @@ function MatchScoreContent() {
                         <h1 className="font-black text-sm tracking-tight truncate max-w-[200px]">VS {match.opponent}</h1>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2">
-                        {/* 💡 全画面化ボタン */}
+                        {/* 全画面化ボタン */}
                         <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleFullScreen}>
                             <Maximize className="h-4 w-4 text-muted-foreground" />
                         </Button>
@@ -301,72 +301,61 @@ function MatchScoreContent() {
                     </div>
                 </div>
 
-                {/* 💡 イニングスコアボード（左右の余白をなくし、画面幅いっぱいに！） */}
-                {/* 親の padding (p-4) を打ち消すために -mx-4 を指定しています */}
-                <div className="bg-background border-y border-border overflow-x-auto -mx-4 scrollbar-hide">
-                    <div className="min-w-[360px] p-2">
-                        <table className="w-full text-center text-sm table-fixed">
-                            <thead>
-                                <tr className="text-muted-foreground border-b border-border text-[10px] sm:text-xs">
-                                    <th className="text-left font-medium pb-1 pl-3 w-16 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">TEAM</th>
-                                    {[...Array(9)].map((_, i) => (
-                                        <th key={i} className={cn("font-medium pb-1 w-7", inning === i + 1 ? "text-primary font-black" : "")}>{i + 1}</th>
-                                    ))}
-                                    <th className="font-black pb-1 w-8 text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">R</th>
-                                </tr>
-                            </thead>
-                            <tbody className="font-bold text-xs sm:text-sm">
-                                {/* 先攻 (Guest) */}
-                                <tr className="border-b border-border/50">
-                                    <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-muted-foreground text-[9px] bg-muted px-1.5 py-0.5 rounded leading-none">表</span>
-                                            <span className="truncate max-w-[45px]">{match.opponent}</span>
-                                        </div>
-                                    </td>
-                                    {[...Array(9)].map((_, i) => (
-                                        <td key={i} className={cn("py-2", inning === i + 1 && isTop ? "bg-primary/10 text-primary rounded-sm" : "text-muted-foreground")}>
-                                            {guestInningScores[i] !== null ? guestInningScores[i] : '-'}
+                {/* 💡 イニングスコアボード（左右の余白なし ＋ 浮き出るバッター表示） */}
+                {/* 基準となるrelativeコンテナにマージンを持たせます */}
+                <div className="relative -mx-4 mb-4 mt-2">
+                    <div className="bg-background border-y border-border overflow-x-auto scrollbar-hide pb-3">
+                        <div className="min-w-[360px] px-2 pt-2">
+                            <table className="w-full text-center text-sm table-fixed">
+                                <thead>
+                                    <tr className="text-muted-foreground border-b border-border text-[10px] sm:text-xs">
+                                        <th className="text-left font-medium pb-1 pl-3 w-16 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">TEAM</th>
+                                        {[...Array(9)].map((_, i) => (
+                                            <th key={i} className={cn("font-medium pb-1 w-7", inning === i + 1 ? "text-primary font-black" : "")}>{i + 1}</th>
+                                        ))}
+                                        <th className="font-black pb-1 w-8 text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">R</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="font-bold text-xs sm:text-sm">
+                                    {/* 先攻 (Guest) */}
+                                    <tr className="border-b border-border/50">
+                                        <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
+                                            {/* 💡 「表」を削除し、チーム名をスッキリ表示 */}
+                                            <span className="truncate max-w-[55px] inline-block align-middle">{match.opponent}</span>
                                         </td>
-                                    ))}
-                                    <td className="py-2 text-sm text-foreground sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">{guestScore}</td>
-                                </tr>
-                                {/* 後攻 (Self) */}
-                                <tr>
-                                    <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-primary text-[9px] bg-primary/10 px-1.5 py-0.5 rounded leading-none">裏</span>
-                                            <span className="truncate max-w-[45px]">Self</span>
-                                        </div>
-                                    </td>
-                                    {[...Array(9)].map((_, i) => (
-                                        <td key={i} className={cn("py-2", inning === i + 1 && !isTop ? "bg-primary/10 text-primary rounded-sm" : "text-muted-foreground")}>
-                                            {selfInningScores[i] !== null ? selfInningScores[i] : '-'}
+                                        {[...Array(9)].map((_, i) => (
+                                            <td key={i} className={cn("py-2", inning === i + 1 && isTop ? "bg-primary/10 text-primary rounded-sm" : "text-muted-foreground")}>
+                                                {guestInningScores[i] !== null ? guestInningScores[i] : '-'}
+                                            </td>
+                                        ))}
+                                        <td className="py-2 text-sm text-foreground sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">{guestScore}</td>
+                                    </tr>
+                                    {/* 後攻 (Self) */}
+                                    <tr>
+                                        <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
+                                            {/* 💡 「裏」を削除し、チーム名をスッキリ表示 */}
+                                            <span className="truncate max-w-[55px] inline-block align-middle text-primary">Self</span>
                                         </td>
-                                    ))}
-                                    <td className="py-2 text-sm text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">{selfScore}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* 💡 現在のバッター表示（見切れないように独立したバーとして配置） */}
-                {currentBatter && (
-                    <div className="mt-3 flex items-center justify-between bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 animate-in fade-in slide-in-from-top-2">
-                        <div className="flex items-center gap-3">
-                            {/* 打順を丸いバッジで強調 */}
-                            <div className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-sm">
-                                {currentBatter.batting_order}
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="font-extrabold text-sm sm:text-base text-primary tracking-tight">{currentBatter.playerName}</span>
-                                <span className="text-[10px] sm:text-xs text-muted-foreground font-bold">({currentBatter.position})</span>
-                            </div>
+                                        {[...Array(9)].map((_, i) => (
+                                            <td key={i} className={cn("py-2", inning === i + 1 && !isTop ? "bg-primary/10 text-primary rounded-sm" : "text-muted-foreground")}>
+                                                {selfInningScores[i] !== null ? selfInningScores[i] : '-'}
+                                            </td>
+                                        ))}
+                                        <td className="py-2 text-sm text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">{selfScore}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <User className="h-4 w-4 text-primary opacity-40" />
                     </div>
-                )}
+
+                    {/* 💡 現在のバッター表示バー（2つ前の「浮き出るバッジ」スタイルに復元！） */}
+                    {currentBatter && (
+                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2 z-20">
+                            <User className="h-3 w-3" />
+                            {currentBatter.batting_order}番 {currentBatter.playerName} <span className="opacity-70 text-[10px]">({currentBatter.position})</span>
+                        </div>
+                    )}
+                </div>
             </header>
 
             <main className="flex-1 relative p-4 flex flex-col items-center justify-center overflow-hidden min-h-[220px]">
