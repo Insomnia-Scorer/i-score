@@ -5,7 +5,6 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-// 💡 Activity(ピッチャー用) と ChevronRight(Next用) を追加
 import { ArrowLeft, Settings, RotateCcw, User, Maximize, Activity, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,8 +25,10 @@ interface GameStateSnapshot {
     myBatterIndex: number;
     selfInningScores: number[];
     guestInningScores: number[];
-    selfPitchCount: number;  // 💡 Undo用に投球数も記憶
-    guestPitchCount: number; // 💡 Undo用に投球数も記憶
+    selfPitchCount: number;
+    guestPitchCount: number;
+    selfInningPitchCount: number;  // 💡 Undo用にイニング投球数も記憶
+    guestInningPitchCount: number; // 💡 Undo用にイニング投球数も記憶
 }
 
 function MatchScoreContent() {
@@ -45,9 +46,13 @@ function MatchScoreContent() {
     const [guestInningScores, setGuestInningScores] = useState<number[]>([0, ...Array(8).fill(null)]);
     const [selfInningScores, setSelfInningScores] = useState<number[]>(Array(9).fill(null));
 
-    // 💡 新機能：ピッチャーの投球数カウンター
+    // ピッチャーの投球数カウンター（トータル）
     const [selfPitchCount, setSelfPitchCount] = useState(0);
     const [guestPitchCount, setGuestPitchCount] = useState(0);
+
+    // 💡 ピッチャーの投球数カウンター（イニング）
+    const [selfInningPitchCount, setSelfInningPitchCount] = useState(0);
+    const [guestInningPitchCount, setGuestInningPitchCount] = useState(0);
 
     const [balls, setBalls] = useState(0);
     const [strikes, setStrikes] = useState(0);
@@ -84,7 +89,8 @@ function MatchScoreContent() {
             firstBase, secondBase, thirdBase, myBatterIndex,
             selfInningScores: [...selfInningScores],
             guestInningScores: [...guestInningScores],
-            selfPitchCount, guestPitchCount // 💡 保存
+            selfPitchCount, guestPitchCount,
+            selfInningPitchCount, guestInningPitchCount // 💡 保存
         }]);
     };
 
@@ -98,8 +104,10 @@ function MatchScoreContent() {
         setMyBatterIndex(prev.myBatterIndex);
         setSelfInningScores(prev.selfInningScores);
         setGuestInningScores(prev.guestInningScores);
-        setSelfPitchCount(prev.selfPitchCount); // 💡 復元
-        setGuestPitchCount(prev.guestPitchCount); // 💡 復元
+        setSelfPitchCount(prev.selfPitchCount);
+        setGuestPitchCount(prev.guestPitchCount);
+        setSelfInningPitchCount(prev.selfInningPitchCount); // 💡 復元
+        setGuestInningPitchCount(prev.guestInningPitchCount); // 💡 復元
         setPitchX(null); setPitchY(null);
 
         setHistory(h => h.slice(0, -1));
@@ -113,9 +121,14 @@ function MatchScoreContent() {
     const recordPitchAPI = async (pitchResult: string, atBatResult: string | null = null) => {
         if (!matchId) return;
         try {
-            // 💡 投球されるたびにカウントを＋1する
-            if (isTop) setSelfPitchCount(prev => prev + 1); // 守備時なら自分のピッチャー
-            else setGuestPitchCount(prev => prev + 1);      // 攻撃時なら相手のピッチャー
+            // 💡 投球されるたびに「トータル」と「イニング」両方のカウントを増やす
+            if (isTop) {
+                setSelfPitchCount(prev => prev + 1);
+                setSelfInningPitchCount(prev => prev + 1);
+            } else {
+                setGuestPitchCount(prev => prev + 1);
+                setGuestInningPitchCount(prev => prev + 1);
+            }
 
             await fetch(`/api/matches/${matchId}/pitches`, {
                 method: 'POST',
@@ -164,6 +177,7 @@ function MatchScoreContent() {
             setFirstBase(false); setSecondBase(false); setThirdBase(false);
             if (isTop) {
                 setIsTop(false);
+                setGuestInningPitchCount(0); // 💡 チェンジのタイミングで「相手の」イニング投球数をリセット
                 setSelfInningScores(prev => {
                     const newScores = [...prev];
                     newScores[inning - 1] = 0;
@@ -171,6 +185,7 @@ function MatchScoreContent() {
                 });
             } else {
                 setIsTop(true);
+                setSelfInningPitchCount(0); // 💡 チェンジのタイミングで「自分の」イニング投球数をリセット
                 setInning(i => {
                     const next = i + 1;
                     setGuestInningScores(prev => {
@@ -284,12 +299,8 @@ function MatchScoreContent() {
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-background text-foreground">読み込み中...</div>;
     if (!match) return <div className="p-8 text-center bg-background text-foreground h-screen flex flex-col items-center justify-center"><p>試合が見つかりません</p><Button asChild variant="outline" className="mt-4"><Link href="/dashboard">戻る</Link></Button></div>;
 
-    // 💡 選手情報の取得ロジック
-    // 現在のバッター
     const currentBatter = myLineup.length > 0 ? myLineup[myBatterIndex] : null;
-    // NEXTバッター
     const nextBatter = myLineup.length > 0 ? myLineup[(myBatterIndex + 1) % myLineup.length] : null;
-    // 自チームのピッチャー（ポジションが「1」「投手」「P」のいずれか。見つからなければ一旦1番を仮表示）
     const currentPitcher = myLineup.find(p => p.position === '1' || p.position === '投手' || p.position.toUpperCase() === 'P') || myLineup[0];
 
     return (
@@ -354,7 +365,6 @@ function MatchScoreContent() {
                         </div>
                     </div>
 
-                    {/* 💡 攻守に応じたバッジの表示切り替えエリア */}
                     <div className="absolute -bottom-3 left-0 right-0 flex justify-center items-end gap-2 px-2 z-20 pointer-events-none">
                         {isTop ? (
                             /* ⚾️ 守備時（表）：ピッチャーと投球数 */
@@ -362,7 +372,12 @@ function MatchScoreContent() {
                                 <div className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
                                     <Activity className="h-3.5 w-3.5" />
                                     P: {currentPitcher.playerName}
-                                    <span className="bg-blue-800/60 px-1.5 py-0.5 rounded text-[10px] ml-1">{selfPitchCount}球</span>
+                                    {/* 💡 Total と Inning の投球数を並べて表示 */}
+                                    <span className="bg-blue-800/60 px-2 py-0.5 rounded text-[10px] ml-1 flex items-center gap-1.5">
+                                        <span>計{selfPitchCount}球</span>
+                                        <span className="text-[8px] opacity-50">|</span>
+                                        <span>今{selfInningPitchCount}球</span>
+                                    </span>
                                 </div>
                             )
                         ) : (
