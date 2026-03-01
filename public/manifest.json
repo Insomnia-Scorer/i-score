@@ -1,0 +1,16 @@
+{
+    "name": "i-Score",
+    "short_name": "i-Score",
+    "description": "次世代野球スコア記録アプリ",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#09090b",
+    "theme_color": "#18181b",
+    "icons": [
+        {
+            "src": "/logo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

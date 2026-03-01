@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 import * as React from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
@@ -16,9 +16,28 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 });
 
+// 💡 ズームの禁止（ダブルタップで拡大されるのを防ぐ）とテーマカラーの設定
+export const viewport: Viewport = {
+	width: "device-width",
+	initialScale: 1,
+	maximumScale: 1,
+	userScalable: false,
+	themeColor: [
+		{ media: "(prefers-color-scheme: light)", color: "#ffffff" },
+		{ media: "(prefers-color-scheme: dark)", color: "#09090b" },
+	],
+};
+
+// 💡 PWA（ホーム画面に追加）用の設定を追記
 export const metadata: Metadata = {
 	title: "i-Score",
 	description: "次世代野球スコア記録アプリ",
+	manifest: "/manifest.json",
+	appleWebApp: {
+		capable: true,
+		statusBarStyle: "black-translucent",
+		title: "i-Score",
+	},
 };
 
 export default function RootLayout({
