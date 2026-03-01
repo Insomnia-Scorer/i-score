@@ -4,11 +4,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { canEditScore, isApprovedMember, ROLES } from "@/lib/roles";
+import { canEditScore, canManageTeam, isApprovedMember, ROLES } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, History, Trophy, Calendar, ChevronRight, MapPin, Loader2, Users, CheckCircle2, ClipboardList } from "lucide-react";
+import { Plus, History, Trophy, Calendar, ChevronRight, Loader2, Users, CheckCircle2, ClipboardList, Edit2, Trash2, Check, X } from "lucide-react";
 
 interface Match {
   id: string;
@@ -44,6 +44,10 @@ export default function DashboardPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamRole, setNewTeamRole] = useState<string>(ROLES.SCORER);
+
+  // 💡 チーム編集・削除用の状態と処理
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editTeamName, setEditTeamName] = useState("");
 
   // 1. チーム一覧の取得
   const fetchTeams = async () => {
@@ -116,6 +120,48 @@ export default function DashboardPage() {
     }
   };
 
+  // 💡 チーム編集開始
+  const startEditTeam = (team: Team) => {
+    setEditingTeamId(team.id);
+    setEditTeamName(team.name);
+  };
+
+  // 💡 チーム更新処理
+  const handleUpdateTeam = async () => {
+    if (!editTeamName.trim() || !editingTeamId) return;
+    try {
+      const res = await fetch(`/api/teams/${editingTeamId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editTeamName })
+      });
+      if (res.ok) {
+        setEditingTeamId(null);
+        await fetchTeams(); // 最新状態を再取得
+      } else {
+        alert('チーム名の更新に失敗しました');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // 💡 チーム削除処理
+  const handleDeleteTeam = async (targetTeamId: string) => {
+    if (!confirm('⚠️ 本当にこのチームを削除しますか？\n（所属選手やこれまでの試合データがすべて完全に消去されます！）')) return;
+    try {
+      const res = await fetch(`/api/teams/${targetTeamId}`, { method: 'DELETE' });
+      if (res.ok) {
+        if (selectedTeamId === targetTeamId) setSelectedTeamId("");
+        await fetchTeams();
+      } else {
+        alert('チームの削除に失敗しました');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (isSessionLoading || isLoadingTeams) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -125,14 +171,12 @@ export default function DashboardPage() {
   // スコア編集権限があるか（チーム内ロールで判定）
   const canEdit = currentTeam ? canEditScore(currentTeam.myRole) : false;
 
-  // 💡 return の直前（matches を取得したあと）にこのブロックを追加！
+  // 💡 成績の自動計算
   const completedMatches = matches.filter(match => match.status === 'completed');
   const wins = completedMatches.filter(match => match.myScore > match.opponentScore).length;
   const losses = completedMatches.filter(match => match.myScore < match.opponentScore).length;
   const draws = completedMatches.filter(match => match.myScore === match.opponentScore).length;
   const totalGames = completedMatches.length;
-
-  // 勝率の計算（試合数が0の場合は0%にする）
   const winRate = totalGames > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
 
   // =========================================================
@@ -163,7 +207,7 @@ export default function DashboardPage() {
                   type="text"
                   required
                   placeholder="例: 川崎中央シニア"
-                  className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   value={newTeamName}
                   onChange={(e) => setNewTeamName(e.target.value)}
                 />
@@ -228,7 +272,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {canEdit && (
-          // 💡 試合作成ページへ `teamId` をパラメータとして渡す！
+          // 💡 試合作成ページへ `teamId` をパラメータとして渡す
           <Link href={`/matches/new?teamId=${selectedTeamId}`} className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl">
             <Card className="relative overflow-hidden group rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm transition-all hover:shadow-md hover:border-primary/40 active:scale-[0.98] cursor-pointer h-full">
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -250,19 +294,55 @@ export default function DashboardPage() {
           </Link>
         )}
 
-        {/* 💡 チーム成績を表示するカード（上部）を丸ごと差し替え！ */}
-        <Card className="border-border/50 shadow-sm bg-gradient-to-br from-slate-900 to-slate-950 text-white overflow-hidden relative">
-          {/* 背景の装飾（うっすらとロゴを透かしたり、グラデーションを置く） */}
+        {/* 💡 チーム成績・管理カード */}
+        <Card className="border-border/50 shadow-sm bg-gradient-to-br from-slate-900 to-slate-950 text-white overflow-hidden relative md:col-span-2">
+          {/* 背景の装飾 */}
           <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-primary/20 blur-3xl rounded-full pointer-events-none"></div>
 
-          <CardContent className="p-6 sm:p-8 relative z-10">
+          <CardContent className="p-6 sm:p-8 relative z-10 h-full flex flex-col justify-center">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
-              <div className="space-y-2">
+
+              {/* チーム情報と編集機能 */}
+              <div className="space-y-2 w-full sm:w-auto">
                 <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-extrabold bg-primary/20 text-primary uppercase tracking-wider">
                   2026 Season
                 </span>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight">{currentTeam?.name}</h2>
-                {/* 💡 ここに「選手名簿」へのボタンを追加！ */}
+
+                {/* 💡 編集モードと通常モードの切り替え */}
+                {editingTeamId === currentTeam?.id ? (
+                  <div className="flex items-center gap-2 mt-2 animate-in fade-in zoom-in duration-200">
+                    <input
+                      type="text"
+                      value={editTeamName}
+                      onChange={(e) => setEditTeamName(e.target.value)}
+                      className="bg-slate-900/50 border border-white/20 rounded-lg px-3 py-1 text-2xl sm:text-3xl font-black w-full outline-none focus:border-primary text-white"
+                      autoFocus
+                    />
+                    <Button size="icon" className="bg-green-500 hover:bg-green-600 text-white shrink-0 rounded-lg" onClick={handleUpdateTeam}>
+                      <Check className="h-5 w-5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="shrink-0 text-white hover:bg-white/10 rounded-lg" onClick={() => setEditingTeamId(null)}>
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 group mt-2">
+                    <h2 className="text-3xl sm:text-4xl font-black tracking-tight">{currentTeam?.name}</h2>
+                    {/* 監督(Manager)や管理者のみ編集・削除ボタンを表示 */}
+                    {canManageTeam(currentTeam?.myRole) && (
+                      <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                        <Button size="icon-sm" variant="ghost" className="h-8 w-8 text-white/50 hover:text-white hover:bg-white/10 rounded-full" onClick={() => currentTeam && startEditTeam(currentTeam)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon-sm" variant="ghost" className="h-8 w-8 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded-full" onClick={() => currentTeam && handleDeleteTeam(currentTeam.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 💡 選手名簿へのボタン（teamId を連携） */}
                 <div className="pt-2">
                   <Button asChild variant="secondary" size="sm" className="rounded-xl font-bold bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm">
                     <Link href={`/teams/roster?id=${currentTeam?.id}`}>
@@ -274,7 +354,7 @@ export default function DashboardPage() {
               </div>
 
               {/* 💡 自動計算された成績表示エリア */}
-              <div className="flex items-center gap-4 bg-slate-950/50 p-4 rounded-2xl border border-white/10 shadow-inner w-full sm:w-auto">
+              <div className="flex items-center gap-4 bg-slate-950/50 p-4 rounded-2xl border border-white/10 shadow-inner w-full sm:w-auto mt-4 sm:mt-0">
                 <div className="text-center px-2">
                   <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Wins</div>
                   <div className="text-3xl font-black text-primary">{wins}</div>
@@ -300,11 +380,13 @@ export default function DashboardPage() {
                   <div className="text-3xl font-black text-white">{winRate}<span className="text-sm ml-0.5 text-slate-400">%</span></div>
                 </div>
               </div>
+
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* 最近の試合リスト */}
       <div className="space-y-6">
         <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight">
           <History className="h-5 w-5 text-primary" /> 最近の試合
@@ -320,7 +402,6 @@ export default function DashboardPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {matches.map((match) => (
-              // 💡 外側の <Link> を外し、代わりに <Card> に key を持たせます
               <Card key={match.id} className="rounded-2xl border-border bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 overflow-hidden relative">
                 <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${match.status === 'scheduled' ? 'bg-slate-300' : 'bg-blue-500'}`} />
                 <CardContent className="p-5 sm:p-6 pl-6 sm:pl-8">
@@ -334,22 +415,25 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-extrabold ring-1 ring-inset bg-blue-50 text-blue-700 ring-blue-600/20">進行中</span>
+                    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-extrabold ring-1 ring-inset bg-blue-50 text-blue-700 ring-blue-600/20">
+                      {match.status === 'completed' ? '試合終了' : '進行中'}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between bg-muted/30 rounded-xl p-4">
                     <div className="text-base font-extrabold w-1/3 text-center truncate">{currentTeam?.name}</div>
                     <div className="flex items-center justify-center gap-4 w-1/3">
-                      <div className="text-3xl font-black">0</div>
+                      <div className="text-3xl font-black">{match.myScore || 0}</div>
                       <div className="text-muted-foreground font-bold">-</div>
-                      <div className="text-3xl font-black">0</div>
+                      <div className="text-3xl font-black">{match.opponentScore || 0}</div>
                     </div>
                     <div className="text-base font-bold text-muted-foreground w-1/3 text-center truncate">{match.opponent}</div>
                   </div>
 
-                  {/* 💡 ここにボタンエリアを新設！ */}
+                  {/* 💡 ここにボタンエリアを配置 */}
                   <div className="flex gap-2 mt-4 pt-4 border-t border-border/50 justify-end">
                     <Button asChild variant="outline" size="sm" className="rounded-lg font-bold shadow-sm">
+                      {/* 💡 teamId のパラメータを付与 */}
                       <Link href={`/matches/lineup?id=${match.id}&teamId=${currentTeam?.id}`}>
                         <ClipboardList className="h-4 w-4 mr-1.5" />
                         スタメン
@@ -359,7 +443,6 @@ export default function DashboardPage() {
                       <Link href={`/matches/score?id=${match.id}`}>スコア入力</Link>
                     </Button>
                   </div>
-
                 </CardContent>
               </Card>
             ))}

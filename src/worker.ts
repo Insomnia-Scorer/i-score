@@ -74,6 +74,69 @@ app.post('/api/teams', async (c) => {
     }
 })
 
+// 💡 チーム名の更新API
+app.patch('/api/teams/:id', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if (!session) return c.json({ error: 'Unauthorized' }, 401)
+
+    const teamId = c.req.param('id')
+    const body = await c.req.json()
+    const db = drizzle(c.env.DB)
+
+    try {
+        // チーム内の権限チェック（代表/監督/管理者のみ）
+        const member = await db.select().from(teamMembers)
+            .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, session.user.id))).get()
+
+        if (!member || !canManageTeam(member.role)) {
+            return c.json({ error: '権限がありません' }, 403)
+        }
+
+        // チーム名更新
+        await db.update(teams).set({ name: body.name }).where(eq(teams.id, teamId))
+        return c.json({ success: true })
+    } catch (e) {
+        console.error("チーム更新エラー:", e)
+        return c.json({ success: false, error: 'Failed to update team' }, 500)
+    }
+})
+
+// 💡 チームの削除API（※関連する試合データ等もまとめて綺麗に消去します）
+app.delete('/api/teams/:id', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if (!session) return c.json({ error: 'Unauthorized' }, 401)
+
+    const teamId = c.req.param('id')
+    const db = drizzle(c.env.DB)
+
+    try {
+        // 権限チェック
+        const member = await db.select().from(teamMembers)
+            .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, session.user.id))).get()
+
+        if (!member || !canManageTeam(member.role)) {
+            return c.json({ error: '権限がありません' }, 403)
+        }
+
+        // 💡 関連データを全て綺麗に削除する
+        // スタメン → 投球データ → 打席データ → 試合データ → 選手 → メンバー情報 → チーム本体 の順
+        await c.env.DB.prepare(`DELETE FROM match_lineups WHERE match_id IN (SELECT id FROM matches WHERE team_id = ?)`).bind(teamId).run()
+        await c.env.DB.prepare(`DELETE FROM pitches WHERE at_bat_id IN (SELECT id FROM at_bats WHERE match_id IN (SELECT id FROM matches WHERE team_id = ?))`).bind(teamId).run()
+        await c.env.DB.prepare(`DELETE FROM at_bats WHERE match_id IN (SELECT id FROM matches WHERE team_id = ?)`).bind(teamId).run()
+        await c.env.DB.prepare(`DELETE FROM matches WHERE team_id = ?`).bind(teamId).run()
+        await c.env.DB.prepare(`DELETE FROM players WHERE team_id = ?`).bind(teamId).run()
+        await c.env.DB.prepare(`DELETE FROM team_members WHERE team_id = ?`).bind(teamId).run()
+        await c.env.DB.prepare(`DELETE FROM teams WHERE id = ?`).bind(teamId).run()
+
+        return c.json({ success: true })
+    } catch (e) {
+        console.error("チーム削除エラー:", e)
+        return c.json({ success: false, error: 'Failed to delete team' }, 500)
+    }
+})
+
 // 💡 チームの所属選手一覧を取得するAPI（背番号順に並べて返します）
 app.get('/api/teams/:teamId/players', async (c) => {
     const teamId = c.req.param('teamId');
