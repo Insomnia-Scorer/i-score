@@ -112,6 +112,41 @@ app.post('/api/teams/:teamId/players', async (c) => {
     }
 });
 
+// 💡 チームに所属する選手情報を更新するAPI
+app.patch('/api/teams/:teamId/players/:playerId', async (c) => {
+    const teamId = c.req.param('teamId');
+    const playerId = c.req.param('playerId');
+    const body = await c.req.json();
+
+    try {
+        await c.env.DB.prepare(
+            `UPDATE players SET name = ?, uniform_number = ? WHERE id = ? AND team_id = ?`
+        ).bind(body.name, body.uniformNumber, playerId, teamId).run();
+
+        return c.json({ success: true });
+    } catch (e) {
+        console.error("選手更新エラー:", e);
+        return c.json({ error: '選手の更新に失敗しました' }, 500);
+    }
+});
+
+// 💡 チームの選手を削除するAPI
+app.delete('/api/teams/:teamId/players/:playerId', async (c) => {
+    const teamId = c.req.param('teamId');
+    const playerId = c.req.param('playerId');
+
+    try {
+        await c.env.DB.prepare(
+            `DELETE FROM players WHERE id = ? AND team_id = ?`
+        ).bind(playerId, teamId).run();
+
+        return c.json({ success: true });
+    } catch (e) {
+        console.error("選手削除エラー:", e);
+        return c.json({ error: '選手の削除に失敗しました' }, 500);
+    }
+});
+
 // ==========================================
 // 💡 試合関連 API
 // ==========================================
