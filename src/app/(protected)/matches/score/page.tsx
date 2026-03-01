@@ -280,79 +280,93 @@ function MatchScoreContent() {
 
     return (
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-            <header className="bg-muted/30 border-b border-border p-4 shrink-0 z-10">
+            {/* ヘッダー */}
+            <header className="bg-muted/10 border-b border-border p-4 pb-3 shrink-0 z-10">
                 <div className="flex items-center justify-between mb-4">
-                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted -ml-2" asChild>
                         <Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
                     </Button>
                     <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
                             {match.season} {match.matchType === 'practice' ? 'Practice' : 'Official'}
                         </span>
                         <h1 className="font-black text-sm tracking-tight truncate max-w-[200px]">VS {match.opponent}</h1>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {/* 💡 全画面化ボタンを追加 */}
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        {/* 💡 全画面化ボタン */}
                         <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleFullScreen}>
-                            <Maximize className="h-5 w-5" />
+                            <Maximize className="h-4 w-4 text-muted-foreground" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><Settings className="h-5 w-5" /></Button>
-                        <Button onClick={handleFinishMatch} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full px-4 shadow-sm">試合終了</Button>
+                        <Button onClick={handleFinishMatch} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full px-3 sm:px-4 shadow-sm text-xs">試合終了</Button>
                     </div>
                 </div>
 
-                {/* 💡 本格的なイニングスコアボード */}
-                <div className="bg-muted/20 rounded-2xl pt-2 pb-5 px-3 border border-border shadow-inner relative overflow-x-auto mb-2">
-                    <div className="min-w-[340px]">
-                        <table className="w-full text-center text-sm">
+                {/* 💡 イニングスコアボード（左右の余白をなくし、画面幅いっぱいに！） */}
+                {/* 親の padding (p-4) を打ち消すために -mx-4 を指定しています */}
+                <div className="bg-background border-y border-border overflow-x-auto -mx-4 scrollbar-hide">
+                    <div className="min-w-[360px] p-2">
+                        <table className="w-full text-center text-sm table-fixed">
                             <thead>
-                                <tr className="text-muted-foreground border-b border-border/50 text-[10px] sm:text-xs">
-                                    <th className="text-left font-medium pb-1 pl-2 w-16 sticky left-0 bg-muted/50 backdrop-blur-md">TEAM</th>
+                                <tr className="text-muted-foreground border-b border-border text-[10px] sm:text-xs">
+                                    <th className="text-left font-medium pb-1 pl-3 w-16 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">TEAM</th>
                                     {[...Array(9)].map((_, i) => (
                                         <th key={i} className={cn("font-medium pb-1 w-7", inning === i + 1 ? "text-primary font-black" : "")}>{i + 1}</th>
                                     ))}
-                                    <th className="font-black pb-1 w-8 text-primary">R</th>
+                                    <th className="font-black pb-1 w-8 text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">R</th>
                                 </tr>
                             </thead>
                             <tbody className="font-bold text-xs sm:text-sm">
                                 {/* 先攻 (Guest) */}
-                                <tr className="border-b border-border/10">
-                                    <td className="text-left py-1.5 pl-2 truncate max-w-[80px] sticky left-0 bg-muted/50 backdrop-blur-md">
-                                        <span className="text-muted-foreground text-[10px] mr-1">表</span>
-                                        <span className="truncate inline-block align-bottom max-w-[50px]">{match.opponent}</span>
+                                <tr className="border-b border-border/50">
+                                    <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-muted-foreground text-[9px] bg-muted px-1.5 py-0.5 rounded leading-none">表</span>
+                                            <span className="truncate max-w-[45px]">{match.opponent}</span>
+                                        </div>
                                     </td>
                                     {[...Array(9)].map((_, i) => (
-                                        <td key={i} className={cn("py-1.5", inning === i + 1 && isTop ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground/70")}>
+                                        <td key={i} className={cn("py-2", inning === i + 1 && isTop ? "bg-primary/10 text-primary rounded-sm" : "text-muted-foreground")}>
                                             {guestInningScores[i] !== null ? guestInningScores[i] : '-'}
                                         </td>
                                     ))}
-                                    <td className="py-1.5 text-base text-foreground">{guestScore}</td>
+                                    <td className="py-2 text-sm text-foreground sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">{guestScore}</td>
                                 </tr>
                                 {/* 後攻 (Self) */}
                                 <tr>
-                                    <td className="text-left py-1.5 pl-2 truncate max-w-[80px] sticky left-0 bg-muted/50 backdrop-blur-md">
-                                        <span className="text-primary text-[10px] mr-1">裏</span>
-                                        <span className="truncate inline-block align-bottom max-w-[50px]">Self</span>
+                                    <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-primary text-[9px] bg-primary/10 px-1.5 py-0.5 rounded leading-none">裏</span>
+                                            <span className="truncate max-w-[45px]">Self</span>
+                                        </div>
                                     </td>
                                     {[...Array(9)].map((_, i) => (
-                                        <td key={i} className={cn("py-1.5", inning === i + 1 && !isTop ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground/70")}>
+                                        <td key={i} className={cn("py-2", inning === i + 1 && !isTop ? "bg-primary/10 text-primary rounded-sm" : "text-muted-foreground")}>
                                             {selfInningScores[i] !== null ? selfInningScores[i] : '-'}
                                         </td>
                                     ))}
-                                    <td className="py-1.5 text-base text-primary">{selfScore}</td>
+                                    <td className="py-2 text-sm text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">{selfScore}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-
-                    {/* 💡 現在のバッター表示バー（常に表示に変更） */}
-                    {currentBatter && (
-                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
-                            <User className="h-3 w-3" />
-                            {currentBatter.batting_order}番 {currentBatter.playerName} <span className="opacity-70 text-[10px]">({currentBatter.position})</span>
-                        </div>
-                    )}
                 </div>
+
+                {/* 💡 現在のバッター表示（見切れないように独立したバーとして配置） */}
+                {currentBatter && (
+                    <div className="mt-3 flex items-center justify-between bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center gap-3">
+                            {/* 打順を丸いバッジで強調 */}
+                            <div className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-sm">
+                                {currentBatter.batting_order}
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="font-extrabold text-sm sm:text-base text-primary tracking-tight">{currentBatter.playerName}</span>
+                                <span className="text-[10px] sm:text-xs text-muted-foreground font-bold">({currentBatter.position})</span>
+                            </div>
+                        </div>
+                        <User className="h-4 w-4 text-primary opacity-40" />
+                    </div>
+                )}
             </header>
 
             <main className="flex-1 relative p-4 flex flex-col items-center justify-center overflow-hidden min-h-[220px]">
