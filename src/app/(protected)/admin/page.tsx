@@ -195,7 +195,7 @@ export default function AdminPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-end gap-2 shrink-0 pt-3 sm:pt-0 border-t border-border/50 sm:border-0">
-                                        <Select value={user.role || 'user'} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="h-9 w-[120px] rounded-lg border-border bg-muted/30 text-xs font-bold cursor-pointer">
+                                        <Select value={user.role || 'user'} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="h-9 w-[130px] rounded-lg border-border bg-muted/30 text-xs font-bold cursor-pointer">
                                             <option value="user">一般ユーザー</option>
                                             <option value="admin">システム管理者</option>
                                         </Select>
@@ -275,8 +275,8 @@ export default function AdminPage() {
                                                     <div className="pt-2 border-t border-border/50">
                                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1"><UserPlus className="h-3 w-3" /> ユーザーの紐付け</h4>
                                                         <div className="flex flex-col sm:flex-row gap-2">
-                                                            <select 
-                                                                className="flex-1 h-9 bg-background border border-border rounded-lg px-2 text-sm outline-none focus:border-primary"
+                                                            <Select 
+                                                                className="flex-1 h-9"
                                                                 value={newMemberId}
                                                                 onChange={(e) => setNewMemberId(e.target.value)}
                                                             >
@@ -284,9 +284,10 @@ export default function AdminPage() {
                                                                 {users.filter(u => !teamMembers.some(tm => tm.id === u.id)).map(u => (
                                                                     <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                                                                 ))}
-                                                            </select>
-                                                            <select 
-                                                                className="w-full sm:w-[120px] h-9 bg-background border border-border rounded-lg px-2 text-sm outline-none focus:border-primary"
+                                                            </Select>
+                                                            
+                                                            <Select 
+                                                                className="w-full sm:w-[130px] h-9"
                                                                 value={newMemberRole}
                                                                 onChange={(e) => setNewMemberRole(e.target.value)}
                                                             >
@@ -294,7 +295,7 @@ export default function AdminPage() {
                                                                 <option value={ROLES.COACH}>コーチ</option>
                                                                 <option value={ROLES.SCORER}>スコアラー</option>
                                                                 <option value={ROLES.STAFF}>スタッフ</option>
-                                                            </select>
+                                                            </Select>
                                                             <Button size="sm" className="h-9 font-bold shrink-0" onClick={() => handleAddMemberToTeam(team.id)}>追加</Button>
                                                         </div>
                                                     </div>
