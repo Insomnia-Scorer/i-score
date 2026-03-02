@@ -420,31 +420,60 @@ app.put('/api/matches/:id/lineup', async (c) => {
 });
 
 // ==========================================
-// 💡 ユーザー管理 API
+// 💡 ユーザー管理 API (Admin専用)
 // ==========================================
+
+// 1. ユーザー一覧の取得
 app.get('/api/users', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
-    const userRole = (session?.user as unknown as { role?: string })?.role
-    if (!session || !canManageTeam(userRole)) return c.json({ error: '権限がありません' }, 403)
-    const db = drizzle(c.env.DB)
-    const allUsers = await db.select().from(user).orderBy(desc(user.createdAt))
-    return c.json(allUsers)
+    if ((session?.user as any)?.role !== 'admin') return c.json({ error: '権限がありません' }, 403)
+
+    try {
+        const { results } = await c.env.DB.prepare(
+            `SELECT id, name, email, role, created_at as createdAt FROM user ORDER BY created_at DESC`
+        ).all()
+        return c.json(results)
+    } catch (e) {
+        console.error(e)
+        return c.json({ error: '取得に失敗しました' }, 500)
+    }
 })
 
+// 2. ユーザーの権限（ロール）を更新するAPI
 app.patch('/api/users/:id/role', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
-    const userRole = (session?.user as unknown as { role?: string })?.role
-    if (!session || !canManageTeam(userRole)) return c.json({ error: '権限がありません' }, 403)
-    const targetUserId = c.req.param('id')
-    const body = await c.req.json()
-    const db = drizzle(c.env.DB)
+    if ((session?.user as any)?.role !== 'admin') return c.json({ error: '権限がありません' }, 403)
+        
+    const userId = c.req.param('id')
+    const { role } = await c.req.json()
+    
     try {
-        await db.update(user).set({ role: body.role }).where(eq(user.id, targetUserId))
+        await c.env.DB.prepare(`UPDATE user SET role = ? WHERE id = ?`).bind(role, userId).run()
         return c.json({ success: true })
     } catch (e) {
-        return c.json({ success: false, error: '更新に失敗しました' }, 500)
+        console.error(e)
+        return c.json({ error: '更新に失敗しました' }, 500)
+    }
+})
+
+// 3. ユーザーを削除するAPI
+app.delete('/api/users/:id', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if ((session?.user as any)?.role !== 'admin') return c.json({ error: '権限がありません' }, 403)
+        
+    const userId = c.req.param('id')
+    
+    try {
+        // ユーザー本体と、関連付けられたチームメンバー情報を削除
+        await c.env.DB.prepare(`DELETE FROM team_members WHERE user_id = ?`).bind(userId).run()
+        await c.env.DB.prepare(`DELETE FROM user WHERE id = ?`).bind(userId).run()
+        return c.json({ success: true })
+    } catch (e) {
+        console.error(e)
+        return c.json({ error: '削除に失敗しました' }, 500)
     }
 })
 
@@ -456,4 +485,5 @@ export default {
     }
 
 }
+
 
