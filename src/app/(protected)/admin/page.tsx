@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Users, ShieldAlert, Shield, Search, Trash2, User as UserIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface AppUser {
     id: string;
