@@ -71,11 +71,19 @@ export default function AdminPage() {
             });
             if (res.ok) {
                 setNewMemberId("");
-                fetchTeams(); // 人数を更新するため
-                toggleManageMembers(teamId); // リスト再取得のため再読込（少し手抜きですが確実です）
-                setTimeout(() => toggleManageMembers(teamId), 50); 
-            } else alert("追加に失敗しました");
-        } catch (e) { console.error(e); }
+                fetchTeams(); // 外側の人数表示を更新
+                
+                // 💡 無理やり画面を閉じて開くハックをやめ、APIから直接メンバーリストを再取得する
+                const membersRes = await fetch(`/api/admin/teams/${teamId}/members`);
+                if (membersRes.ok) {
+                    setTeamMembers(await membersRes.json());
+                }
+            } else {
+                alert("追加に失敗しました");
+            }
+        } catch (e) { 
+            console.error("メンバー追加処理エラー:", e); 
+        }
     };
 
     // 💡 ユーザーをチームから解除する
