@@ -8,21 +8,25 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, children, ...props }, ref) => {
     return (
-      <div className="relative w-full">
+      {/* 💡 修正ポイント1: 外側のdivにすべてのデザイン（背景・枠・フォーカス）を持たせ、className をここで受け取ります */}
+      <div 
+        className={cn(
+          "relative flex items-center w-full rounded-xl border border-input bg-background text-sm text-foreground transition-all",
+          "hover:bg-muted focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20",
+          className
+        )}
+      >
+        {/* 💡 修正ポイント2: 実際のselectタグは「透明」にして、親のdivにすっぽり被せます */}
         <select
           ref={ref}
-          className={cn(
-            "w-full appearance-none rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 pr-10 text-sm text-slate-200 outline-none transition-all cursor-pointer",
-            "hover:border-slate-500 hover:bg-slate-800 focus:border-primary focus:ring-2 focus:ring-primary/20",
-            "invalid:text-slate-500",
-            className
-          )}
+          className="w-full h-full appearance-none bg-transparent px-4 py-2.5 pr-10 outline-none cursor-pointer invalid:text-muted-foreground z-10"
           {...props}
         >
           {children}
         </select>
         
-        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+        {/* 矢印アイコン */}
+        <div className="pointer-events-none absolute right-3 text-muted-foreground z-0">
           <ChevronDown className="h-4 w-4" />
         </div>
       </div>
