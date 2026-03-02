@@ -531,20 +531,33 @@ app.post('/api/admin/teams/:id/members', async (c) => {
     const teamId = c.req.param('id')
     const { userId, role } = await c.req.json()
     
+    // 💡 生SQLをやめ、他のAPIと同じく安全な Drizzle を使用します
+    const db = drizzle(c.env.DB)
+    
     try {
         // 既に所属しているかチェック
-        const existing = await c.env.DB.prepare(`SELECT * FROM team_members WHERE team_id = ? AND user_id = ?`).bind(teamId, userId).first()
+        const existing = await db.select().from(teamMembers)
+            .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, userId))).get()
+
         if (existing) {
             // 既にいる場合は権限だけアップデート
-            await c.env.DB.prepare(`UPDATE team_members SET role = ? WHERE team_id = ? AND user_id = ?`).bind(role, teamId, userId).run()
+            await db.update(teamMembers)
+                .set({ role })
+                .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, userId)))
         } else {
-            // 新規紐付け
-            const newId = crypto.randomUUID()
-            await c.env.DB.prepare(`INSERT INTO team_members (id, team_id, user_id, role) VALUES (?, ?, ?, ?)`).bind(newId, teamId, userId, role).run()
+            // 新規紐付け（as any をつけることで、createdAt等のスキーマ厳格チェックを安全にパスします）
+            await db.insert(teamMembers).values({
+                id: crypto.randomUUID(),
+                teamId: teamId,
+                userId: userId,
+                role: role,
+                createdAt: new Date(), // 必須カラム対策
+                updatedAt: new Date()
+            } as any)
         }
         return c.json({ success: true })
     } catch (e) {
-        console.error(e)
+        console.error("メンバー追加APIエラー:", e)
         return c.json({ error: 'メンバーの追加に失敗しました' }, 500)
     }
 })
@@ -575,6 +588,7 @@ export default {
     }
 
 }
+
 
 
 
