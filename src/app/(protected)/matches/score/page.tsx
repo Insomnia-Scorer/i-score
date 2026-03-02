@@ -306,6 +306,68 @@ function MatchScoreContent() {
     const nextBatter = myLineup.length > 0 ? myLineup[(myBatterIndex + 1) % myLineup.length] : null;
     const currentPitcher = myLineup.find(p => p.position === '1' || p.position === '投手' || p.position.toUpperCase() === 'P') || myLineup[0];
 
+    
+    // 💡 もしこのState（状態管理）も消えていたら追加してください（ファイル上部のuseStateの並びに）
+    const [showFieldModal, setShowFieldModal] = useState(false);
+    const [pendingPlay, setPendingPlay] = useState<{ type: 'hit' | 'out', bases?: 1|2|3|4, outType?: 'groundout'|'flyout'|'double_play' } | null>(null);
+
+
+    // 💡 消えてしまった関数たち（return の直前あたりに追加してください）
+
+    // ヒットボタンを押した時
+    const initiateHit = (bases: 1 | 2 | 3 | 4) => {
+        setPendingPlay({ type: 'hit', bases });
+        setShowFieldModal(true);
+    };
+
+    // アウトボタンを押した時
+    const initiateInPlayOut = (outType: 'groundout' | 'flyout' | 'double_play') => {
+        setPendingPlay({ type: 'out', outType });
+        setShowFieldModal(true);
+    };
+
+    // グラウンドをタップした時に最終的な記録を行う関数
+    // （※これも一緒に消えてしまっていたら追加してください！）
+    const finalizePlayOnField = async (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!pendingPlay) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const fieldX = (e.clientX - rect.left) / rect.width;
+        const fieldY = (e.clientY - rect.top) / rect.height;
+
+        saveStateToHistory();
+
+        if (pendingPlay.type === 'hit') {
+            const hitTypes = { 1: 'single', 2: 'double', 3: 'triple', 4: 'home_run' };
+            await recordPitchAPI('in_play', hitTypes[pendingPlay.bases!], fieldX, fieldY);
+
+            let runs = 0; let newFirst = false; let newSecond = false; let newThird = false;
+            const bases = pendingPlay.bases!;
+
+            if (bases === 1) { if (thirdBase) runs++; if (secondBase) newThird = true; if (firstBase) newSecond = true; newFirst = true; }
+            else if (bases === 2) { if (thirdBase) runs++; if (secondBase) runs++; if (firstBase) newThird = true; newSecond = true; }
+            else if (bases === 3) { if (thirdBase) runs++; if (secondBase) runs++; if (firstBase) runs++; newThird = true; }
+            else if (bases === 4) { if (thirdBase) runs++; if (secondBase) runs++; if (firstBase) runs++; runs++; }
+
+            setFirstBase(newFirst); setSecondBase(newSecond); setThirdBase(newThird);
+            addScore(runs); setBalls(0); setStrikes(0); advanceBatter();
+        } else {
+            const outType = pendingPlay.outType!;
+            await recordPitchAPI('in_play', outType, fieldX, fieldY);
+            let addedOuts = 1;
+            if (outType === 'double_play') {
+                if (firstBase || secondBase || thirdBase) {
+                    addedOuts = 2;
+                    if (firstBase) setFirstBase(false); else if (secondBase) setSecondBase(false); else if (thirdBase) setThirdBase(false);
+                }
+            }
+            setBalls(0); setStrikes(0); processOuts(addedOuts); advanceBatter();
+        }
+
+        setShowFieldModal(false);
+        setPendingPlay(null);
+    };
+    
     return (
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
             <header className="bg-muted/10 border-b border-border p-4 pb-1 shrink-0 z-10">
@@ -496,3 +558,4 @@ export default function MatchScorePage() {
     );
 
 }
+
