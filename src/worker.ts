@@ -501,6 +501,72 @@ app.get('/api/admin/teams', async (c) => {
     }
 })
 
+// 5. 特定チームの所属メンバー一覧を取得 (Admin専用)
+app.get('/api/admin/teams/:id/members', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if ((session?.user as any)?.role !== 'admin') return c.json({ error: '権限がありません' }, 403)
+
+    const teamId = c.req.param('id')
+    try {
+        const { results } = await c.env.DB.prepare(`
+            SELECT u.id, u.name, u.email, tm.role 
+            FROM team_members tm
+            JOIN user u ON tm.user_id = u.id
+            WHERE tm.team_id = ?
+        `).bind(teamId).all()
+        return c.json(results)
+    } catch (e) {
+        console.error(e)
+        return c.json({ error: 'メンバー取得に失敗しました' }, 500)
+    }
+})
+
+// 6. チームにユーザーを紐付け（追加） (Admin専用)
+app.post('/api/admin/teams/:id/members', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if ((session?.user as any)?.role !== 'admin') return c.json({ error: '権限がありません' }, 403)
+
+    const teamId = c.req.param('id')
+    const { userId, role } = await c.req.json()
+    
+    try {
+        // 既に所属しているかチェック
+        const existing = await c.env.DB.prepare(`SELECT * FROM team_members WHERE team_id = ? AND user_id = ?`).bind(teamId, userId).first()
+        if (existing) {
+            // 既にいる場合は権限だけアップデート
+            await c.env.DB.prepare(`UPDATE team_members SET role = ? WHERE team_id = ? AND user_id = ?`).bind(role, teamId, userId).run()
+        } else {
+            // 新規紐付け
+            const newId = crypto.randomUUID()
+            await c.env.DB.prepare(`INSERT INTO team_members (id, team_id, user_id, role) VALUES (?, ?, ?, ?)`).bind(newId, teamId, userId, role).run()
+        }
+        return c.json({ success: true })
+    } catch (e) {
+        console.error(e)
+        return c.json({ error: 'メンバーの追加に失敗しました' }, 500)
+    }
+})
+
+// 7. チームからユーザーの紐付けを解除（削除） (Admin専用)
+app.delete('/api/admin/teams/:id/members/:userId', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if ((session?.user as any)?.role !== 'admin') return c.json({ error: '権限がありません' }, 403)
+
+    const teamId = c.req.param('id')
+    const userId = c.req.param('userId')
+    
+    try {
+        await c.env.DB.prepare(`DELETE FROM team_members WHERE team_id = ? AND user_id = ?`).bind(teamId, userId).run()
+        return c.json({ success: true })
+    } catch (e) {
+        console.error(e)
+        return c.json({ error: 'メンバーの解除に失敗しました' }, 500)
+    }
+})
+
 export default {
     async fetch(request: Request, env: any, ctx: ExecutionContext) {
         const url = new URL(request.url)
@@ -509,6 +575,7 @@ export default {
     }
 
 }
+
 
 
 
