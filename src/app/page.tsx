@@ -16,7 +16,7 @@ export default function Home() {
             <section className="relative py-20 md:py-32 overflow-hidden bg-slate-950 text-white">
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-3xl mx-auto text-center space-y-8">
-                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-relaxed">
+                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-normal">
                             野球の「今」を<br /><span className="text-primary italic">次世代</span> の形に
                         </h1>
                         <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
