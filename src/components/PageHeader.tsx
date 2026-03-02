@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
     href: string;            // 戻る先のURL (例: "/dashboard")
@@ -13,29 +12,30 @@ interface PageHeaderProps {
 
 export function PageHeader({ href, icon: Icon, title, subtitle }: PageHeaderProps) {
     return (
-        <header className="bg-muted/30 border-b border-border p-4 sticky top-0 z-10 backdrop-blur-md">
+        {/* 💡 背景を bg-primary にし、文字を text-primary-foreground (白系) に統一。境界線を消して影(shadow-md)で立体感を出しました */}
+        <header className="bg-primary text-primary-foreground p-4 sticky top-0 z-10 shadow-md transition-colors duration-300">
             <div className="flex items-center gap-3">
                 
-                {/* 💡 カッコいい戻るボタン（立体的な丸ボタン＋ホバーで光る） */}
+                {/* 💡 戻るボタンも、濃い背景に合うように「半透明の白」ベースに進化させました */}
                 <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-10 w-10 rounded-full bg-background border border-border shadow-sm hover:bg-muted hover:text-primary transition-all group shrink-0" 
+                    className="h-10 w-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground border-none transition-all group shrink-0" 
                     asChild
                 >
                     <Link href={href}>
-                        {/* 従来の ArrowLeft ではなく、よりアプリらしい ChevronLeft を使用 */}
-                        <ChevronLeft className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors pr-0.5" />
+                        <ChevronLeft className="h-6 w-6 pr-0.5" />
                     </Link>
                 </Button>
                 
-                {/* 💡 アイコン＋タイトル（メインカラー）＋サブタイトル */}
                 <div className="flex flex-col min-w-0">
-                    <h1 className="font-black text-lg sm:text-xl tracking-tight flex items-center gap-2 text-primary truncate">
+                    {/* 💡 タイトルの色指定(text-primary)を外し、背景色に対して自動でコントラストが保たれるようにしました */}
+                    <h1 className="font-black text-lg sm:text-xl tracking-tight flex items-center gap-2 truncate">
                         <Icon className="h-5 w-5 shrink-0" />
                         <span className="truncate">{title}</span>
                     </h1>
-                    <p className="text-xs text-muted-foreground font-bold truncate mt-0.5 tracking-wider">
+                    {/* 💡 サブタイトルも、薄いグレーではなく「80%の不透明度の白」に変更して美しく馴染ませています */}
+                    <p className="text-xs text-primary-foreground/80 font-bold truncate mt-0.5 tracking-wider">
                         {subtitle}
                     </p>
                 </div>
