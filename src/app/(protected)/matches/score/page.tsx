@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Maximize, Activity, ChevronRight, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { Scoreboard } from "@/components/score/Scoreboard";
+import { PlayArea } from "@/components/score/PlayArea";
 import { ControlPanel } from "@/components/score/ControlPanel";
 import { FieldModal } from "@/components/score/FieldModal";
 
@@ -289,165 +291,24 @@ function MatchScoreContent() {
 
     return (
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden relative">
-            <header className="bg-muted/10 border-b border-border p-4 pb-1 shrink-0 z-10">
-                <div className="flex items-center justify-between mb-2">
-                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted -ml-2" asChild>
-                        <Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
-                    </Button>
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                            {match.season} {match.matchType === 'practice' ? 'Practice' : 'Official'}
-                        </span>
-                        <h1 className="font-black text-sm tracking-tight truncate max-w-[200px]">VS {match.opponent}</h1>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2">
-                        <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleFullScreen}>
-                            <Maximize className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                        <Button onClick={handleFinishMatch} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full px-3 sm:px-4 shadow-sm text-xs">
-                            試合終了
-                        </Button>
-                    </div>
-                </div>
+            {/* 💡 ヘッダー（スコアボード） */}
+            <Scoreboard
+                match={match} inning={inning} isTop={isTop}
+                guestInningScores={guestInningScores} selfInningScores={selfInningScores}
+                guestScore={guestScore} selfScore={selfScore}
+                currentPitcher={currentPitcher} selfPitchCount={selfPitchCount} selfInningPitchCount={selfInningPitchCount}
+                currentBatter={currentBatter} nextBatter={nextBatter}
+                onFinish={handleFinishMatch} onToggleFullScreen={toggleFullScreen}
+            />
 
-                <div className="relative -mx-4 mb-4 mt-2">
-                    <div className="bg-background border-y border-border overflow-x-auto scrollbar-hide pb-3">
-                        <div className="min-w-[360px] px-2 pt-2">
-                            <table className="w-full text-center text-sm table-fixed">
-                                <thead>
-                                    <tr className="text-muted-foreground border-b border-border text-[10px] sm:text-xs">
-                                        <th className="text-left font-medium pb-1 pl-3 w-16 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">TEAM</th>
-                                        {[...Array(9)].map((_, i) => (
-                                            <th key={i} className={cn("font-medium pb-1 w-7", inning === i + 1 ? "text-primary font-black" : "")}>
-                                                {i + 1}
-                                            </th>
-                                        ))}
-                                        <th className="font-black pb-1 w-8 text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">R</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="font-bold text-xs sm:text-sm">
-                                    <tr className="border-b border-border/50">
-                                        <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
-                                            <span className="truncate max-w-[55px] inline-block align-middle">{match.opponent}</span>
-                                        </td>
-                                        {[...Array(9)].map((_, i) => (
-                                            <td key={i} className={cn("py-2", inning === i + 1 && isTop ? "bg-primary/10 text-primary rounded-sm" : "text-muted-foreground")}>
-                                                {guestInningScores[i] !== null ? guestInningScores[i] : '-'}
-                                            </td>
-                                        ))}
-                                        <td className="py-2 text-sm text-foreground sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">
-                                            {guestScore}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="text-left py-2 pl-3 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(255,255,255,0.05)]">
-                                            <span className="truncate max-w-[55px] inline-block align-middle text-primary">Self</span>
-                                        </td>
-                                        {[...Array(9)].map((_, i) => (
-                                            <td key={i} className={cn("py-2", inning === i + 1 && !isTop ? "bg-primary/10 text-primary rounded-sm" : "text-muted-foreground")}>
-                                                {selfInningScores[i] !== null ? selfInningScores[i] : '-'}
-                                            </td>
-                                        ))}
-                                        <td className="py-2 text-sm text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_5px_-2px_rgba(255,255,255,0.05)]">
-                                            {selfScore}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+            {/* 💡 メイン（配球・ランナー） */}
+            <PlayArea
+                balls={balls} strikes={strikes} outs={outs}
+                firstBase={firstBase} secondBase={secondBase} thirdBase={thirdBase}
+                pitchX={pitchX} pitchY={pitchY} onZoneClick={handleZoneClick}
+            />
 
-                    <div className="absolute -bottom-3 left-0 right-0 flex justify-center items-end gap-2 px-2 z-20 pointer-events-none">
-                        {isTop ? (
-                            currentPitcher && (
-                                <div className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
-                                    <Activity className="h-3.5 w-3.5" /> P: {currentPitcher.playerName}
-                                    <span className="bg-blue-800/60 px-2 py-0.5 rounded text-[10px] ml-1 flex items-center gap-1.5">
-                                        <span>計{selfPitchCount}球</span>
-                                        <span className="text-[8px] opacity-50">|</span>
-                                        <span>今{selfInningPitchCount}球</span>
-                                    </span>
-                                </div>
-                            )
-                        ) : (
-                            <>
-                                {currentBatter && (
-                                    <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-2 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2">
-                                        <User className="h-3.5 w-3.5" /> {currentBatter.batting_order}番 {currentBatter.playerName}
-                                    </div>
-                                )}
-                                {nextBatter && (
-                                    <div className="bg-muted text-muted-foreground px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 border-2 border-background whitespace-nowrap animate-in slide-in-from-top-2 opacity-95">
-                                        <span className="text-primary font-black ml-0.5">NEXT</span>
-                                        <ChevronRight className="h-3 w-3 -mx-1 opacity-50" /> {nextBatter.batting_order}番 {nextBatter.playerName}
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-            </header>
-
-            <main className="flex-1 relative p-4 flex flex-col items-center justify-center overflow-hidden min-h-[220px]">
-                <div className="absolute top-4 left-4 space-y-3 z-10 bg-muted/30 p-3 rounded-xl backdrop-blur-sm border border-border shadow-sm">
-                    <div className="flex gap-1.5 items-center">
-                        <span className="w-4 text-[10px] font-black text-muted-foreground">B</span>
-                        {[...Array(3)].map((_, i) => (
-                            <div key={i} className={cn("h-4 w-4 rounded-full border-2 border-border transition-colors", i < balls ? "bg-green-500 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" : "bg-background")} />
-                        ))}
-                    </div>
-                    <div className="flex gap-1.5 items-center">
-                        <span className="w-4 text-[10px] font-black text-muted-foreground">S</span>
-                        {[...Array(2)].map((_, i) => (
-                            <div key={i} className={cn("h-4 w-4 rounded-full border-2 border-border transition-colors", i < strikes ? "bg-yellow-500 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]" : "bg-background")} />
-                        ))}
-                    </div>
-                    <div className="flex gap-1.5 items-center">
-                        <span className="w-4 text-[10px] font-black text-muted-foreground">O</span>
-                        {[...Array(2)].map((_, i) => (
-                            <div key={i} className={cn("h-4 w-4 rounded-full border-2 border-border transition-colors", i < outs ? "bg-red-500 border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" : "bg-background")} />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="absolute top-4 right-4 z-10 bg-muted/30 p-4 rounded-xl backdrop-blur-sm border border-border shadow-sm flex items-center justify-center w-[100px] h-[100px]">
-                    <div className="relative w-12 h-12 rotate-45 border-[3px] border-border rounded-sm transition-all">
-                        <div className={cn("absolute -top-1.5 -left-1.5 h-3 w-3 border-2 border-border rounded-sm -rotate-45 transition-all duration-300", secondBase ? "bg-yellow-400 border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)] scale-150" : "bg-muted")} />
-                        <div className={cn("absolute -bottom-1.5 -left-1.5 h-3 w-3 border-2 border-border rounded-sm -rotate-45 transition-all duration-300", thirdBase ? "bg-yellow-400 border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)] scale-150" : "bg-muted")} />
-                        <div className={cn("absolute -top-1.5 -right-1.5 h-3 w-3 border-2 border-border rounded-sm -rotate-45 transition-all duration-300", firstBase ? "bg-yellow-400 border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)] scale-150" : "bg-muted")} />
-                        <div className="absolute -bottom-2 -right-2 h-4 w-4 bg-primary/20 border-2 border-primary/50 -rotate-45 rounded-sm flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 bg-primary rounded-sm animate-pulse" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="relative w-[75vw] max-w-[280px] aspect-[4/5] mt-6 mx-auto bg-muted/5 rounded-2xl cursor-crosshair touch-none overflow-hidden shadow-inner border-2 border-border/50" onClick={handleZoneClick}>
-                    <div className="absolute top-[10%] bottom-[32%] left-[22%] right-[22%] border-2 border-foreground/50 grid grid-cols-3 grid-rows-3 pointer-events-none bg-primary/5 shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-none">
-                        {[...Array(9)].map((_, i) => (
-                            <div key={i} className="border border-foreground/30" />
-                        ))}
-                    </div>
-                    <div className="absolute top-[73%] left-[22%] right-[22%] pointer-events-none opacity-60">
-                        <svg viewBox="0 0 100 30" className="w-full h-auto fill-background stroke-foreground/70 stroke-[2.5px] drop-shadow-sm">
-                            <polygon points="2,2 98,2 98,12 50,28 2,12" />
-                        </svg>
-                    </div>
-                    {pitchX !== null && pitchY !== null && (
-                        <div className="absolute w-6 h-6 -ml-3 -mt-3 bg-yellow-400 rounded-full border-2 border-zinc-900 shadow-[0_0_15px_rgba(250,204,21,0.6)] z-20 flex items-center justify-center animate-in zoom-in pointer-events-none" style={{ left: `${pitchX * 100}%`, top: `${pitchY * 100}%` }}>
-                            <div className="w-full h-[2px] bg-red-600/50 absolute rotate-45"></div>
-                            <div className="w-full h-[2px] bg-red-600/50 absolute -rotate-45"></div>
-                        </div>
-                    )}
-                    {pitchX === null && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                            <span className="text-xs font-bold text-muted-foreground bg-background/90 px-3 py-1.5 rounded-full backdrop-blur-md shadow-sm">
-                                コースをタップ
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </main>
-
+            {/* 💡 フッター（操作ボタン群） */}
             <ControlPanel
                 handleBall={handleBall}
                 handleStrike={handleStrike}
@@ -459,6 +320,7 @@ function MatchScoreContent() {
                 initiateInPlayOut={initiateInPlayOut}
             />
 
+            {/* 💡 グラウンド入力モーダル */}
             <FieldModal
                 show={showFieldModal}
                 onClose={() => { setShowFieldModal(false); setPendingPlay(null); }}
