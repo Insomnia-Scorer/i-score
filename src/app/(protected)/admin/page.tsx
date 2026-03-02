@@ -25,7 +25,7 @@ export default function AdminPage() {
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [isMembersLoading, setIsMembersLoading] = useState(false);
     const [newMemberId, setNewMemberId] = useState("");
-    const [newMemberRole, setNewMemberRole] = useState(ROLES.SCORER);
+    const [newMemberRole, setNewMemberRole] = useState<string>(ROLES.SCORER);
 
     const fetchUsers = async () => {
         try { const res = await fetch('/api/users'); if (res.ok) setUsers(await res.json()); } 
