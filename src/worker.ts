@@ -552,7 +552,7 @@ app.post('/api/admin/teams/:id/members', async (c) => {
                 userId: userId,
                 role: role,
                 createdAt: new Date(), // 必須カラム対策
-                updatedAt: new Date()
+                joinedAt: new Date()
             } as any)
         }
         return c.json({ success: true })
@@ -588,6 +588,7 @@ export default {
     }
 
 }
+
 
 
 
