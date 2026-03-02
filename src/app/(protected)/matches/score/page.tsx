@@ -121,18 +121,20 @@ function MatchScoreContent() {
         }
     };
 
-    const recordPitchAPI = async (pitchResult: string, atBatResult: string | null = null) => {
+    // 💡 引数に hitX と hitY を追加し、APIに送信できるようにします
+    const recordPitchAPI = async (pitchResult: string, atBatResult: string | null = null, hitX: number | null = null, hitY: number | null = null) => {
         if (!matchId) return;
         try {
-            // 💡 投球されるたびに「トータル」と「イニング」両方のカウントを増やす
-            if (isTop) {
-                setSelfPitchCount(prev => prev + 1);
-                setSelfInningPitchCount(prev => prev + 1);
-            } else {
-                setGuestPitchCount(prev => prev + 1);
-                setGuestInningPitchCount(prev => prev + 1);
+            // 投球数のカウントアップ
+            if (isTop) { 
+                setSelfPitchCount(prev => prev + 1); 
+                setSelfInningPitchCount(prev => prev + 1); 
+            } else { 
+                setGuestPitchCount(prev => prev + 1); 
+                setGuestInningPitchCount(prev => prev + 1); 
             }
 
+            // APIへ送信
             await fetch(`/api/matches/${matchId}/pitches`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -140,11 +142,16 @@ function MatchScoreContent() {
                     inning, isTop,
                     pitchNumber: balls + strikes + 1,
                     result: pitchResult, ballsBefore: balls, strikesBefore: strikes, atBatResult,
-                    zoneX: pitchX, zoneY: pitchY
+                    zoneX: pitchX, zoneY: pitchY,
+                    hitX, hitY // 💡 ここでグラウンドの座標を送信！
                 }),
             });
-        } catch (e) { console.error(e); }
-        setPitchX(null);
+        } catch (e) { 
+            console.error(e); 
+        }
+        
+        // 入力した配球コースをリセット
+        setPitchX(null); 
         setPitchY(null);
     };
 
@@ -558,4 +565,5 @@ export default function MatchScorePage() {
     );
 
 }
+
 
