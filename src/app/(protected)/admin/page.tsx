@@ -3,144 +3,180 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
-import { canManageTeam, ROLES, Role } from "@/lib/roles";
+import { ArrowLeft, Users, ShieldAlert, Shield, Search, Trash2, User as UserIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Shield, Users, Loader2, CheckCircle2 } from "lucide-react";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  createdAt: string;
+interface AppUser {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    createdAt: string;
 }
 
-export default function AdminDashboardPage() {
-  const { data: session, isPending: isSessionLoading } = authClient.useSession();
-  const userRole = (session?.user as unknown as { role?: string })?.role;
-  const isManager = canManageTeam(userRole);
-
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isManager) {
-      setIsLoading(false);
-      return;
-    }
+export default function AdminPage() {
+    const [users, setUsers] = useState<AppUser[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
 
     const fetchUsers = async () => {
-      try {
-        const response = await fetch('/api/users');
-        if (!response.ok) throw new Error('Failed to fetch users');
-        const data = await response.json() as User[];
-        setUsers(data);
-      } catch (error) {
-        console.error("ユーザー取得エラー:", error);
-      } finally {
-        setIsLoading(false);
-      }
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/users');
+            if (res.ok) {
+                setUsers(await res.json());
+            }
+        } catch (error) {
+            console.error("ユーザー取得エラー:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    fetchUsers();
-  }, [isManager]);
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    setUpdatingId(userId);
-    try {
-      const response = await fetch(`/api/users/${userId}/role`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
-      });
+    const handleRoleChange = async (userId: string, newRole: string) => {
+        try {
+            const res = await fetch(`/api/users/${userId}/role`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role: newRole })
+            });
+            if (res.ok) {
+                // ローカルのステートだけサクッと更新してAPI再取得の待ち時間をなくす
+                setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+            } else {
+                alert("権限の更新に失敗しました");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
-      if (response.ok) {
-        // ローカルのステートも更新して画面に反映
-        setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-      } else {
-        alert("権限の更新に失敗しました");
-      }
-    } catch (error) {
-      console.error("更新エラー:", error);
-    } finally {
-      setUpdatingId(null);
-    }
-  };
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`⚠️ 本当にユーザー「${userName}」を削除しますか？\nこの操作は取り消せません。`)) return;
+        
+        try {
+            const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+            if (res.ok) {
+                setUsers(users.filter(u => u.id !== userId));
+            } else {
+                alert("ユーザーの削除に失敗しました");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
-  if (isSessionLoading || isLoading) {
-    return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  }
-
-  if (!isManager) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen space-y-4">
-        <Shield className="h-12 w-12 text-red-500" />
-        <h1 className="text-xl font-bold">アクセス権限がありません</h1>
-        <Button asChild variant="outline"><Link href="/dashboard">ダッシュボードへ戻る</Link></Button>
-      </div>
+    // 検索フィルター
+    const filteredUsers = users.filter(u => 
+        u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }
 
-  return (
-    <div className="container mx-auto max-w-4xl px-4 py-8 space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-extrabold flex items-center gap-2 tracking-tight">
-            <Users className="h-7 w-7 text-primary" />
-            メンバー管理
-          </h1>
-          <p className="text-muted-foreground text-sm font-medium mt-1">チームメンバーの権限を割り当てます。</p>
-        </div>
-      </div>
+    const adminCount = users.filter(u => u.role === 'admin').length;
 
-      <div className="grid gap-4">
-        {users.map((user) => (
-          <Card key={user.id} className={`overflow-hidden transition-colors ${user.role === ROLES.PENDING ? 'border-yellow-500/50 bg-yellow-500/5' : ''}`}>
-            <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-lg">{user.name}</h3>
-                  {user.role === ROLES.PENDING && (
-                    <span className="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">承認待ち</span>
-                  )}
+    return (
+        <div className="flex flex-col min-h-screen bg-background text-foreground pb-20">
+            {/* 💡 ヘッダー */}
+            <header className="bg-muted/30 border-b border-border p-4 sticky top-0 z-10 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" asChild>
+                        <Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
+                    </Button>
+                    <div>
+                        <h1 className="font-black text-xl tracking-tight flex items-center gap-2 text-primary">
+                            <ShieldAlert className="h-5 w-5" />
+                            システム管理 (Admin)
+                        </h1>
+                        <p className="text-xs text-muted-foreground font-medium">全ユーザーと権限の管理</p>
+                    </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
+            </header>
 
-              <div className="flex items-center gap-3">
-                <Select
-                  disabled={updatingId === user.id}
-                  value={user.role}
-                  onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                  className="bg-background border border-input text-sm rounded-lg focus:ring-primary focus:border-primary block w-40 p-2.5 disabled:opacity-50 font-medium cursor-pointer"
-                >
-                  <option value={ROLES.PENDING}>保留 (Pending)</option>
-                  <option value={ROLES.VIEWER}>閲覧者 (Viewer)</option>
-                  <option value={ROLES.PLAYER}>選手 (Player)</option>
-                  <option value={ROLES.STAFF}>スタッフ (Staff)</option>
-                  <option value={ROLES.SCORER}>スコアラー (Scorer)</option>
-                  <option value={ROLES.COACH}>コーチ (Coach)</option>
-                  <option value={ROLES.MANAGER}>監督 (Manager)</option>
-                  <option value={ROLES.ADMIN}>IT担当 (Admin)</option>
-                </Select>
+            <main className="flex-1 p-4 max-w-4xl mx-auto w-full space-y-6 mt-2">
+                
+                {/* 💡 サマリーカード */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-muted/20 border border-border rounded-2xl p-4 flex flex-col justify-center items-center shadow-sm">
+                        <Users className="h-6 w-6 text-muted-foreground mb-2" />
+                        <div className="text-3xl font-black text-foreground">{users.length}</div>
+                        <div className="text-xs font-bold text-muted-foreground tracking-widest uppercase mt-1">Total Users</div>
+                    </div>
+                    <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex flex-col justify-center items-center shadow-sm">
+                        <Shield className="h-6 w-6 text-primary mb-2" />
+                        <div className="text-3xl font-black text-primary">{adminCount}</div>
+                        <div className="text-xs font-bold text-primary/70 tracking-widest uppercase mt-1">Admins</div>
+                    </div>
+                </div>
 
-                {updatingId === user.id ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                {/* 💡 検索バー */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <input
+                        type="text"
+                        placeholder="名前やメールアドレスで検索..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm"
+                    />
+                </div>
+
+                {/* 💡 ユーザーリスト（スマホ向けのカード型） */}
+                {isLoading ? (
+                    <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+                ) : filteredUsers.length === 0 ? (
+                    <div className="text-center py-12 bg-muted/10 rounded-2xl border border-dashed border-border text-muted-foreground font-medium">
+                        ユーザーが見つかりません
+                    </div>
                 ) : (
-                  <CheckCircle2 className={`h-5 w-5 ${user.role === ROLES.PENDING ? 'text-transparent' : 'text-green-500'}`} />
+                    <div className="space-y-3">
+                        {filteredUsers.map((user) => (
+                            <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-background border border-border rounded-xl p-4 shadow-sm hover:border-primary/40 transition-colors">
+                                
+                                {/* ユーザー情報 */}
+                                <div className="flex items-center gap-4 overflow-hidden">
+                                    <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2", user.role === 'admin' ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted border-border text-muted-foreground")}>
+                                        {user.role === 'admin' ? <Shield className="h-6 w-6" /> : <UserIcon className="h-6 w-6" />}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="font-bold text-base truncate flex items-center gap-2">
+                                            {user.name}
+                                            {user.role === 'admin' && <span className="text-[9px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded leading-none uppercase font-black">Admin</span>}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">登録: {new Date(user.createdAt).toLocaleDateString('ja-JP')}</p>
+                                    </div>
+                                </div>
+
+                                {/* 操作エリア */}
+                                <div className="flex items-center justify-end gap-2 shrink-0 pt-3 sm:pt-0 border-t border-border/50 sm:border-0">
+                                    <Select 
+                                        value={user.role || 'user'} 
+                                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                                        className="h-9 w-[120px] rounded-lg border-border bg-muted/30 text-xs font-bold cursor-pointer"
+                                    >
+                                        <option value="user">一般ユーザー</option>
+                                        <option value="admin">システム管理者</option>
+                                    </Select>
+                                    
+                                    <Button 
+                                        size="icon-sm" 
+                                        variant="ghost" 
+                                        className="h-9 w-9 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg shrink-0" 
+                                        onClick={() => handleDeleteUser(user.id, user.name)}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
+            </main>
+        </div>
+    );
 }
