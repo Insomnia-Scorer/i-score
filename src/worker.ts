@@ -477,6 +477,30 @@ app.delete('/api/users/:id', async (c) => {
     }
 })
 
+// 4. 全チーム一覧の取得 (Admin専用)
+app.get('/api/admin/teams', async (c) => {
+    const auth = getAuth(c.env.DB, c.env)
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if ((session?.user as any)?.role !== 'admin') return c.json({ error: '権限がありません' }, 403)
+
+    try {
+        // サブクエリを使って、各チームの「所属メンバー数」も一緒に計算して取得します
+        const { results } = await c.env.DB.prepare(`
+            SELECT 
+                t.id, 
+                t.name, 
+                t.created_at as createdAt, 
+                (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as memberCount
+            FROM teams t
+            ORDER BY t.created_at DESC
+        `).all()
+        return c.json(results)
+    } catch (e) {
+        console.error(e)
+        return c.json({ error: 'チーム一覧の取得に失敗しました' }, 500)
+    }
+})
+
 export default {
     async fetch(request: Request, env: any, ctx: ExecutionContext) {
         const url = new URL(request.url)
@@ -485,5 +509,6 @@ export default {
     }
 
 }
+
 
 
