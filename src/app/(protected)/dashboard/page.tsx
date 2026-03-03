@@ -46,11 +46,9 @@ export default function DashboardPage() {
 
   const [batterStats, setBatterStats] = useState<PlayerStats[]>([]);
   const [pitcherStats, setPitcherStats] = useState<PitcherStats[]>([]);
-  const [sprayData, setSprayData] = useState<SprayData[]>([]); // 💡 追加
+  const [sprayData, setSprayData] = useState<SprayData[]>([]);
 
-  // 💡 タブの種類を4つに拡張
   const [activeTab, setActiveTab] = useState<"matches" | "batterStats" | "pitcherStats" | "sprayChart">("matches");
-  // 💡 スプレーチャートで表示する選手（デフォルトは全員）
   const [selectedBatter, setSelectedBatter] = useState<string>("all");
 
   const [isLoadingTeams, setIsLoadingTeams] = useState(true);
@@ -62,6 +60,12 @@ export default function DashboardPage() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState("");
 
+  // 💡 追加：チーム選択を変更した時にLocalStorageにも保存する関数
+  const handleTeamChange = (newTeamId: string) => {
+    setSelectedTeamId(newTeamId);
+    localStorage.setItem("iScore_selectedTeamId", newTeamId);
+  };
+
   const fetchTeams = async () => {
     setIsLoadingTeams(true);
     try {
@@ -69,11 +73,23 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json() as Team[];
         setTeams(data);
-        if (data.length > 0 && !selectedTeamId) setSelectedTeamId(data[0].id);
+
+        // 💡 修正：前回選択したチームがLocalStorageにあれば復元、なければ先頭のチームにする
+        const savedTeamId = localStorage.getItem("iScore_selectedTeamId");
+        const isValidSavedTeam = data.some(t => t.id === savedTeamId);
+
+        if (isValidSavedTeam && savedTeamId) {
+          setSelectedTeamId(savedTeamId);
+        } else if (data.length > 0) {
+          setSelectedTeamId(data[0].id);
+          localStorage.setItem("iScore_selectedTeamId", data[0].id);
+        }
       }
     } catch (e) { console.error(e); }
     finally { setIsLoadingTeams(false); }
   };
+
+  useEffect(() => { fetchTeams(); }, []);
 
   useEffect(() => { fetchTeams(); }, []);
 
@@ -180,7 +196,7 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">あなたの役割（ロール）</label>
-                <Select className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus-visible:ring-primary font-medium" value={newTeamRole} onChange={(e) => setNewTeamRole(e.target.value)}>
+                <Select className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus-visible:ring-primary font-medium" value={newTeamRole} onChange={(e) => handleTeamChange(e.target.value)}>
                   <option value={ROLES.MANAGER}>監督 / 代表 (Manager)</option>
                   <option value={ROLES.COACH}>コーチ (Coach)</option>
                   <option value={ROLES.SCORER}>スコアラー (Scorer)</option>
