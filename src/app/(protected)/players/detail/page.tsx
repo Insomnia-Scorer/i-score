@@ -116,7 +116,7 @@ function PlayerDetailContent() {
                 <div className="grid gap-6 md:grid-cols-2">
                     <div className="space-y-6">
 
-                        <Card className="rounded-2xl border-border bg-background shadow-md overflow-hidden p-0 gap-0">
+                        <Card className="rounded-2xl border-border bg-background shadow-xs overflow-hidden p-0 gap-0">
                             <div className="bg-primary/5 p-4 border-b border-primary/10">
                                 <h2 className="text-lg font-black tracking-tight flex items-center gap-2 text-primary">
                                     <BarChart3 className="h-5 w-5" /> 打撃成績
@@ -145,7 +145,7 @@ function PlayerDetailContent() {
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-2xl border-border bg-background shadow-md overflow-hidden p-0 gap-0">
+                        <Card className="rounded-2xl border-border bg-background shadow-xs overflow-hidden p-0 gap-0">
                             <div className="bg-primary/5 p-4 border-b border-primary/10">
                                 <h2 className="text-lg font-black tracking-tight flex items-center gap-2 text-primary">
                                     <Activity className="h-5 w-5" /> 投手成績
@@ -172,7 +172,7 @@ function PlayerDetailContent() {
                     </div>
 
                     <div>
-                        <Card className="rounded-2xl border-border bg-background shadow-md overflow-hidden h-full flex flex-col p-0 gap-0">
+                        <Card className="rounded-2xl border-border bg-background shadow-xs overflow-hidden h-full flex flex-col p-0 gap-0">
                             <div className="bg-primary/5 p-4 border-b border-primary/10">
                                 <h2 className="text-lg font-black tracking-tight flex items-center gap-2 text-primary">
                                     <Map className="h-5 w-5" /> スプレーチャート
@@ -234,4 +234,5 @@ export default function PlayerDetailPage() {
             <PlayerDetailContent />
         </Suspense>
     );
+
 }
