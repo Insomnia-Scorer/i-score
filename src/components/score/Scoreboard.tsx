@@ -34,7 +34,7 @@ export function Scoreboard({
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground border-none transition-all group shrink-0 -ml-2"
+                    className="h-10 w-10 rounded-full bg-primary-foreground/20 hover:bg-primary-foreground/20 text-primary-foreground border-none transition-all group shrink-0 -ml-2"
                     asChild
                 >
                     <Link href="/dashboard">
@@ -58,7 +58,7 @@ export function Scoreboard({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground border-none transition-all"
+                        className="h-10 w-10 rounded-full bg-primary-foreground/20 hover:bg-primary-foreground/20 text-primary-foreground border-none transition-all"
                         onClick={onToggleFullScreen}
                     >
                         <Maximize className="h-5 w-5" />
