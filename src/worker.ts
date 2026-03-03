@@ -332,12 +332,18 @@ app.patch('/api/matches/:id/finish', async (c) => {
     if (!session || !canEditScore(userRole)) return c.json({ error: '権限がありません' }, 403)
 
     const matchId = c.req.param('id')
+    const body = await c.req.json() // 💡 フロントからスコア情報を受け取る
     const db = drizzle(c.env.DB)
 
     try {
         await db.update(matches)
             .set({
-                status: 'completed', // ステータスを「完了」に変更
+                status: 'completed',
+                // 💡 点数とイニングごとの配列(JSON)をDBに保存！
+                myScore: body.myScore || 0,
+                opponentScore: body.opponentScore || 0,
+                myInningScores: JSON.stringify(body.selfInningScores || []),
+                opponentInningScores: JSON.stringify(body.guestInningScores || []),
             })
             .where(eq(matches.id, matchId))
 

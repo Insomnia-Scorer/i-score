@@ -81,6 +81,14 @@ export const matches = sqliteTable("matches", {
     battingOrder: text("batting_order").notNull(), // 'first'(先攻) または 'second'(後攻)
     // 試合の進行状態を管理するカラム（後々スコア入力画面で使います）
     status: text("status").notNull().default("scheduled"), // 'scheduled', 'in_progress', 'finished'
+    // 自チームスコア
+    myScore: integer("my_score").notNull().default(0),
+    // 対戦チームスコア
+    opponentScore: integer("opponent_score").notNull().default(0),
+    // 自チームイニングごとのスコア
+    myInningScores: text("my_inning_scores").default('[]'),
+    // 対戦チームイニングごとのスコア
+    opponentInningScores: text("opponent_inning_scores").default('[]'),
     // 作成日時
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()

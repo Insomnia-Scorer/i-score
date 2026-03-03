@@ -192,7 +192,12 @@ function MatchScoreContent() {
         try {
             const res = await fetch(`/api/matches/${matchId}/finish`, {
                 method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ myScore: selfScore, opponentScore: guestScore })
+                body: JSON.stringify({
+                    myScore: selfScore,
+                    opponentScore: guestScore,
+                    selfInningScores: selfInningScores, // 追加
+                    guestInningScores: guestInningScores // 追加
+                })
             });
             if (res.ok) router.push('/dashboard');
         } catch (e) { console.error(e); }
