@@ -302,12 +302,22 @@ export default function DashboardPage() {
                         <div className="text-base font-bold text-muted-foreground w-1/3 text-center truncate">{match.opponent}</div>
                       </div>
                       <div className="flex gap-2 mt-4 pt-4 border-t border-border/50 justify-end">
-                        <Button asChild variant="outline" size="sm" className="rounded-lg font-bold shadow-sm">
-                          <Link href={`/matches/lineup?id=${match.id}&teamId=${currentTeam?.id}`}><ClipboardList className="h-4 w-4 mr-1.5" />スタメン</Link>
-                        </Button>
-                        <Button asChild size="sm" className="rounded-lg font-bold bg-primary text-primary-foreground shadow-sm">
-                          <Link href={`/matches/score?id=${match.id}`}>スコア入力</Link>
-                        </Button>
+                        {/* 進行中の場合のみスタメンボタンを表示 */}
+                        {match.status !== 'completed' && (
+                          <Button asChild variant="outline" size="sm" className="rounded-lg font-bold shadow-sm">
+                            <Link href={`/matches/lineup?id=${match.id}&teamId=${currentTeam?.id}`}><ClipboardList className="h-4 w-4 mr-1.5" />スタメン</Link>
+                          </Button>
+                        )}
+                        {/* 💡 ステータスによってボタンの色とリンク先を変える */}
+                        {match.status === 'completed' ? (
+                          <Button asChild size="sm" className="rounded-lg font-bold bg-slate-800 hover:bg-slate-700 text-white shadow-sm border-none">
+                            <Link href={`/matches/result?id=${match.id}`}>試合結果（BoxScore）</Link>
+                          </Button>
+                        ) : (
+                          <Button asChild size="sm" className="rounded-lg font-bold bg-primary text-primary-foreground shadow-sm">
+                            <Link href={`/matches/score?id=${match.id}`}>スコア入力へ戻る</Link>
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

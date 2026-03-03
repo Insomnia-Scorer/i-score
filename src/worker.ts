@@ -619,6 +619,25 @@ app.get('/api/teams/:id/stats', async (c) => {
     }
 });
 
+// 💡 ボックススコア（打席結果の一覧）を取得するAPI
+app.get('/api/matches/:id/boxscore', async (c) => {
+    const matchId = c.req.param('id');
+    try {
+        // その試合の全打席を時間の古い順に取得
+        const { results } = await c.env.DB.prepare(`
+            SELECT inning, is_top as isTop, batter_name as batterName, result
+            FROM at_bats
+            WHERE match_id = ? AND batter_name IS NOT NULL
+            ORDER BY created_at ASC
+        `).bind(matchId).all();
+
+        return c.json(results);
+    } catch (e) {
+        console.error("ボックススコア取得エラー:", e);
+        return c.json({ error: '取得に失敗しました' }, 500);
+    }
+});
+
 export default {
     async fetch(request: Request, env: any, ctx: ExecutionContext) {
         const url = new URL(request.url)
