@@ -79,6 +79,8 @@ export const matches = sqliteTable("matches", {
     location: text("location"), // 場所（任意なので notNull を外す）
     matchType: text("match_type").notNull(), // 'practice' または 'official'
     battingOrder: text("batting_order").notNull(), // 'first'(先攻) または 'second'(後攻)
+    // 規定イニング数（デフォルトは9）
+    innings: integer("innings").notNull().default(9),
     // 試合の進行状態を管理するカラム（後々スコア入力画面で使います）
     status: text("status").notNull().default("scheduled"), // 'scheduled', 'in_progress', 'finished'
     // 自チームスコア

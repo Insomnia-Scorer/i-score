@@ -2,71 +2,61 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2, CalendarPlus, Trophy, Users, Calendar, Hash } from "lucide-react";
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Calendar, CalendarPlus, Loader2, Trophy, Users } from "lucide-react";
 
 function NewMatchForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-
-  // 💡 ダッシュボードのURLから渡された teamId を取得！
   const teamId = searchParams.get("teamId");
+  const router = useRouter();
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [season, setSeason] = useState(new Date().getFullYear().toString());
   const [opponent, setOpponent] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]); // 今日の日付
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [matchType, setMatchType] = useState("practice");
 
-  // 💡 シーズンの管理（デフォルトは現在の年 "2026"）
-  const [season, setSeason] = useState(new Date().getFullYear().toString());
-  const [isLoading, setIsLoading] = useState(false);
+  // 💡 追加：イニング数（デフォルトは7回制）
+  const [innings, setInnings] = useState<number>(7);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teamId) {
-      alert("チームが選択されていません。ダッシュボードからやり直してください。");
-      return;
-    }
-
+    if (!teamId) return;
     setIsLoading(true);
+
     try {
-      const response = await fetch("/api/matches", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teamId,
           season,
           opponent,
           date,
           matchType,
-          location: "",
-          battingOrder: "[]",
+          battingOrder: "9",
+          innings, // 💡 追加：イニング数を送信
         }),
       });
 
-      // 💡 成功時と失敗時で、受け取る変数名と型を完全に分ける！
-      if (response.ok) {
-        // 成功時は matchId が返ってくる
-        const successData = (await response.json()) as { matchId: string };
-        router.push(`/matches/score?id=${successData.matchId}`);
+      if (res.ok) {
+        const data = await res.json() as { matchId: string };
+        router.push(`/matches/lineup?id=${data.matchId}&teamId=${teamId}`);
       } else {
-        // 失敗時は error メッセージが返ってくる
-        const errorData = (await response.json()) as { error: string };
-        alert(`作成に失敗しました: ${errorData.error}`);
+        alert("試合の作成に失敗しました");
+        setIsLoading(false);
       }
-
     } catch (error) {
-      console.error("試合作成エラー:", error);
-      alert("通信エラーが発生しました。");
-    } finally {
+      console.error(error);
+      alert("エラーが発生しました");
       setIsLoading(false);
     }
   };
 
-  // チームIDがURLに無い場合のエラーハンドリング
   if (!teamId) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -95,14 +85,7 @@ function NewMatchForm() {
                 <label className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-primary" /> シーズン・大会名
                 </label>
-                <input
-                  type="text"
-                  required
-                  className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                  placeholder="例: 2026, 2026-春季大会"
-                  value={season}
-                  onChange={(e) => setSeason(e.target.value)}
-                />
+                <input type="text" required className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" placeholder="例: 2026, 2026-春季大会" value={season} onChange={(e) => setSeason(e.target.value)} />
               </div>
 
               {/* 対戦相手 */}
@@ -110,26 +93,13 @@ function NewMatchForm() {
                 <label className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Users className="h-4 w-4 text-primary" /> 対戦相手
                 </label>
-                <input
-                  type="text"
-                  required
-                  className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                  placeholder="例: 横浜ボーイズ"
-                  value={opponent}
-                  onChange={(e) => setOpponent(e.target.value)}
-                />
+                <input type="text" required className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" placeholder="例: 横浜ボーイズ" value={opponent} onChange={(e) => setOpponent(e.target.value)} />
               </div>
 
               {/* 試合日 */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground">試合日</label>
-                <input
-                  type="date"
-                  required
-                  className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
+                <input type="date" required className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer" value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
 
               {/* 試合種別 */}
@@ -149,6 +119,21 @@ function NewMatchForm() {
                 </div>
               </div>
 
+              {/* 💡 追加：イニング数の設定 */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-primary" /> 規定イニング数
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[6, 7, 9].map(num => (
+                    <label key={num} className={`flex flex-col items-center justify-center rounded-xl border-2 py-3 cursor-pointer transition-all ${innings === num ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted'}`}>
+                      <input type="radio" name="innings" value={num} className="sr-only" checked={innings === num} onChange={() => setInnings(num)} />
+                      <span className="font-bold text-lg">{num}回</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <Button type="submit" className="w-full h-14 text-base font-bold rounded-xl shadow-md mt-4" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "試合を作成してスコアを入力する"}
               </Button>
@@ -160,7 +145,6 @@ function NewMatchForm() {
   );
 }
 
-// Next.js の useSearchParams を使うための Suspense ラッパー
 export default function NewMatchPage() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
