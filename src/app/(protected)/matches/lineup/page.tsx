@@ -6,7 +6,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { ArrowLeft, ClipboardList, Save } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { ClipboardList, Save, Users } from "lucide-react";
 
 const POSITIONS = [
     { value: "1", label: "1 (投)" }, { value: "2", label: "2 (捕)" },
@@ -79,19 +80,12 @@ function LineupContent() {
 
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground pb-20">
-            <header className="bg-muted/30 border-b border-border p-4 sticky top-0 z-10 backdrop-blur-md flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" asChild>
-                        <Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
-                    </Button>
-                    <h1 className="font-black text-xl tracking-tight flex items-center gap-2">
-                        <ClipboardList className="h-5 w-5 text-primary" /> スタメン登録
-                    </h1>
-                </div>
-                <Button onClick={handleSave} disabled={isSaving} className="bg-primary text-primary-foreground font-bold rounded-xl px-4 flex items-center gap-2">
-                    <Save className="h-4 w-4" />{isSaving ? "保存中..." : "保存"}
-                </Button>
-            </header>
+            <PageHeader
+                href="/dashboard"
+                icon={Users}
+                title="スターティングメンバー"
+                subtitle="打順と守備位置の登録をしてください。"
+            />
 
             <main className="flex-1 p-4 max-w-2xl mx-auto w-full space-y-3 mt-4">
                 {lineup.map((entry) => (

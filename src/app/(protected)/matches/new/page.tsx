@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Calendar, CalendarPlus, Loader2, Trophy, Users } from "lucide-react";
+import { Calendar, CalendarPlus, Loader2, Trophy, Users } from "lucide-react";
 
 function NewMatchForm() {
   const router = useRouter();
@@ -79,10 +79,10 @@ function NewMatchForm() {
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 animate-in fade-in duration-500">
       <PageHeader
-        href="/dashboard" 
-        icon={CalendarPlus} 
-        title="新規試合の作成" 
-        subtitle="試合情報の入力と設定" 
+        href="/dashboard"
+        icon={CalendarPlus}
+        title="試合の新規作成"
+        subtitle="試合情報の入力と設定をしてください。"
       />
 
       <Card className="border-border/50 shadow-sm">

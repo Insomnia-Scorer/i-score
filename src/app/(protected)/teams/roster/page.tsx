@@ -5,7 +5,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, UserPlus, Users, Edit2, Trash2, Check, X } from "lucide-react"; // 💡 アイコンを追加
+import { PageHeader } from "@/components/PageHeader";
+import { UserPlus, Users, Edit2, Trash2, Check, X, Building2 } from "lucide-react"; // 💡 アイコンを追加
 
 interface Player {
     id: string;
@@ -134,20 +135,12 @@ function RosterContent() {
 
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground pb-20">
-            <header className="bg-muted/30 border-b border-border p-4 sticky top-0 z-10 backdrop-blur-md">
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" asChild>
-                        <Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
-                    </Button>
-                    <div>
-                        <h1 className="font-black text-xl tracking-tight flex items-center gap-2">
-                            <Users className="h-5 w-5 text-primary" />
-                            選手名簿 (Roster)
-                        </h1>
-                        <p className="text-xs text-muted-foreground font-medium">登録人数: {players.length}名</p>
-                    </div>
-                </div>
-            </header>
+            <PageHeader
+                href="/dashboard"
+                icon={Building2}
+                title="チームの管理"
+                subtitle="所属チームの選択と新規作成を行います。"
+            />
 
             <main className="flex-1 p-4 max-w-2xl mx-auto w-full space-y-8 mt-4">
                 <section className="bg-muted/20 border border-border rounded-2xl p-5 shadow-sm">
