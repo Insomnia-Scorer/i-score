@@ -91,8 +91,6 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchTeams(); }, []);
 
-  useEffect(() => { fetchTeams(); }, []);
-
   useEffect(() => {
     if (!selectedTeamId) return;
 
@@ -196,7 +194,7 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">あなたの役割（ロール）</label>
-                <Select className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus-visible:ring-primary font-medium" value={newTeamRole} onChange={(e) => handleTeamChange(e.target.value)}>
+                <Select className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus-visible:ring-primary font-medium" value={newTeamRole} onChange={(e) => setNewTeamRole(e.target.value)}>
                   <option value={ROLES.MANAGER}>監督 / 代表 (Manager)</option>
                   <option value={ROLES.COACH}>コーチ (Coach)</option>
                   <option value={ROLES.SCORER}>スコアラー (Scorer)</option>
@@ -222,7 +220,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-muted-foreground hidden sm:inline">対象チーム:</span>
-          <Select className="flex h-11 w-full sm:w-64 rounded-xl border border-input bg-background px-4 text-sm font-bold shadow-sm" value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)}>
+          <Select className="flex h-11 w-full sm:w-64 rounded-xl border border-input bg-background px-4 text-sm font-bold shadow-sm" value={selectedTeamId} onChange={(e) => handleTeamChange(e.target.value)}>
             {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </Select>
         </div>
