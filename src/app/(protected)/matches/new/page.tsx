@@ -77,7 +77,7 @@ function NewMatchForm() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8 animate-in fade-in duration-500">
+    <div className="flex flex-col min-h-screen bg-background text-foreground pb-20">
       <PageHeader
         href="/dashboard"
         icon={CalendarPlus}
@@ -85,75 +85,77 @@ function NewMatchForm() {
         subtitle="試合情報の入力と設定をしてください。"
       />
 
-      <Card className="border-border/50 shadow-sm">
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <main className="flex-1 px-4 pb-4 pt-2 max-w-2xl mx-auto w-full mt-6 animate-in fade-in duration-500">
+        <Card className="border-border/50 shadow-sm">
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* シーズン選択 */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" /> シーズン・大会名
-              </label>
-              <input
-                type="text"
-                required
-                className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                placeholder="例: 2026, 2026-春季大会"
-                value={season}
-                onChange={(e) => setSeason(e.target.value)}
-              />
-            </div>
-
-            {/* 対戦相手 */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" /> 対戦相手
-              </label>
-              <input
-                type="text"
-                required
-                className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                placeholder="例: 横浜ボーイズ"
-                value={opponent}
-                onChange={(e) => setOpponent(e.target.value)}
-              />
-            </div>
-
-            {/* 試合日 */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-foreground">試合日</label>
-              <input
-                type="date"
-                required
-                className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
-
-            {/* 試合種別 */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-primary" /> 試合種別
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <label className={`flex flex-col items-center justify-center rounded-xl border-2 p-4 cursor-pointer transition-all ${matchType === 'practice' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted'}`}>
-                  <input type="radio" name="matchType" value="practice" className="sr-only" checked={matchType === 'practice'} onChange={() => setMatchType('practice')} />
-                  <span className="font-bold">練習試合</span>
+              {/* シーズン選択 */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" /> シーズン・大会名
                 </label>
-                <label className={`flex flex-col items-center justify-center rounded-xl border-2 p-4 cursor-pointer transition-all ${matchType === 'official' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted'}`}>
-                  <input type="radio" name="matchType" value="official" className="sr-only" checked={matchType === 'official'} onChange={() => setMatchType('official')} />
-                  <span className="font-bold">公式戦</span>
-                </label>
+                <input
+                  type="text"
+                  required
+                  className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  placeholder="例: 2026, 2026-春季大会"
+                  value={season}
+                  onChange={(e) => setSeason(e.target.value)}
+                />
               </div>
-            </div>
 
-            <Button type="submit" className="w-full h-14 text-base font-bold rounded-xl shadow-md mt-4" disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "試合を作成してスコアを入力する"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              {/* 対戦相手 */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" /> 対戦相手
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  placeholder="例: 横浜ボーイズ"
+                  value={opponent}
+                  onChange={(e) => setOpponent(e.target.value)}
+                />
+              </div>
+
+              {/* 試合日 */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground">試合日</label>
+                <input
+                  type="date"
+                  required
+                  className="flex h-12 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+
+              {/* 試合種別 */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-primary" /> 試合種別
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className={`flex flex-col items-center justify-center rounded-xl border-2 p-4 cursor-pointer transition-all ${matchType === 'practice' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted'}`}>
+                    <input type="radio" name="matchType" value="practice" className="sr-only" checked={matchType === 'practice'} onChange={() => setMatchType('practice')} />
+                    <span className="font-bold">練習試合</span>
+                  </label>
+                  <label className={`flex flex-col items-center justify-center rounded-xl border-2 p-4 cursor-pointer transition-all ${matchType === 'official' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted'}`}>
+                    <input type="radio" name="matchType" value="official" className="sr-only" checked={matchType === 'official'} onChange={() => setMatchType('official')} />
+                    <span className="font-bold">公式戦</span>
+                  </label>
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full h-14 text-base font-bold rounded-xl shadow-md mt-4" disabled={isLoading}>
+                {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "試合を作成してスコアを入力する"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }
