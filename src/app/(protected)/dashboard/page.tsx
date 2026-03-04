@@ -394,7 +394,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight mb-4">
               <BarChart3 className="h-5 w-5 text-primary" /> 個人打撃成績
             </h2>
-            <Card className="rounded-2xl border-border bg-background shadow-sm overflow-hidden">
+            <Card className="rounded-2xl border-border bg-background shadow-xs overflow-hidden p-0 gap-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left whitespace-nowrap">
                   <thead className="bg-muted/30 text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
@@ -452,7 +452,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight mb-4">
               <Activity className="h-5 w-5 text-blue-600" /> 個人投手成績
             </h2>
-            <Card className="rounded-2xl border-border bg-background shadow-sm overflow-hidden">
+            <Card className="rounded-2xl border-border bg-background shadow-xs overflow-hidden p-0 gap-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left whitespace-nowrap">
                   <thead className="bg-muted/30 text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
@@ -494,7 +494,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight mb-4">
               <Map className="h-5 w-5 text-green-600" /> スプレーチャート (打球方向)
             </h2>
-            <Card className="rounded-2xl border-border bg-background shadow-sm p-4 sm:p-6">
+            <Card className="rounded-2xl border-border bg-background shadow-xs p-4 sm:p-6">
               <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
                 <span className="text-sm font-bold text-muted-foreground">選手を選択:</span>
                 <Select value={selectedBatter} onChange={(e) => setSelectedBatter(e.target.value)} className="w-full sm:w-64 h-10 shadow-sm">
