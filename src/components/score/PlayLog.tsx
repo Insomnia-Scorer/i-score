@@ -20,10 +20,12 @@ export function PlayLog({ logs }: PlayLogProps) {
     return (
         <div
             ref={scrollRef}
-            className="bg-muted/10 border-y border-border px-4 py-2 h-[88px] overflow-y-auto flex flex-col gap-1.5 text-sm shadow-inner scroll-smooth"
+            // 💡 修正：背景色を bg-primary/5（薄いプライマリー色）、上下の枠線を border-primary/10 に変更
+            className="bg-primary/5 border-y border-primary/10 px-4 py-2 h-[88px] overflow-y-auto flex flex-col gap-1.5 text-sm shadow-inner scroll-smooth"
         >
             {logs.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground/50 font-bold text-xs gap-1.5">
+                // 💡 初期のプレースホルダー文字も少しプライマリー色を混ぜて馴染ませる
+                <div className="flex items-center justify-center h-full text-primary/40 font-bold text-xs gap-1.5">
                     <MessageSquareText className="h-4 w-4" /> プレイログがここに表示されます
                 </div>
             ) : (
@@ -35,7 +37,7 @@ export function PlayLog({ logs }: PlayLogProps) {
 
                     return (
                         <div key={i} className="animate-in slide-in-from-bottom-2 fade-in flex items-start gap-2 leading-snug">
-                            <span className="text-[9px] font-mono text-muted-foreground/40 pt-0.5 shrink-0">
+                            <span className="text-[9px] font-mono text-primary/40 pt-0.5 shrink-0">
                                 {(i + 1).toString().padStart(3, '0')}
                             </span>
                             <span className={cn(
@@ -43,7 +45,7 @@ export function PlayLog({ logs }: PlayLogProps) {
                                 isHit ? "text-blue-600 dark:text-blue-400 font-bold" :
                                     isOut ? "text-red-500 font-bold" :
                                         isWalk ? "text-green-600 dark:text-green-500 font-bold" :
-                                            "text-muted-foreground"
+                                            "text-foreground" // 💡 通常の文字色も見やすく調整
                             )}>
                                 {log}
                             </span>
