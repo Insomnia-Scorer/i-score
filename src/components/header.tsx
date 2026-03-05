@@ -18,7 +18,8 @@ import {
   X,
   Home,
   ClipboardList,
-  ShieldAlert
+  ShieldAlert,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +71,7 @@ function HeaderContent() {
   const navItems = [
     { name: "ホーム", href: "/", icon: Home, show: false },
     { name: "ダッシュボード", href: "/dashboard", icon: ClipboardList, show: !!session },
+    { name: "マイチーム", href: "/teams", icon: Shield, show: !!session },
     // 💡 管理者・監督のみ表示されるメニュー
     { name: "システム管理", href: "/admin", icon: ShieldAlert, show: !!session && isManager },
   ];
