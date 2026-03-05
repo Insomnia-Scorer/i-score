@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer"; // 💡 フッターをインポート
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,7 +17,6 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 });
 
-// 💡 ズームの禁止（ダブルタップで拡大されるのを防ぐ）とテーマカラーの設定
 export const viewport: Viewport = {
 	width: "device-width",
 	initialScale: 1,
@@ -28,7 +28,6 @@ export const viewport: Viewport = {
 	],
 };
 
-// 💡 PWA（ホーム画面に追加）用の設定を追記
 export const metadata: Metadata = {
 	title: "i-Score",
 	description: "次世代野球スコア記録アプリ",
@@ -47,7 +46,6 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="ja" suppressHydrationWarning>
-			{/* 💡 ページ読み込み時の「色のチラつき(FOUC)」を完璧に防ぐ魔法のスクリプト */}
 			<head>
 				<script
 					dangerouslySetInnerHTML={{
@@ -62,16 +60,25 @@ export default function RootLayout({
 					}}
 				/>
 			</head>
-			<body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col`}>
+			{/* 💡 min-h-screen を追加して、フッターが常に一番下にくるように調整 */}
+			<body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
 				<ThemeProvider
 					attribute="class"
 					defaultTheme="system"
 					enableSystem
 					disableTransitionOnChange>
+					
+					{/* ヘッダー */}
 					<Header />
+					
+					{/* メインコンテンツ（flex-1 で余白をすべて埋める） */}
 					<main className="flex-1 flex flex-col">
 						{children}
 					</main>
+
+					{/* 💡 新しく追加したフッター */}
+					<Footer />
+					
 				</ThemeProvider>
 			</body>
 		</html>
