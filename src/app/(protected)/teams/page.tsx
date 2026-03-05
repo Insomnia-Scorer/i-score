@@ -55,7 +55,7 @@ export default function TeamsPage() {
                 body: JSON.stringify({ name: newTeamName, role: newTeamRole }),
             });
             if (res.ok) {
-                const data = await res.json();
+                const data = await res.json() as { teamId: string };
                 // 新しく作ったチームを即座に選択状態にしてダッシュボードへ
                 localStorage.setItem("iScore_selectedTeamId", data.teamId);
                 router.push('/dashboard');
