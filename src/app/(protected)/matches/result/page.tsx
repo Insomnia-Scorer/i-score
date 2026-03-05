@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Newspaper, Trophy, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
-import html2canvas from "html2canvas"; // 💡 復活！
+import html2canvas from "html2canvas";
 
 interface Match {
     id: string; opponent: string; date: string; season: string; status: string;
@@ -41,8 +41,6 @@ function MatchResultContent() {
     const [match, setMatch] = useState<Match | null>(null);
     const [atBats, setAtBats] = useState<AtBat[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-
-    // 💡 画像ダウンロード用の状態とRefを追加
     const [isDownloading, setIsDownloading] = useState(false);
     const captureRef = useRef<HTMLDivElement>(null);
 
@@ -61,31 +59,25 @@ function MatchResultContent() {
         fetchData();
     }, [matchId]);
 
-    // 💡 画像化処理
     const handleDownloadImage = async () => {
         if (!captureRef.current || !match) return;
         setIsDownloading(true);
         try {
-            // 💡 修正 1：スマホのメモリ制限（キャンバス上限）を回避するため scale を 1.5 に下げる
-            // 💡 修正 2：useCORS は外部画像がない場合はエラーの元になることがあるため削除
+            // 💡 scale を 1.5 に下げてスマホ等でのクラッシュを防ぎます
             const canvas = await html2canvas(captureRef.current, {
                 backgroundColor: document.documentElement.classList.contains('dark') ? '#020817' : '#ffffff',
                 scale: 1.5,
+                useCORS: true,
             });
-
             const image = canvas.toDataURL("image/png");
-
-            // 💡 修正 3：ブラウザにブロックされないよう、一度画面(DOM)にリンクを追加してからクリックする
             const link = document.createElement("a");
             link.href = image;
             link.download = `試合結果_${match.opponent}戦_${match.date}.png`;
-            document.body.appendChild(link);
+            document.body.appendChild(link); // 💡 一時的にDOMに追加してクリック
             link.click();
             document.body.removeChild(link);
-
         } catch (error: any) {
             console.error("画像化エラー:", error);
-            // 💡 修正 4：エラー内容を画面に表示して原因を特定しやすくする
             alert(`画像の保存に失敗しました。\n詳細: ${error?.message || error}`);
         } finally {
             setIsDownloading(false);
@@ -109,7 +101,6 @@ function MatchResultContent() {
     const guestScores: (number | null)[] = match.opponentInningScores ? JSON.parse(match.opponentInningScores) : [];
     const selfScores: (number | null)[] = match.myInningScores ? JSON.parse(match.myInningScores) : [];
 
-    // 💡 先ほどの修正：規定イニングと実際のスコアから表示枠数を決定
     let maxInning = match.innings || 9;
     guestScores.forEach((s, i) => { if (s !== null) maxInning = Math.max(maxInning, i + 1); });
     selfScores.forEach((s, i) => { if (s !== null) maxInning = Math.max(maxInning, i + 1); });
@@ -119,21 +110,23 @@ function MatchResultContent() {
 
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground pb-20">
-            <PageHeader href="/dashboard" icon={Newspaper} title={`試合結果 vs ${match.opponent}`} subtitle={`${new Date(match.date).toLocaleDateString('ja-JP')} • ${match.season}`} />
+            <PageHeader
+                href="/dashboard"
+                icon={Newspaper}
+                title={`試合結果 vs ${match.opponent}`}
+                subtitle={`${new Date(match.date).toLocaleDateString('ja-JP')} • ${match.season}`}
+            />
 
             <div className="max-w-5xl mx-auto w-full px-4 mt-6 flex justify-end">
-                {/* 💡 ボタンを「画像で保存」に変更 */}
                 <Button onClick={handleDownloadImage} disabled={isDownloading} className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95">
                     {isDownloading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> 画像を生成中...</> : <><Download className="mr-2 h-5 w-5" /> 結果を画像で保存 (シェア)</>}
                 </Button>
             </div>
 
-            {/* 💡 ここから下の領域（ref={captureRef}）が画像として切り取られます */}
+            {/* 💡 ここから下のクラス名から /10 や /50 などの透過度指定を除外しました */}
             <div ref={captureRef} className="bg-background p-4 sm:p-6 max-w-5xl mx-auto w-full mt-2 rounded-2xl">
-
-                {/* 画像化されたときに見えるタイトル部分 */}
-                <div className="text-center mb-6 pb-4 border-b border-border/50">
-                    <div className="inline-flex items-center rounded-full px-3 py-1 text-xs font-extrabold bg-primary/10 text-primary uppercase tracking-wider mb-2">
+                <div className="text-center mb-6 pb-4 border-b border-border">
+                    <div className="inline-flex items-center rounded-full px-3 py-1 text-xs font-extrabold bg-primary text-primary-foreground uppercase tracking-wider mb-2">
                         {match.season}
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-1">vs {match.opponent}</h1>
@@ -142,7 +135,7 @@ function MatchResultContent() {
 
                 <div className="space-y-8">
                     <Card className="rounded-2xl border-border bg-background shadow-sm overflow-hidden p-0 gap-0">
-                        <div className="bg-muted/30 p-4 border-b border-border/50 flex items-center justify-between">
+                        <div className="bg-muted p-4 border-b border-border flex items-center justify-between">
                             <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
                                 <Trophy className={cn("h-5 w-5", isWin ? "text-yellow-500" : "text-muted-foreground")} />
                                 ランニングスコア
@@ -153,7 +146,6 @@ function MatchResultContent() {
                                 <table className="w-full text-center text-sm table-fixed">
                                     <thead>
                                         <tr className="text-muted-foreground border-b border-border text-xs">
-                                            {/* 先ほどのコンパクト化の修正も保持 */}
                                             <th className="text-left font-bold pb-2 pl-1 w-20 sm:w-24 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">TEAM</th>
                                             {[...Array(inningsCount)].map((_, i) => (
                                                 <th key={i} className="font-bold pb-2 w-8 sm:w-10">{i + 1}</th>
@@ -162,7 +154,7 @@ function MatchResultContent() {
                                         </tr>
                                     </thead>
                                     <tbody className="font-black text-base">
-                                        <tr className="border-b border-border/50">
+                                        <tr className="border-b border-border">
                                             <td className="text-left py-3 pl-1 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                                                 <span className="truncate max-w-[70px] sm:max-w-[85px] inline-block align-middle">{match.opponent}</span>
                                             </td>
@@ -191,14 +183,14 @@ function MatchResultContent() {
                     </Card>
 
                     <Card className="rounded-2xl border-border bg-background shadow-sm overflow-hidden p-0 gap-0">
-                        <div className="bg-muted/30 p-4 border-b border-border/50">
+                        <div className="bg-muted p-4 border-b border-border">
                             <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
                                 <Newspaper className="h-5 w-5 text-primary" /> ボックススコア
                             </h2>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left whitespace-nowrap">
-                                <thead className="bg-muted/10 text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
+                                <thead className="bg-muted text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
                                     <tr>
                                         <th className="px-3 py-3 sticky left-0 bg-muted/90 backdrop-blur-sm z-10 shadow-[1px_0_0_rgba(0,0,0,0.1)]">打者名</th>
                                         {[...Array(Math.max(maxAtBatsCount, 3))].map((_, i) => (
@@ -206,14 +198,14 @@ function MatchResultContent() {
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border/50">
+                                <tbody className="divide-y divide-border">
                                     {batters.length === 0 ? (
                                         <tr>
                                             <td colSpan={maxAtBatsCount + 1} className="text-center py-8 text-muted-foreground">打席データがありません</td>
                                         </tr>
                                     ) : (
                                         batters.map(([name, abs], idx) => (
-                                            <tr key={idx} className="hover:bg-muted/10 transition-colors">
+                                            <tr key={idx} className="hover:bg-muted transition-colors">
                                                 <td className="px-3 py-3 font-bold sticky left-0 bg-background z-10 shadow-[1px_0_0_rgba(0,0,0,0.05)]">
                                                     {name}
                                                 </td>
@@ -236,8 +228,7 @@ function MatchResultContent() {
                     </Card>
                 </div>
 
-                {/* 💡 宣伝フッター */}
-                <div className="mt-8 pt-4 border-t border-border/30 text-center text-xs font-bold text-muted-foreground opacity-50 flex items-center justify-center gap-2">
+                <div className="mt-8 pt-4 border-t border-border text-center text-xs font-bold text-muted-foreground opacity-50 flex items-center justify-center gap-2">
                     <Trophy className="h-3 w-3" /> Powered by i-Score
                 </div>
             </div>
