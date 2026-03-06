@@ -5,7 +5,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { PwaRegister } from "@/components/pwa-register";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -88,9 +87,6 @@ export default function RootLayout({
 		
 					{/* 💡 これを追加！リッチな通知が表示されるようになります */}
 					<Toaster richColors position="top-center" />
-
-					{/* 💡 これを追加！裏でService Workerを起動してオフライン対応にします */}
-					<PwaRegister />
 
 				</ThemeProvider>
 			</body>
