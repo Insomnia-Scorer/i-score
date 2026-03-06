@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Plus, History, Trophy, Calendar, ChevronRight, Loader2, Users, CheckCircle2, ClipboardList, Edit2, Trash2, Check, X, BarChart3, Activity, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Match {
   id: string; opponent: string; date: string;
@@ -119,9 +120,10 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' });
       if (res.ok) {
+        toast.success("試合を削除しました");
         await fetchMatchesAndStats(); // 💡 成功したらデータを再取得して表示を更新（成績の集計もやり直される）
       } else {
-        alert('試合の削除に失敗しました');
+        toast.error('試合の削除に失敗しました');
       }
     } catch (e) { console.error(e); }
   };
@@ -135,8 +137,14 @@ export default function DashboardPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newTeamName, role: newTeamRole }),
       });
-      if (res.ok) { setNewTeamName(""); await fetchTeams(); }
-      else { alert("チームの作成に失敗しました"); }
+      if (res.ok) {
+        setNewTeamName("");
+        toast.success("チームを作成しました！");
+        await fetchTeams();
+      }
+      else {
+        toast.error("チームの作成に失敗しました");
+      }
     } catch (e) { console.error(e); }
     finally { setIsCreating(false); }
   };
@@ -149,8 +157,12 @@ export default function DashboardPage() {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editTeamName })
       });
-      if (res.ok) { setEditingTeamId(null); await fetchTeams(); }
-      else alert('更新に失敗しました');
+      if (res.ok) {
+        setEditingTeamId(null);
+        toast.success("チーム名を更新しました");
+        await fetchTeams();
+      }
+      else toast.error('更新に失敗しました');
     } catch (e) { console.error(e); }
   };
 
@@ -158,8 +170,12 @@ export default function DashboardPage() {
     if (!confirm('⚠️ 本当にこのチームを削除しますか？\n（所属選手やこれまでの試合データがすべて完全に消去されます！）')) return;
     try {
       const res = await fetch(`/api/teams/${targetTeamId}`, { method: 'DELETE' });
-      if (res.ok) { if (selectedTeamId === targetTeamId) setSelectedTeamId(""); await fetchTeams(); }
-      else alert('削除に失敗しました');
+      if (res.ok) {
+        if (selectedTeamId === targetTeamId) setSelectedTeamId("");
+        toast.success("チームを削除しました");
+        await fetchTeams();
+      }
+      else toast.error('削除に失敗しました');
     } catch (e) { console.error(e); }
   };
 
