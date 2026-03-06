@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer"; // 💡 フッターをインポート
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -78,7 +79,9 @@ export default function RootLayout({
 
 					{/* 💡 新しく追加したフッター */}
 					<Footer />
-					
+		
+					{/* 💡 これを追加！リッチな通知が表示されるようになります */}
+					<Toaster richColors position="top-center" />
 				</ThemeProvider>
 			</body>
 		</html>
