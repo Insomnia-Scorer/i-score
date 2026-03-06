@@ -8,7 +8,7 @@ import { canEditScore, canManageTeam, ROLES } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, History, Trophy, Calendar, ChevronRight, Loader2, Users, CheckCircle2, ClipboardList, Edit2, Trash2, Check, X, BarChart3, Activity, Map } from "lucide-react";
+import { Plus, History, Trophy, Calendar, ChevronRight, Loader2, Users, CheckCircle2, ClipboardList, Edit2, Trash2, Check, X, BarChart3, Activity, Map, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -178,6 +178,48 @@ export default function DashboardPage() {
       }
       else toast.error('削除に失敗しました');
     } catch (e) { console.error(e); }
+  };
+
+  // 💡 CSVエクスポート機能
+  const handleExportCSV = (type: "batter" | "pitcher") => {
+    let csvContent = "\uFEFF"; // Excelでの文字化け防止(BOM)
+    let filename = "";
+
+    if (type === "batter") {
+      filename = `打撃成績_${currentTeam?.name || "team"}_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}.csv`;
+      csvContent += "選手名,打率(AVG),出塁率(OBP),OPS,試合(打席),打数,安打,本塁打,四死球,三振\n";
+      
+      batterStats.forEach(s => {
+        const avg = s.atBats > 0 ? (s.hits / s.atBats).toFixed(3) : "0.000";
+        const obp = s.plateAppearances > 0 ? ((s.hits + s.walks) / s.plateAppearances).toFixed(3) : "0.000";
+        const tb = s.singles + (s.doubles * 2) + (s.triples * 3) + (s.homeRuns * 4);
+        const slg = s.atBats > 0 ? (tb / s.atBats).toFixed(3) : "0.000";
+        const ops = (parseFloat(obp) + parseFloat(slg)).toFixed(3);
+        
+        csvContent += `${s.playerName},${avg},${obp},${ops},${s.plateAppearances},${s.atBats},${s.hits},${s.homeRuns},${s.walks},${s.strikeouts}\n`;
+      });
+    } else {
+      filename = `投手成績_${currentTeam?.name || "team"}_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}.csv`;
+      csvContent += "選手名,投球回,奪三振,与四死球,被安打,対打者\n";
+      
+      pitcherStats.forEach(s => {
+        const fullInnings = Math.floor(s.outs / 3);
+        const remainingOuts = s.outs % 3;
+        const ip = remainingOuts > 0 ? `${fullInnings} ${remainingOuts}/3` : `${fullInnings}`;
+        csvContent += `${s.playerName},${ip},${s.strikeouts},${s.walks},${s.hitsAllowed},${s.battersFaced}\n`;
+      });
+    }
+
+    // Blobを作成してダウンロードリンクを強制クリックさせる
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success(`${type === 'batter' ? '打撃' : '投手'}成績をダウンロードしました！`);
   };
 
   if (isSessionLoading || isLoadingTeams) {
@@ -438,9 +480,14 @@ export default function DashboardPage() {
         {/* --- これより下のタブ（打撃成績、投手成績、スプレーチャート）は変更なしのため省略せずにそのまま --- */}
         {activeTab === "batterStats" && (
           <div className="animate-in fade-in duration-300">
-            <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight mb-4">
-              <BarChart3 className="h-5 w-5 text-primary" /> 個人打撃成績
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight">
+                <BarChart3 className="h-5 w-5 text-primary" /> 個人打撃成績
+              </h2>
+              <Button onClick={() => handleExportCSV('batter')} variant="outline" size="sm" className="font-bold shadow-sm h-9 rounded-lg">
+                <Download className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">CSVダウンロード</span><span className="sm:hidden">CSV</span>
+              </Button>
+            </div>
             <Card className="rounded-2xl border-border bg-background shadow-xs overflow-hidden p-0 gap-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left whitespace-nowrap">
@@ -506,9 +553,14 @@ export default function DashboardPage() {
 
         {activeTab === "pitcherStats" && (
           <div className="animate-in fade-in duration-300">
-            <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight mb-4">
-              <Activity className="h-5 w-5 text-blue-600" /> 個人投手成績
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-extrabold flex items-center gap-2 tracking-tight">
+                <Activity className="h-5 w-5 text-blue-600" /> 個人投手成績
+              </h2>
+              <Button onClick={() => handleExportCSV('pitcher')} variant="outline" size="sm" className="font-bold shadow-sm h-9 rounded-lg border-blue-200 hover:bg-blue-50 text-blue-700">
+                <Download className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">CSVダウンロード</span><span className="sm:hidden">CSV</span>
+              </Button>
+            </div>
             <Card className="rounded-2xl border-border bg-background shadow-xs overflow-hidden p-0 gap-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left whitespace-nowrap">
