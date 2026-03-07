@@ -147,25 +147,21 @@ function RosterContent() {
                                 key={player.id} 
                                 className="block group outline-none"
                             >
-                                {/* 💡 スマホのタップ（active）に対応 */}
                                 <Card className="relative overflow-hidden rounded-[28px] border-border/50 bg-background shadow-sm transition-all duration-200 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer h-full">
                                     
-                                    {/* 💡 背景の円がホバー＆タップでフワッと広がる（チーム一覧と同じエフェクト） */}
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[120px] -mr-8 -mt-8 transition-transform duration-300 group-hover:scale-[1.3] group-hover:bg-primary/10 group-active:scale-[1.3] group-active:bg-primary/10 z-0" />
-
-                                    {/* 巨大背番号ウォーターマークもタップに反応させる */}
+                                    {/* 💡 背景の円を削除し、巨大背番号ウォーターマークだけを主役に！ */}
                                     <div className="absolute -bottom-6 -right-2 text-[180px] sm:text-[220px] font-black italic text-foreground/[0.03] group-hover:text-primary/10 group-active:text-primary/10 transition-colors duration-300 select-none z-0 tracking-tighter leading-none pointer-events-none">
                                         {player.uniformNumber}
                                     </div>
                                     
                                     <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col h-full pl-8 pointer-events-none">
                                         <div className="flex justify-between items-start mb-6">
-                                            {/* 💡 背番号アイコン：最初はグレーで、タップするとプライマリカラーに鮮やかに変化！ */}
+                                            {/* 背番号アイコン */}
                                             <div className="flex items-center justify-center w-14 h-14 rounded-[20px] bg-muted/50 text-muted-foreground font-black text-2xl border border-border/50 shadow-sm group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary group-hover:border-primary/20 group-active:border-primary/20 transition-all duration-200">
                                                 {player.uniformNumber}
                                             </div>
                                             
-                                            {/* 削除ボタン（独立して機能するように pointer-events-auto を付与） */}
+                                            {/* 削除ボタン */}
                                             <div className="pointer-events-auto">
                                                 <Button 
                                                     variant="ghost" 
@@ -179,12 +175,12 @@ function RosterContent() {
                                             </div>
                                         </div>
                                         
-                                        {/* 💡 選手名もタップで光る！ */}
+                                        {/* 選手名 */}
                                         <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary group-active:text-primary transition-colors duration-200 drop-shadow-sm mt-auto">
                                             {player.name}
                                         </h3>
                                         
-                                        {/* 💡 矢印もタップでスッと動く！ */}
+                                        {/* 矢印 */}
                                         <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 group-active:text-primary/80 transition-colors duration-200">
                                             <BarChart3 className="h-4 w-4 mr-1.5 opacity-70" />
                                             スタッツを見る <ChevronRight className="h-5 w-5 ml-1 transition-transform group-hover:translate-x-1 group-active:translate-x-1" />
@@ -206,7 +202,7 @@ function RosterContent() {
                 <span className="sr-only">選手を追加</span>
             </Button>
 
-            {/* 新規登録モーダル（グラスモーフィズム） */}
+            {/* 新規登録モーダル */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-md animate-in fade-in duration-200">
                     <div className="absolute inset-0" onClick={() => !isSaving && setIsModalOpen(false)} />
