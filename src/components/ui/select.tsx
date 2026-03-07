@@ -1,36 +1,29 @@
-// src/components/ui/select.tsx
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { ChevronDown } from "lucide-react"
 
-export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {}
+export interface SelectProps
+  extends React.SelectHTMLAttributes<HTMLSelectElement> {}
 
-export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, children, ...props }, ref) => {
+const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+  ({ className, ...props }, ref) => {
     return (
-      <div 
+      <select
         className={cn(
-          // 💡 flex から inline-flex に変更し、無駄な w-full を削除（親からの指定幅に完璧に従うようになります）
-          "relative inline-flex items-center rounded-lg border border-input bg-background text-sm transition-all",
-          "focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20",
+          // 💡 ベースの美しいスタイル（Inputと完全に統一）
+          "flex h-14 w-full appearance-none rounded-2xl border border-border/60 bg-muted/20 px-4 pr-10 text-base font-bold shadow-xs transition-all duration-300 cursor-pointer",
+          // 💡 究極UI：フォーカス時のオーラエフェクト
+          "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background focus-visible:shadow-md",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          // 💡 ネイティブSelect用のカスタム矢印（SVG）を背景画像として設定
+          "bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_16px_center] bg-no-repeat",
           className
         )}
-      >
-        <select
-          ref={ref}
-          // 💡 text-inherit を追加し、親に渡された text-xs などの文字サイズを確実に引き継ぐようにしました
-          // 💡 py-1.5 と min-h-[36px] に縮小し、高さ指定（h-10など）が来た時にハミ出さないように調整
-          className="w-full h-full min-h-[36px] appearance-none bg-transparent pl-3 pr-8 py-1.5 outline-none cursor-pointer z-10 text-inherit"
-          {...props}
-        >
-          {children}
-        </select>
-        
-        <div className="pointer-events-none absolute right-2.5 text-muted-foreground z-0 flex items-center justify-center">
-          <ChevronDown className="h-4 w-4" />
-        </div>
-      </div>
+        ref={ref}
+        {...props}
+      />
     )
   }
 )
 Select.displayName = "Select"
+
+export { Select }
