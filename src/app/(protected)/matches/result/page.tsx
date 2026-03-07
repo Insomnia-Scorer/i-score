@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 interface Match {
     id: string; opponent: string; date: string; season: string; status: string;
-    myScore: number; opponentScore: number;
+    matchType: string; myScore: number; opponentScore: number;
     myInningScores: string; opponentInningScores: string;
     innings?: number;
 }
@@ -297,3 +297,4 @@ export default function MatchResultPage() {
         </Suspense>
     );
 }
+
