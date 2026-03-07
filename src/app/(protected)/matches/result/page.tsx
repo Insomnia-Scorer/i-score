@@ -4,11 +4,11 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Newspaper, Trophy, Download } from "lucide-react";
+import { Loader2, Newspaper, Trophy, Download, Activity, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as htmlToImage from 'html-to-image';
+import { toast } from "sonner";
 
 interface Match {
     id: string; opponent: string; date: string; season: string; status: string;
@@ -26,12 +26,23 @@ const resultLabels: Record<string, string> = {
     'walk': '四死球', 'strikeout': '三振', 'groundout': 'ゴロ', 'flyout': '飛・直', 'double_play': '併殺打',
 };
 
-const getResultColor = (result: string | null) => {
-    if (!result) return "text-muted-foreground";
-    if (['single', 'double', 'triple', 'home_run'].includes(result)) return "text-blue-600 dark:text-blue-400 font-bold";
-    if (result === 'walk') return "text-green-600 dark:text-green-500 font-bold";
-    if (['strikeout', 'double_play'].includes(result)) return "text-red-500 font-bold";
-    return "text-foreground";
+// 💡 究極UI: ただの色文字ではなく、美しい「ソリッドバッジ」で結果を表現
+const getResultBadge = (result: string | null) => {
+    if (!result) return <span className="text-muted-foreground font-bold">-</span>;
+    
+    const text = resultLabels[result] || result;
+    
+    if (['single', 'double', 'triple', 'home_run'].includes(result)) {
+        return <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-[8px] bg-[#3b82f6]/10 text-[#2563eb] dark:bg-[#3b82f6]/20 dark:text-[#60a5fa] font-black text-[11px] whitespace-nowrap tracking-wider border border-[#3b82f6]/20">{text}</span>;
+    }
+    if (result === 'walk') {
+        return <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-[8px] bg-[#10b981]/10 text-[#059669] dark:bg-[#10b981]/20 dark:text-[#34d399] font-black text-[11px] whitespace-nowrap tracking-wider border border-[#10b981]/20">{text}</span>;
+    }
+    if (['strikeout', 'double_play'].includes(result)) {
+        return <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-[8px] bg-[#ef4444]/10 text-[#dc2626] dark:bg-[#ef4444]/20 dark:text-[#f87171] font-black text-[11px] whitespace-nowrap tracking-wider border border-[#ef4444]/20">{text}</span>;
+    }
+    // 普通のアウト（ゴロ・フライ）は目立たせすぎないグレー
+    return <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-[8px] bg-muted text-muted-foreground font-bold text-[11px] whitespace-nowrap tracking-wider border border-border/50">{text}</span>;
 };
 
 function MatchResultContent() {
@@ -62,11 +73,15 @@ function MatchResultContent() {
     const handleDownloadImage = async () => {
         if (!captureRef.current || !match) return;
         setIsDownloading(true);
+        toast.info("画像を生成しています...", { id: "download-toast" });
+
         try {
-            // 💡 修正：html-to-image を使ったモダンで確実な画像生成
             const dataUrl = await htmlToImage.toPng(captureRef.current, {
                 backgroundColor: document.documentElement.classList.contains('dark') ? '#020817' : '#ffffff',
-                pixelRatio: 1.5, // スマホでも綺麗に、かつ重すぎない解像度
+                pixelRatio: 2, // 💡 画質を少し上げて、文字をくっきり綺麗に
+                style: {
+                    margin: '0',
+                }
             });
 
             const link = document.createElement("a");
@@ -76,16 +91,17 @@ function MatchResultContent() {
             link.click();
             document.body.removeChild(link);
 
+            toast.success("画像を保存しました！シェアしてみましょう！", { id: "download-toast" });
         } catch (error: any) {
             console.error("画像化エラー:", error);
-            alert(`画像の保存に失敗しました。\n詳細: ${error?.message || error}`);
+            toast.error(`画像の保存に失敗しました。\n詳細: ${error?.message || error}`, { id: "download-toast" });
         } finally {
             setIsDownloading(false);
         }
     };
 
     if (isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-    if (!match) return <div className="flex h-screen items-center justify-center">試合が見つかりません</div>;
+    if (!match) return <div className="flex h-screen items-center justify-center font-bold">試合が見つかりません</div>;
 
     const battersMap = new Map<string, AtBat[]>();
     let maxAtBatsCount = 0;
@@ -107,9 +123,10 @@ function MatchResultContent() {
     const inningsCount = maxInning;
 
     const isWin = match.myScore > match.opponentScore;
+    const isDraw = match.myScore === match.opponentScore;
 
     return (
-        <div className="flex flex-col min-h-screen bg-background text-foreground pb-20">
+        <div className="flex flex-col min-h-screen bg-muted/20 text-foreground pb-24">
             <PageHeader
                 href="/dashboard"
                 icon={Newspaper}
@@ -117,121 +134,158 @@ function MatchResultContent() {
                 subtitle={`${new Date(match.date).toLocaleDateString('ja-JP')} • ${match.season}`}
             />
 
-            <div className="max-w-5xl mx-auto w-full px-4 mt-6 flex justify-end">
-                <Button onClick={handleDownloadImage} disabled={isDownloading} className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95">
-                    {isDownloading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> 画像を生成中...</> : <><Download className="mr-2 h-5 w-5" /> 結果を画像で保存 (シェア)</>}
-                </Button>
-            </div>
-
-            {/* 💡 ここから下のクラス名から /10 や /50 などの透過度指定を除外しました */}
-            <div ref={captureRef} className="bg-background p-4 sm:p-6 max-w-5xl mx-auto w-full mt-2 rounded-2xl">
-                <div className="text-center mb-6 pb-4 border-b border-border">
-                    <div className="inline-flex items-center rounded-full px-3 py-1 text-xs font-extrabold bg-primary text-primary-foreground uppercase tracking-wider mb-2">
-                        {match.season}
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-1">vs {match.opponent}</h1>
-                    <p className="text-sm text-muted-foreground font-bold">{new Date(match.date).toLocaleDateString('ja-JP')}</p>
+            <main className="max-w-4xl mx-auto w-full px-4 mt-6">
+                {/* 💡 追従するダウンロードボタン */}
+                <div className="flex justify-end mb-4 sticky top-4 z-50">
+                    <Button 
+                        onClick={handleDownloadImage} 
+                        disabled={isDownloading} 
+                        className="rounded-full h-12 px-6 font-extrabold shadow-lg shadow-blue-500/20 bg-[#2563eb] hover:bg-[#1d4ed8] text-white transition-all active:scale-95"
+                    >
+                        {isDownloading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> 生成中...</> : <><Download className="mr-2 h-5 w-5" /> 結果を画像で保存</>}
+                    </Button>
                 </div>
 
-                <div className="space-y-8">
-                    <Card className="rounded-2xl border-border bg-background shadow-sm overflow-hidden p-0 gap-0">
-                        <div className="bg-muted p-4 border-b border-border flex items-center justify-between">
-                            <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
-                                <Trophy className={cn("h-5 w-5", isWin ? "text-yellow-500" : "text-muted-foreground")} />
-                                ランニングスコア
-                            </h2>
+                {/* 💡 画像生成のターゲットエリア（透明度を使わずソリッドに構築） */}
+                <div 
+                    ref={captureRef} 
+                    className="bg-background border border-border/50 rounded-[32px] shadow-sm overflow-hidden"
+                >
+                    {/* ヘッダー部分：スポーツ新聞の「見出し」のような大迫力デザイン */}
+                    <div className="bg-primary text-primary-foreground p-8 sm:p-10 text-center relative overflow-hidden">
+                        {/* 背景の装飾 */}
+                        <div className="absolute top-0 right-0 -mt-10 -mr-10 opacity-10">
+                            <Trophy className="w-64 h-64" />
                         </div>
-                        <div className="overflow-x-auto scrollbar-hide pb-2">
-                            <div className="min-w-[400px] px-2 pt-4 pb-2">
-                                <table className="w-full text-center text-sm table-fixed">
-                                    <thead>
-                                        <tr className="text-muted-foreground border-b border-border text-xs">
-                                            <th className="text-left font-bold pb-2 pl-1 w-20 sm:w-24 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">TEAM</th>
-                                            {[...Array(inningsCount)].map((_, i) => (
-                                                <th key={i} className="font-bold pb-2 w-8 sm:w-10">{i + 1}</th>
-                                            ))}
-                                            <th className="font-black pb-2 w-10 text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">R</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="font-black text-base">
-                                        <tr className="border-b border-border">
-                                            <td className="text-left py-3 pl-1 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                                                <span className="truncate max-w-[70px] sm:max-w-[85px] inline-block align-middle">{match.opponent}</span>
-                                            </td>
-                                            {[...Array(inningsCount)].map((_, i) => (
-                                                <td key={i} className="py-3 text-muted-foreground">
-                                                    {guestScores[i] !== null && guestScores[i] !== undefined ? guestScores[i] : '-'}
-                                                </td>
-                                            ))}
-                                            <td className="py-3 text-xl sm:text-2xl text-foreground sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">{match.opponentScore}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="text-left py-3 pl-1 sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                                                <span className="truncate max-w-[70px] sm:max-w-[85px] inline-block align-middle text-primary">Self</span>
-                                            </td>
-                                            {[...Array(inningsCount)].map((_, i) => (
-                                                <td key={i} className="py-3 text-muted-foreground">
-                                                    {selfScores[i] !== null && selfScores[i] !== undefined ? selfScores[i] : '-'}
-                                                </td>
-                                            ))}
-                                            <td className="py-3 text-xl sm:text-2xl text-primary sticky right-0 bg-background z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">{match.myScore}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                        
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="inline-flex items-center rounded-full px-4 py-1.5 text-xs font-black bg-primary-foreground/20 text-primary-foreground uppercase tracking-[0.2em] mb-4">
+                                {match.season} {match.matchType === 'practice' ? 'Practice' : 'Official'}
+                            </div>
+                            <h1 className="text-3xl sm:text-5xl font-black tracking-tighter mb-2 drop-shadow-md leading-tight">
+                                vs {match.opponent}
+                            </h1>
+                            <p className="text-primary-foreground/80 font-bold tracking-widest">{new Date(match.date).toLocaleDateString('ja-JP')}</p>
+                            
+                            {/* 勝敗バッジ */}
+                            <div className="mt-6 flex items-center justify-center gap-4 bg-background/10 backdrop-blur-sm rounded-2xl px-6 py-3 border border-primary-foreground/20">
+                                <span className="text-2xl font-black">{match.opponentScore}</span>
+                                <span className="text-primary-foreground/50 font-black">-</span>
+                                <span className="text-2xl font-black">{match.myScore}</span>
+                                <div className="w-px h-6 bg-primary-foreground/30 mx-2" />
+                                <span className={cn("text-lg font-black tracking-widest", isWin ? "text-yellow-300" : isDraw ? "text-primary-foreground/70" : "text-red-300")}>
+                                    {isWin ? "WIN" : isDraw ? "DRAW" : "LOSE"}
+                                </span>
                             </div>
                         </div>
-                    </Card>
+                    </div>
 
-                    <Card className="rounded-2xl border-border bg-background shadow-sm overflow-hidden p-0 gap-0">
-                        <div className="bg-muted p-4 border-b border-border">
-                            <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
-                                <Newspaper className="h-5 w-5 text-primary" /> ボックススコア
+                    <div className="p-4 sm:p-8 space-y-10">
+                        {/* 💡 スコアボード（ランニングスコア） */}
+                        <section>
+                            <h2 className="text-lg font-black tracking-tight flex items-center gap-2 mb-4 text-foreground">
+                                <Activity className="h-5 w-5 text-primary" /> ランニングスコア
                             </h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left whitespace-nowrap">
-                                <thead className="bg-muted text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
-                                    <tr>
-                                        <th className="px-3 py-3 sticky left-0 bg-muted/90 backdrop-blur-sm z-10 shadow-[1px_0_0_rgba(0,0,0,0.1)]">打者名</th>
-                                        {[...Array(Math.max(maxAtBatsCount, 3))].map((_, i) => (
-                                            <th key={i} className="px-4 py-3 text-center">第{i + 1}打席</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {batters.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={maxAtBatsCount + 1} className="text-center py-8 text-muted-foreground">打席データがありません</td>
-                                        </tr>
-                                    ) : (
-                                        batters.map(([name, abs], idx) => (
-                                            <tr key={idx} className="hover:bg-muted transition-colors">
-                                                <td className="px-3 py-3 font-bold sticky left-0 bg-background z-10 shadow-[1px_0_0_rgba(0,0,0,0.05)]">
-                                                    {name}
-                                                </td>
-                                                {[...Array(Math.max(maxAtBatsCount, 3))].map((_, i) => {
-                                                    const ab = abs[i];
-                                                    const resultText = ab?.result ? resultLabels[ab.result] || ab.result : '-';
-                                                    return (
-                                                        <td key={i} className="px-4 py-3 text-center">
-                                                            {ab && <div className="text-[9px] text-muted-foreground mb-0.5">{ab.inning}回{ab.isTop ? '表' : '裏'}</div>}
-                                                            <span className={getResultColor(ab?.result || null)}>{resultText}</span>
-                                                        </td>
-                                                    );
-                                                })}
+                            <div className="border border-border rounded-2xl overflow-hidden bg-background">
+                                <div className="overflow-x-auto scrollbar-hide">
+                                    <table className="w-full text-center text-sm min-w-[500px]">
+                                        <thead>
+                                            <tr className="bg-muted border-b border-border">
+                                                <th className="text-left font-black py-3 pl-4 w-28 text-muted-foreground tracking-wider">TEAM</th>
+                                                {[...Array(inningsCount)].map((_, i) => (
+                                                    <th key={i} className="font-bold py-3 w-10 text-muted-foreground">{i + 1}</th>
+                                                ))}
+                                                <th className="font-black py-3 w-12 text-primary bg-primary/5">R</th>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
-                </div>
+                                        </thead>
+                                        <tbody className="font-black text-base divide-y divide-border">
+                                            <tr>
+                                                <td className="text-left py-3.5 pl-4 text-muted-foreground">
+                                                    <span className="truncate max-w-[90px] inline-block align-middle">{match.opponent}</span>
+                                                </td>
+                                                {[...Array(inningsCount)].map((_, i) => (
+                                                    <td key={i} className="py-3.5 text-muted-foreground/80">
+                                                        {guestScores[i] !== null && guestScores[i] !== undefined ? guestScores[i] : '-'}
+                                                    </td>
+                                                ))}
+                                                <td className="py-3.5 text-xl bg-primary/5 text-foreground">{match.opponentScore}</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="text-left py-3.5 pl-4 text-primary">
+                                                    Self
+                                                </td>
+                                                {[...Array(inningsCount)].map((_, i) => (
+                                                    <td key={i} className="py-3.5 text-muted-foreground/80">
+                                                        {selfScores[i] !== null && selfScores[i] !== undefined ? selfScores[i] : '-'}
+                                                    </td>
+                                                ))}
+                                                <td className="py-3.5 text-xl bg-primary/5 text-primary">{match.myScore}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
 
-                <div className="mt-8 pt-4 border-t border-border text-center text-xs font-bold text-muted-foreground opacity-50 flex items-center justify-center gap-2">
-                    <Trophy className="h-3 w-3" /> Powered by i-Score
+                        {/* 💡 ボックススコア（打撃成績） */}
+                        <section>
+                            <h2 className="text-lg font-black tracking-tight flex items-center gap-2 mb-4 text-foreground">
+                                <Target className="h-5 w-5 text-primary" /> ボックススコア
+                            </h2>
+                            <div className="border border-border rounded-2xl overflow-hidden bg-background">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left whitespace-nowrap min-w-[600px]">
+                                        <thead className="bg-muted border-b border-border">
+                                            <tr>
+                                                <th className="px-4 py-3 font-black text-muted-foreground tracking-wider">打者名</th>
+                                                {[...Array(Math.max(maxAtBatsCount, 3))].map((_, i) => (
+                                                    <th key={i} className="px-4 py-3 text-center font-bold text-muted-foreground">第{i + 1}打席</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {batters.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={maxAtBatsCount + 1} className="text-center py-10 text-muted-foreground font-bold bg-muted/30">打席データがありません</td>
+                                                </tr>
+                                            ) : (
+                                                batters.map(([name, abs], idx) => (
+                                                    <tr key={idx} className="hover:bg-muted/50 transition-colors">
+                                                        <td className="px-4 py-3.5 font-extrabold text-foreground border-r border-border/50 bg-muted/10">
+                                                            {name}
+                                                        </td>
+                                                        {[...Array(Math.max(maxAtBatsCount, 3))].map((_, i) => {
+                                                            const ab = abs[i];
+                                                            return (
+                                                                <td key={i} className="px-4 py-3.5 text-center">
+                                                                    {ab ? (
+                                                                        <div className="flex flex-col items-center gap-1.5">
+                                                                            <span className="text-[10px] text-muted-foreground font-bold tracking-tighter leading-none">{ab.inning}回{ab.isTop ? '表' : '裏'}</span>
+                                                                            {getResultBadge(ab.result)}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-muted-foreground/30 font-black">-</span>
+                                                                    )}
+                                                                </td>
+                                                            );
+                                                        })}
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* フッター署名 */}
+                        <div className="pt-6 border-t border-border flex items-center justify-center gap-2">
+                            <Trophy className="h-4 w-4 text-primary/50" />
+                            <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Powered by i-Score</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }
