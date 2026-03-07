@@ -91,11 +91,11 @@ function NewMatchForm() {
             <label className="text-sm sm:text-base font-extrabold text-foreground flex items-center gap-2 tracking-wide pl-1">
               <Calendar className="h-5 w-5 text-primary" /> シーズン・大会名
             </label>
-            {/* 💡 shadow-sm を shadow-xs に変更 */}
+            {/* 💡 フォーカス時に背景が光り、太くて柔らかいリング（オーラ）が出るように変更 */}
             <input 
               type="text" 
               required 
-              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all placeholder:text-muted-foreground/50" 
+              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs transition-all duration-300 placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background focus-visible:shadow-md" 
               placeholder="例: 2026, 2026-春季大会" 
               value={season} 
               onChange={(e) => setSeason(e.target.value)} 
@@ -107,11 +107,10 @@ function NewMatchForm() {
             <label className="text-sm sm:text-base font-extrabold text-foreground flex items-center gap-2 tracking-wide pl-1">
               <Users className="h-5 w-5 text-primary" /> 対戦相手
             </label>
-            {/* 💡 shadow-sm を shadow-xs に変更 */}
             <input 
               type="text" 
               required 
-              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all placeholder:text-muted-foreground/50" 
+              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs transition-all duration-300 placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background focus-visible:shadow-md" 
               placeholder="例: 横浜ボーイズ" 
               value={opponent} 
               onChange={(e) => setOpponent(e.target.value)} 
@@ -123,11 +122,10 @@ function NewMatchForm() {
             <label className="text-sm sm:text-base font-extrabold text-foreground flex items-center gap-2 tracking-wide pl-1">
               <CalendarDays className="h-5 w-5 text-primary" /> 試合日
             </label>
-            {/* 💡 shadow-sm を shadow-xs に変更 */}
             <input 
               type="date" 
               required 
-              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all cursor-pointer" 
+              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background focus-visible:shadow-md" 
               value={date} 
               onChange={(e) => setDate(e.target.value)} 
             />
@@ -145,7 +143,7 @@ function NewMatchForm() {
                 className={cn(
                   "flex items-center justify-center h-12 rounded-[14px] font-extrabold transition-all duration-200 active:scale-[0.96]",
                   matchType === 'practice' 
-                    ? "bg-background shadow-xs text-primary border border-border/50" // 💡 shadow-sm を shadow-xs に変更
+                    ? "bg-background shadow-xs text-primary border border-border/50" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
@@ -157,7 +155,7 @@ function NewMatchForm() {
                 className={cn(
                   "flex items-center justify-center h-12 rounded-[14px] font-extrabold transition-all duration-200 active:scale-[0.96]",
                   matchType === 'official' 
-                    ? "bg-background shadow-xs text-primary border border-border/50" // 💡 shadow-sm を shadow-xs に変更
+                    ? "bg-background shadow-xs text-primary border border-border/50" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
@@ -180,7 +178,7 @@ function NewMatchForm() {
                   className={cn(
                     "flex items-center justify-center h-12 rounded-[14px] font-extrabold transition-all duration-200 active:scale-[0.96]",
                     innings === num
-                      ? "bg-background shadow-xs text-primary border border-border/50" // 💡 shadow-sm を shadow-xs に変更
+                      ? "bg-background shadow-xs text-primary border border-border/50" 
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                 >
