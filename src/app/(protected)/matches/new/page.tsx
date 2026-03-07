@@ -83,20 +83,19 @@ function NewMatchForm() {
         subtitle="試合情報の入力と設定をしてください。"
       />
 
-      {/* 💡 修正: 外枠（カード）を削除し、フォーム要素が直接画面に並ぶようにしました */}
       <main className="flex-1 px-4 sm:px-6 pt-6 sm:pt-8 max-w-2xl mx-auto w-full animate-in slide-in-from-bottom-4 fade-in duration-500">
         <form onSubmit={handleSubmit} className="space-y-8">
 
           {/* シーズン選択 */}
           <div className="space-y-3">
-            {/* 💡 修正: 項目名（ラベル）のフォントサイズとアイコンを大きくし、色を濃くしました */}
             <label className="text-sm sm:text-base font-extrabold text-foreground flex items-center gap-2 tracking-wide pl-1">
               <Calendar className="h-5 w-5 text-primary" /> シーズン・大会名
             </label>
+            {/* 💡 shadow-sm を shadow-xs に変更 */}
             <input 
               type="text" 
               required 
-              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all placeholder:text-muted-foreground/50" 
+              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all placeholder:text-muted-foreground/50" 
               placeholder="例: 2026, 2026-春季大会" 
               value={season} 
               onChange={(e) => setSeason(e.target.value)} 
@@ -108,10 +107,11 @@ function NewMatchForm() {
             <label className="text-sm sm:text-base font-extrabold text-foreground flex items-center gap-2 tracking-wide pl-1">
               <Users className="h-5 w-5 text-primary" /> 対戦相手
             </label>
+            {/* 💡 shadow-sm を shadow-xs に変更 */}
             <input 
               type="text" 
               required 
-              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all placeholder:text-muted-foreground/50" 
+              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all placeholder:text-muted-foreground/50" 
               placeholder="例: 横浜ボーイズ" 
               value={opponent} 
               onChange={(e) => setOpponent(e.target.value)} 
@@ -123,10 +123,11 @@ function NewMatchForm() {
             <label className="text-sm sm:text-base font-extrabold text-foreground flex items-center gap-2 tracking-wide pl-1">
               <CalendarDays className="h-5 w-5 text-primary" /> 試合日
             </label>
+            {/* 💡 shadow-sm を shadow-xs に変更 */}
             <input 
               type="date" 
               required 
-              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all cursor-pointer" 
+              className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-all cursor-pointer" 
               value={date} 
               onChange={(e) => setDate(e.target.value)} 
             />
@@ -144,7 +145,7 @@ function NewMatchForm() {
                 className={cn(
                   "flex items-center justify-center h-12 rounded-[14px] font-extrabold transition-all duration-200 active:scale-[0.96]",
                   matchType === 'practice' 
-                    ? "bg-background shadow-sm text-primary border border-border/50" 
+                    ? "bg-background shadow-xs text-primary border border-border/50" // 💡 shadow-sm を shadow-xs に変更
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
@@ -156,7 +157,7 @@ function NewMatchForm() {
                 className={cn(
                   "flex items-center justify-center h-12 rounded-[14px] font-extrabold transition-all duration-200 active:scale-[0.96]",
                   matchType === 'official' 
-                    ? "bg-background shadow-sm text-primary border border-border/50" 
+                    ? "bg-background shadow-xs text-primary border border-border/50" // 💡 shadow-sm を shadow-xs に変更
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
@@ -179,7 +180,7 @@ function NewMatchForm() {
                   className={cn(
                     "flex items-center justify-center h-12 rounded-[14px] font-extrabold transition-all duration-200 active:scale-[0.96]",
                     innings === num
-                      ? "bg-background shadow-sm text-primary border border-border/50" 
+                      ? "bg-background shadow-xs text-primary border border-border/50" // 💡 shadow-sm を shadow-xs に変更
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                 >
@@ -198,7 +199,7 @@ function NewMatchForm() {
             <Button 
                 onClick={() => handleSubmit()} 
                 disabled={isLoading} 
-                className="w-full h-14 text-base font-extrabold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:-translate-y-1 active:scale-[0.98]"
+                className="w-full h-14 text-base font-extrabold rounded-2xl shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:-translate-y-1 active:scale-[0.98]"
             >
                 {isLoading ? <><Loader2 className="mr-2 h-6 w-6 animate-spin" /> 作成中...</> : <span className="flex items-center">スタメンの入力へ進む <ChevronRight className="ml-1 h-5 w-5" /></span>}
             </Button>
