@@ -77,7 +77,6 @@ export default function TeamsPage() {
 
             <main className="flex-1 px-4 sm:px-6 max-w-4xl mx-auto w-full mt-6 sm:mt-8 animate-in slide-in-from-bottom-4 fade-in duration-500 relative z-10">
                 
-                {/* 💡 ヘッダー部分（チーム数と新規作成ボタン） */}
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2.5">
                         <Users className="h-6 w-6 text-primary" /> 
@@ -93,7 +92,6 @@ export default function TeamsPage() {
                     )}
                 </div>
 
-                {/* 💡 新規チーム作成フォーム（グラスモーフィズムの美しいパネル） */}
                 {showCreateForm && (
                     <Card className="mb-8 rounded-[32px] border-border/40 bg-background/60 backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] overflow-hidden animate-in slide-in-from-top-4 fade-in duration-300 relative">
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary/50 to-primary" />
@@ -150,33 +148,37 @@ export default function TeamsPage() {
                         <Button onClick={() => setShowCreateForm(true)} className="font-extrabold rounded-full h-12 px-8 shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all">最初のチームを作成する</Button>
                     </div>
                 ) : (
-                    /* 💡 チームカード一覧（ウォレット風UI） */
                     <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 mt-4">
                         {teams.map((team) => (
                             <Card
                                 key={team.id}
                                 onClick={() => handleTeamClick(team.id)}
-                                className="group relative overflow-hidden rounded-[28px] border-border/50 bg-background shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:scale-[0.96] cursor-pointer"
+                                /* 💡 hoverだけでなく、スマホ用に active クラスを追加 */
+                                className="group relative overflow-hidden rounded-[28px] border-border/50 bg-background shadow-sm transition-all duration-200 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer"
                             >
-                                {/* 背景のアクセント（ホバー時にフワッと広がる） */}
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[120px] -mr-8 -mt-8 transition-transform duration-500 group-hover:scale-[1.3] group-hover:bg-primary/10" />
+                                {/* 💡 スマホのタップ時（group-active）にも背景の円が広がるように！ */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[120px] -mr-8 -mt-8 transition-transform duration-300 group-hover:scale-[1.3] group-hover:bg-primary/10 group-active:scale-[1.3] group-active:bg-primary/10" />
                                 
-                                <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col h-full">
+                                <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col h-full pointer-events-none">
                                     <div className="flex justify-between items-start mb-6">
-                                        <div className="p-3.5 bg-muted/50 rounded-[18px] text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-300 shadow-sm border border-border/50 group-hover:border-primary/20">
+                                        {/* 💡 アイコンの背景色もタップで変わる！ */}
+                                        <div className="p-3.5 bg-muted/50 rounded-[18px] text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary transition-colors duration-200 shadow-sm border border-border/50 group-hover:border-primary/20 group-active:border-primary/20">
                                             <Shield className="h-7 w-7" />
                                         </div>
-                                        <div className="inline-flex items-center rounded-full px-3 py-1.5 text-[10px] sm:text-xs font-black bg-muted/50 text-muted-foreground uppercase tracking-widest group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-300 border border-border/50 group-hover:border-primary/20 shadow-sm">
+                                        {/* 💡 ロールバッジの色もタップで変わる！ */}
+                                        <div className="inline-flex items-center rounded-full px-3 py-1.5 text-[10px] sm:text-xs font-black bg-muted/50 text-muted-foreground uppercase tracking-widest group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary transition-colors duration-200 border border-border/50 group-hover:border-primary/20 group-active:border-primary/20 shadow-sm">
                                             {team.myRole}
                                         </div>
                                     </div>
                                     
-                                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary transition-colors duration-300 drop-shadow-sm mt-auto">
+                                    {/* 💡 チーム名もタップで光る！ */}
+                                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary group-active:text-primary transition-colors duration-200 drop-shadow-sm mt-auto">
                                         {team.name}
                                     </h3>
                                     
-                                    <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 transition-colors duration-300">
-                                        ダッシュボードを開く <ChevronRight className="h-5 w-5 ml-1 transition-transform group-hover:translate-x-1" />
+                                    {/* 💡 矢印もタップでスッと動く！ */}
+                                    <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 group-active:text-primary/80 transition-colors duration-200">
+                                        ダッシュボードを開く <ChevronRight className="h-5 w-5 ml-1 transition-transform group-hover:translate-x-1 group-active:translate-x-1" />
                                     </div>
                                 </CardContent>
                             </Card>
