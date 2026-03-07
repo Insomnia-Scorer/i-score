@@ -3,7 +3,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link"; // 💡 スタッツ画面への遷移用
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,7 +43,6 @@ function RosterContent() {
             const res = await fetch(`/api/teams/${teamId}/players`);
             if (res.ok) {
                 const data = await res.json() as Player[];
-                // 💡 背番号順に並び替え（実用性アップ）
                 setPlayers(data.sort((a, b) => {
                     const numA = parseInt(a.uniformNumber) || 999;
                     const numB = parseInt(b.uniformNumber) || 999;
@@ -97,7 +96,7 @@ function RosterContent() {
     };
 
     const handleDeletePlayer = async (e: React.MouseEvent, playerId: string, playerName: string) => {
-        e.preventDefault(); // 💡 カードのリンク遷移をブロックする
+        e.preventDefault();
         e.stopPropagation();
 
         if (!teamId || !confirm(`本当に選手「${playerName}」を名簿から削除しますか？\n（スコアブック上の記録は残ります）`)) return;
@@ -143,47 +142,52 @@ function RosterContent() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                         {players.map((player) => (
-                            /* 💡 究極UI: カード全体をリンク化し、スタッツ画面へ美しく遷移 */
                             <Link 
                                 href={`/players/detail?teamId=${teamId}&playerName=${encodeURIComponent(player.name)}&uniformNumber=${encodeURIComponent(player.uniformNumber)}`}
                                 key={player.id} 
                                 className="block group outline-none"
                             >
-                                <Card className="relative overflow-hidden rounded-[32px] border-border/50 bg-background shadow-xs transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:scale-[0.96] cursor-pointer h-full">
+                                {/* 💡 スマホのタップ（active）に対応 */}
+                                <Card className="relative overflow-hidden rounded-[28px] border-border/50 bg-background shadow-sm transition-all duration-200 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer h-full">
                                     
-                                    {/* 背景の巨大背番号ウォーターマーク */}
-                                    <div className="absolute -bottom-6 -right-2 text-[180px] sm:text-[220px] font-black italic text-foreground/[0.03] group-hover:text-primary/10 transition-colors duration-500 select-none z-0 tracking-tighter leading-none pointer-events-none">
+                                    {/* 💡 背景の円がホバー＆タップでフワッと広がる（チーム一覧と同じエフェクト） */}
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[120px] -mr-8 -mt-8 transition-transform duration-300 group-hover:scale-[1.3] group-hover:bg-primary/10 group-active:scale-[1.3] group-active:bg-primary/10 z-0" />
+
+                                    {/* 巨大背番号ウォーターマークもタップに反応させる */}
+                                    <div className="absolute -bottom-6 -right-2 text-[180px] sm:text-[220px] font-black italic text-foreground/[0.03] group-hover:text-primary/10 group-active:text-primary/10 transition-colors duration-300 select-none z-0 tracking-tighter leading-none pointer-events-none">
                                         {player.uniformNumber}
                                     </div>
                                     
-                                    {/* 左端のアクセントカラー帯 */}
-                                    <div className="absolute top-0 left-0 w-2 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-300 z-10" />
-                                    
-                                    <CardContent className="p-6 relative z-10 flex flex-col h-full pl-8">
+                                    <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col h-full pl-8 pointer-events-none">
                                         <div className="flex justify-between items-start mb-6">
-                                            {/* アイコンと背番号 */}
-                                            <div className="flex items-center justify-center w-14 h-14 rounded-[20px] bg-primary/10 text-primary font-black text-2xl border border-primary/20 shadow-sm group-hover:scale-110 group-active:scale-95 transition-all duration-300">
+                                            {/* 💡 背番号アイコン：最初はグレーで、タップするとプライマリカラーに鮮やかに変化！ */}
+                                            <div className="flex items-center justify-center w-14 h-14 rounded-[20px] bg-muted/50 text-muted-foreground font-black text-2xl border border-border/50 shadow-sm group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary group-hover:border-primary/20 group-active:border-primary/20 transition-all duration-200">
                                                 {player.uniformNumber}
                                             </div>
-                                            {/* 削除ボタン（独立して機能するように e.preventDefault() を設定済み） */}
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                onClick={(e) => handleDeletePlayer(e, player.id, player.name)} 
-                                                className="h-10 w-10 rounded-full text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 z-20 relative transition-colors"
-                                                title="選手を削除"
-                                            >
-                                                <Trash2 className="h-5 w-5" />
-                                            </Button>
+                                            
+                                            {/* 削除ボタン（独立して機能するように pointer-events-auto を付与） */}
+                                            <div className="pointer-events-auto">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    onClick={(e) => handleDeletePlayer(e, player.id, player.name)} 
+                                                    className="h-10 w-10 rounded-full text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                                    title="選手を削除"
+                                                >
+                                                    <Trash2 className="h-5 w-5" />
+                                                </Button>
+                                            </div>
                                         </div>
                                         
-                                        <h3 className="text-2xl font-black tracking-tight mb-2 truncate group-hover:text-primary transition-colors duration-300 drop-shadow-sm mt-auto">
+                                        {/* 💡 選手名もタップで光る！ */}
+                                        <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary group-active:text-primary transition-colors duration-200 drop-shadow-sm mt-auto">
                                             {player.name}
                                         </h3>
                                         
-                                        <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-2 group-hover:text-primary/80 transition-colors duration-300">
+                                        {/* 💡 矢印もタップでスッと動く！ */}
+                                        <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 group-active:text-primary/80 transition-colors duration-200">
                                             <BarChart3 className="h-4 w-4 mr-1.5 opacity-70" />
-                                            スタッツを見る <ChevronRight className="h-4 w-4 ml-0.5 transition-transform group-hover:translate-x-1" />
+                                            スタッツを見る <ChevronRight className="h-5 w-5 ml-1 transition-transform group-hover:translate-x-1 group-active:translate-x-1" />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -193,7 +197,7 @@ function RosterContent() {
                 )}
             </main>
 
-            {/* 💡 追従する登録ボタン */}
+            {/* 追従する登録ボタン */}
             <Button 
                 onClick={() => setIsModalOpen(true)}
                 className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-[24px] shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center"
@@ -202,7 +206,7 @@ function RosterContent() {
                 <span className="sr-only">選手を追加</span>
             </Button>
 
-            {/* 💡 新規登録モーダル（グラスモーフィズム） */}
+            {/* 新規登録モーダル（グラスモーフィズム） */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-md animate-in fade-in duration-200">
                     <div className="absolute inset-0" onClick={() => !isSaving && setIsModalOpen(false)} />
