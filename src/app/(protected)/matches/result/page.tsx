@@ -73,7 +73,7 @@ function MatchResultContent() {
                 if (tid) {
                     const teamsRes = await fetch('/api/teams');
                     if (teamsRes.ok) {
-                        const teams = await teamsRes.json();
+                        const teams = await teamsRes.json() as { id: string, name: string }[];
                         const t = teams.find((t: any) => t.id === tid);
                         if (t) setTeamName(t.name);
                     }
@@ -335,3 +335,4 @@ export default function MatchResultPage() {
         </Suspense>
     );
 }
+
