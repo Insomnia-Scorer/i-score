@@ -1,48 +1,34 @@
+/* src/app/globals.css */
 @import "tailwindcss";
 
-@layer base {
-    :root {
-        /* 💡 1. 背景を真っ白から「極上のオフホワイト(Slate 50相当)」に変更 */
-        --background: 210 40% 98.5%;
+:root {
+    /* Better Auth風 (Light Mode) */
+    /* 💡 1. 背景を真っ白から「極上のオフホワイト」に変更 */
+    --background: #fafafa;
+    --foreground: #09090b;
 
-        /* 💡 2. カードは「純白」を維持。これで背景との間に美しい段差（奥行き）が生まれます */
-        --card: 0 0% 100%;
+    /* 💡 2. カードは「純白」を定義。これで背景との間に美しい段差が生まれます */
+    --card: #ffffff;
+    --card-foreground: #09090b;
 
-        /* ... (他の変数はそのまま残してください) ... */
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    --primary: #18181b;
+    --primary-foreground: #fafafa;
+    --border: #e4e4e7;
+    --ring: #18181b;
+    --radius: 0.5rem;
 
-        /* 💡 3. 光彩エフェクトの透明度を設定（ライトモードは3%） */
-        --bg-glow-opacity: 0.03;
-    }
-
-    .dark {
-        /* ... (ダークモードの変数はそのまま残してください) ... */
-
-        /* 💡 ダークモードでも1.5%だけ光彩を入れると、真っ黒にならずリッチになります */
-        --bg-glow-opacity: 0.015;
-    }
-}
-
-@layer base {
-    * {
-        @apply border-border;
-    }
-
-    /* 💡 4. ここが魔法のコードです！ */
-    body {
-        @apply bg-background text-foreground font-sans antialiased;
-
-        /* 究極の「さりげなさ」：画面の左上と右下から、テーマカラーを極薄で滲ませる */
-        background-image:
-            radial-gradient(circle at 0% 0%, hsla(var(--primary) / var(--bg-glow-opacity)) 0%, transparent 45vw),
-            radial-gradient(circle at 100% 100%, hsla(var(--primary) / var(--bg-glow-opacity)) 0%, transparent 45vw);
-        background-attachment: fixed;
-    }
+    /* 💡 3. 光彩エフェクトの濃さ（ライトモードは3%） */
+    --bg-glow: 3%;
 }
 
 @theme inline {
     /* Tailwindのクラス名とCSS変数を結びつける */
     --color-background: var(--background);
     --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
     --color-primary: var(--primary);
@@ -60,19 +46,36 @@
     /* Better Auth風 (Dark Mode) */
     --background: #09090b;
     --foreground: #fafafa;
+    --card: #09090b;
+    /* ダーク時は背景と同化させてスッキリと */
+    --card-foreground: #fafafa;
     --muted: #27272a;
     --muted-foreground: #a1a1aa;
     --primary: #fafafa;
     --primary-foreground: #18181b;
     --border: #27272a;
     --ring: #d4d4d8;
+
+    /* ダークモードは光彩を控えめに（1.5%） */
+    --bg-glow: 1.5%;
 }
 
 body {
     background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+
+    /* 💡 4. 究極の「さりげなさ」：最新CSSの color-mix を使ったグラデーション魔法 */
+    /* どのテーマカラーを選んでも、自動的にその色が画面の隅から極薄で滲み出ます */
+    background-image:
+        radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--primary) var(--bg-glow), transparent) 0%, transparent 45vw),
+        radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--primary) var(--bg-glow), transparent) 0%, transparent 45vw);
+    background-attachment: fixed;
 }
+
+/* =======================================================
+   ⚾️ テーマカラー定義（ここから下は変更なし）
+   ======================================================= */
 
 /* ⚾️ パターン1：ブルー（爽やかなスポーツブルー・横浜や中日風） */
 .theme-blue {
