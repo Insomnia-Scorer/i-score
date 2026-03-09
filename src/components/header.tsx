@@ -102,6 +102,7 @@ function HeaderContent() {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md text-foreground transition-all duration-300">
         <div className="container mx-auto max-w-4xl flex h-16 items-center justify-between px-4 sm:px-6">
 
+          {/* 左側：ロゴとメニュー */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -142,19 +143,22 @@ function HeaderContent() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* 右側：ツールとアバター */}
+          <div className="flex items-center gap-2 sm:gap-4">
+
+            {/* 💡 ライト/ダーク切り替えをヘッダーに常時表示！ */}
+            <ThemeToggle />
+
             {session && (
               <div className="relative hidden md:block" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  // 💡 修正: 画像が丸く切り抜かれるように `overflow-hidden` と `p-0` などの微調整を追加
                   className={cn(
                     "flex items-center justify-center h-10 w-10 rounded-full border transition-all active:scale-95 overflow-hidden",
                     isUserMenuOpen ? "border-primary/30 ring-2 ring-primary/20 ring-offset-2 ring-offset-background" : "border-border/50 hover:border-primary/50",
                     !session.user.image && "bg-muted/50 text-foreground/70 hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  {/* 💡 アバター画像があれば表示、なければデフォルトアイコン */}
                   {session.user.image ? (
                     <img src={session.user.image} alt={session.user.name} className="h-full w-full object-cover" />
                   ) : (
@@ -171,11 +175,11 @@ function HeaderContent() {
                     </div>
 
                     <div className="px-3 py-3 space-y-3">
-                      <div className="flex items-center justify-between px-1">
-                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">外観（テーマ）</span>
-                        <ThemeToggle />
+                      <div className="px-1">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">テーマカラー</span>
                       </div>
                       <div className="px-1 flex justify-center">
+                        {/* 💡 ダークモード切り替えを外に出したので、テーマカラー選択のみ表示 */}
                         <ThemeSwitcher />
                       </div>
                     </div>
@@ -255,7 +259,6 @@ function HeaderContent() {
           <div className="p-4 pb-8 mt-auto">
             <div className="rounded-[24px] bg-muted/30 border border-border/50 p-4 space-y-5 shadow-sm">
               <div className="flex items-center gap-3">
-                {/* 💡 モバイルメニューのプロフィールアイコンも同様に対応 */}
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background border border-border/50 text-foreground shadow-sm overflow-hidden">
                   {session.user.image ? (
                     <img src={session.user.image} alt={session.user.name} className="h-full w-full object-cover" />
@@ -269,9 +272,9 @@ function HeaderContent() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between bg-background rounded-[16px] p-2 border border-border/50">
+              <div className="flex items-center justify-center bg-background rounded-[16px] p-3 border border-border/50">
+                {/* 💡 モバイルメニュー内もテーマ選択（カラー）のみを中央に配置 */}
                 <ThemeSwitcher />
-                <ThemeToggle />
               </div>
 
               <Button
