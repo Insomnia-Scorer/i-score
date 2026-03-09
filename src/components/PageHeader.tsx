@@ -12,8 +12,11 @@ interface PageHeaderProps {
 
 export function PageHeader({ href, icon: Icon, title, subtitle }: PageHeaderProps) {
     return (
-        <header className="bg-primary text-primary-foreground p-4 sticky top-0 z-10 shadow-md transition-colors duration-300">
-            <div className="flex items-center gap-3">
+        // 💡 headerタグ自体は幅100%になり、背景色とシャドウを画面いっぱいに広げます
+        <header className="bg-primary text-primary-foreground sticky top-0 z-10 shadow-md transition-colors duration-300">
+
+            {/* 💡 中身のコンテナに max-w-5xl と mx-auto を設定し、メインコンテンツと幅を揃えます */}
+            <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-4 flex items-center gap-3">
 
                 <Button
                     variant="ghost"
