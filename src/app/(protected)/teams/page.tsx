@@ -82,7 +82,6 @@ export default function TeamsPage() {
         router.push('/dashboard');
     };
 
-    // 💡 修正：バックエンドから返ってきたエラーメッセージ（重複など）をトーストで表示する
     const handleCreateOrg = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newOrgName.trim()) return;
@@ -130,7 +129,6 @@ export default function TeamsPage() {
         } catch (e) { console.error(e); }
     };
 
-    // 💡 修正：チーム作成時もバックエンドのエラーを正しく処理するよう強化
     const handleCreateTeam = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newTeamName.trim() || !selectedOrg) return;
@@ -175,10 +173,6 @@ export default function TeamsPage() {
             />
 
             <main className="flex-1 px-4 sm:px-6 max-w-4xl mx-auto w-full mt-6 sm:mt-8 relative z-10">
-
-                {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    💡 View 1: クラブ（組織）一覧画面
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
                 {view === 'orgs' && (
                     <div className="animate-in slide-in-from-left-4 fade-in duration-300">
                         <div className="flex items-center justify-between mb-6">
@@ -202,7 +196,8 @@ export default function TeamsPage() {
                                     <Card
                                         key={org.id}
                                         onClick={() => handleSelectOrg(org)}
-                                        className="group relative overflow-hidden rounded-[28px] border-border/50 bg-background shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer"
+                                        // 💡 修正: bg-background から bg-card（純白）に変更し、浮かび上がらせる！
+                                        className="group relative overflow-hidden rounded-[28px] border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer"
                                     >
                                         <div className="absolute top-0 right-0 pointer-events-none">
                                             <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-110 group-active:scale-110" />
@@ -249,10 +244,6 @@ export default function TeamsPage() {
                     </div>
                 )}
 
-
-                {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    💡 View 2: 選択したクラブ内の「チーム」一覧画面
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
                 {view === 'teams' && selectedOrg && (
                     <div className="animate-in slide-in-from-right-4 fade-in duration-300">
                         <div className="mb-6 flex flex-col items-start gap-4">
@@ -287,7 +278,8 @@ export default function TeamsPage() {
                                     <Card
                                         key={team.id}
                                         onClick={() => handleTeamClick(team.id)}
-                                        className="group relative overflow-hidden rounded-[28px] border-border/50 bg-background shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer"
+                                        // 💡 修正: bg-background から bg-card（純白）に変更！
+                                        className="group relative overflow-hidden rounded-[28px] border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer"
                                     >
                                         <div className="absolute top-0 right-0 pointer-events-none">
                                             <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-110 group-active:scale-110" />
@@ -321,9 +313,6 @@ export default function TeamsPage() {
                 )}
             </main>
 
-            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                💡 究極のFAB（右下に浮遊する完全な丸型＋ボタン）
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
             <Button
                 onClick={() => view === 'orgs' ? setShowOrgCreate(true) : setShowTeamCreate(true)}
                 className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center"
@@ -331,9 +320,6 @@ export default function TeamsPage() {
                 <Plus className="h-8 w-8" />
             </Button>
 
-            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                💡 究極のモーダル：のっぺら感ゼロのPrimary背景
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
             {(showOrgCreate || showTeamCreate) && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="absolute inset-0" onClick={() => {

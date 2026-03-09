@@ -4,7 +4,7 @@
 :root {
     /* Better Auth風 (Light Mode) */
     /* 💡 1. 背景を真っ白から「極上のオフホワイト」に変更 */
-    --background: #fafafa;
+    --background: #f8f8f8;
     --foreground: #09090b;
 
     /* 💡 2. カードは「純白」を定義。これで背景との間に美しい段差が生まれます */

@@ -220,7 +220,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground font-extrabold text-lg">まずはあなたの「クラブ」と「チーム」を立ち上げましょう。</p>
         </div>
 
-        <Card className="rounded-[32px] border-border/40 shadow-[0_8px_30px_rgba(0,0,0,0.08)] bg-background/60 backdrop-blur-2xl overflow-hidden text-center p-8 sm:p-12 relative group">
+        <Card className="rounded-[32px] border-border/40 shadow-[0_8px_30px_rgba(0,0,0,0.08)] bg-card/60 backdrop-blur-2xl overflow-hidden text-center p-8 sm:p-12 relative group">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 to-blue-600" />
 
           <p className="text-sm font-bold text-muted-foreground mb-8">
@@ -238,7 +238,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-500 pb-24">
       {/* ヘッダー */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-background/60 backdrop-blur-xl p-4 sm:p-6 rounded-[24px] border border-border/50 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/60 backdrop-blur-xl p-4 sm:p-6 rounded-[24px] border border-border/50 shadow-sm">
         <div>
           <h1 className="text-2xl font-black tracking-tight">ダッシュボード</h1>
           <div className="flex items-center gap-2 mt-1">
@@ -345,16 +345,16 @@ export default function DashboardPage() {
 
       {/* セグメントタブ */}
       <div className="flex bg-muted/30 p-1.5 rounded-[20px] border border-border/50 max-w-3xl overflow-x-auto scrollbar-hide shadow-inner">
-        <button onClick={() => setActiveTab("matches")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "matches" ? "bg-background shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
+        <button onClick={() => setActiveTab("matches")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "matches" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
           <History className="h-4 w-4" /> <span className="hidden sm:inline">試合</span>結果
         </button>
-        <button onClick={() => setActiveTab("batterStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "batterStats" ? "bg-background shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
+        <button onClick={() => setActiveTab("batterStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "batterStats" ? "bg-bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
           <BarChart3 className="h-4 w-4" /> 打撃<span className="hidden sm:inline">成績</span>
         </button>
-        <button onClick={() => setActiveTab("pitcherStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "pitcherStats" ? "bg-background shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
+        <button onClick={() => setActiveTab("pitcherStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "pitcherStats" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
           <Activity className="h-4 w-4" /> 投手<span className="hidden sm:inline">成績</span>
         </button>
-        <button onClick={() => setActiveTab("sprayChart")} className={cn("flex-1 min-w-[130px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "sprayChart" ? "bg-background shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
+        <button onClick={() => setActiveTab("sprayChart")} className={cn("flex-1 min-w-[130px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "sprayChart" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
           <Map className="h-4 w-4" /> <span className="hidden sm:inline">スプレー</span>チャート
         </button>
       </div>
