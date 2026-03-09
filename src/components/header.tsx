@@ -9,7 +9,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
-// 💡 ロールチェック用の関数を追加インポート
 import { canManageTeam } from "@/lib/roles";
 import {
   UserCircle,
@@ -19,8 +18,10 @@ import {
   Home,
   ClipboardList,
   ShieldAlert,
-  Shield
+  ChevronDown
 } from "lucide-react";
+// 💡 クラブ・チーム用のアイコンをインポート
+import { RiTeamFill } from "react-icons/ri";
 import { cn } from "@/lib/utils";
 
 export function Header() {
@@ -31,7 +32,6 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  // 💡 スコア入力画面ではヘッダーを完全に隠して画面を広く使う
   if (pathname?.includes("/matches/score")) {
     return null;
   }
@@ -39,11 +39,11 @@ export function Header() {
   if (!mounted) {
     return (
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md text-foreground">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
+        <div className="container mx-auto max-w-5xl flex h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-4">
             <div className="md:hidden h-10 w-10" />
             <Link href="/" className="flex items-center space-x-2">
-              <span className="font-extrabold text-2xl tracking-tighter text-primary">i-Score</span>
+              <span className="font-extrabold italic text-2xl tracking-tighter text-primary">i-Score</span>
             </Link>
           </div>
           <div className="h-8 w-8" />
@@ -63,16 +63,29 @@ function HeaderContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const closeMenu = () => setIsMobileMenuOpen(false);
 
-  // 💡 現在のユーザー権限を取得し、管理者かどうか判定
+  // 💡 プルダウンメニューの開閉状態と、画面外クリック検知用のRef
+  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
+
+  // 画面外をクリックしたらプルダウンを閉じる魔法
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const userRole = (session?.user as unknown as { role?: string })?.role;
   const isManager = canManageTeam(userRole);
 
-  // 💡 セッション状態や権限に応じて動的にメニューを生成するように変更
   const navItems = [
     { name: "ホーム", href: "/", icon: Home, show: false },
     { name: "ダッシュボード", href: "/dashboard", icon: ClipboardList, show: !!session },
-    { name: "マイチーム", href: "/teams", icon: Shield, show: !!session },
-    // 💡 管理者・監督のみ表示されるメニュー
+    // 💡 メニュー名を「クラブ・チーム」に変更し、アイコンを RiTeamFill に！
+    { name: "クラブ・チーム", href: "/teams", icon: RiTeamFill, show: !!session },
     { name: "システム管理", href: "/admin", icon: ShieldAlert, show: !!session && isManager },
   ];
 
@@ -81,6 +94,7 @@ function HeaderContent() {
       fetchOptions: {
         onSuccess: () => {
           closeMenu();
+          setIsUserMenuOpen(false);
           router.push("/login");
           router.refresh();
         },
@@ -91,7 +105,8 @@ function HeaderContent() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md text-foreground transition-all duration-300">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
+        {/* 💡 コンテナの幅も max-w-5xl (または4xl) で合わせておくことで、コンテンツの左端が揃います */}
+        <div className="container mx-auto max-w-5xl flex h-16 items-center justify-between px-4 sm:px-6">
 
           <div className="flex items-center gap-4">
             <button
@@ -105,16 +120,15 @@ function HeaderContent() {
             {/* PC用ヘッダー部分 */}
             <Link href="/" className="flex items-center gap-1 group transition-opacity hover:opacity-80">
               <LogoIcon className="h-10 w-10 transition-transform group-hover:scale-110 duration-300" />
-              {/* 💡 italic を追加して画像の世界観に合わせる */}
               <span className="font-black italic text-2xl tracking-tighter text-foreground group-hover:text-primary transition-colors">
                 i-Score
               </span>
             </Link>
 
             {/* PC用ナビゲーション */}
-            <nav className="hidden md:flex items-center gap-2 ml-6 text-sm font-medium">
+            <nav className="hidden md:flex items-center gap-2 ml-8 text-sm font-bold">
               {navItems.map((item) => {
-                if (!item.show) return null; // 💡 show が false のものはスキップ
+                if (!item.show) return null;
                 const isActive = pathname === item.href;
 
                 return (
@@ -122,13 +136,13 @@ function HeaderContent() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-[18px] w-[18px]" />
                     {item.name}
                   </Link>
                 );
@@ -137,27 +151,62 @@ function HeaderContent() {
           </div>
 
           <div className="flex items-center gap-4">
-            <ThemeToggle />
-            {session ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2 bg-background/50 backdrop-blur-sm px-4 py-1.5 rounded-full border border-border/50 shadow-sm">
-                  <UserCircle className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold truncate max-w-[120px]">{session.user.name}</span>
-                </div>
-                <Button variant="ghost" size="icon" onClick={handleLogout} className="hidden sm:flex text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors">
-                  <LogOut className="h-5 w-5" />
-                </Button>
+            {/* 💡 未ログイン時の「ログインボタン」は不要なので削除！ */}
+            {session && (
+              <div className="relative hidden md:block" ref={userMenuRef}>
+                {/* 💡 アバターアイコンだけのスマートなボタン */}
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className={cn(
+                    "flex items-center justify-center h-10 w-10 rounded-full border transition-all active:scale-95",
+                    isUserMenuOpen ? "bg-primary/10 border-primary/30 text-primary ring-2 ring-primary/20 ring-offset-2 ring-offset-background" : "bg-muted/50 border-border/50 text-foreground/70 hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <UserCircle className="h-6 w-6" />
+                </button>
+
+                {/* 💡 クリックで開く、極上のプルダウンメニュー（グラスモーフィズム） */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-3 w-72 bg-card/95 backdrop-blur-2xl rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-border/50 p-2 z-50 animate-in fade-in slide-in-from-top-2 zoom-in-95 duration-200">
+
+                    {/* ユーザー情報エリア */}
+                    <div className="px-4 py-4 border-b border-border/50 mb-2 bg-muted/20 rounded-[18px]">
+                      <div className="font-black text-base truncate text-foreground mb-0.5">{session.user.name}</div>
+                      <div className="text-xs font-bold text-muted-foreground truncate">{session.user.email}</div>
+                    </div>
+
+                    {/* テーマ選択エリア */}
+                    <div className="px-3 py-3 space-y-3">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">外観（テーマ）</span>
+                        <ThemeToggle />
+                      </div>
+                      <div className="px-1 flex justify-center">
+                        <ThemeSwitcher />
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-border/50 my-2 mx-3" />
+
+                    {/* ログアウトエリア */}
+                    <div className="p-1">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-[16px] h-12 font-extrabold transition-colors"
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="mr-3 h-5 w-5" /> ログアウト
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <Button size="sm" className="rounded-full px-6 shadow-sm transition-transform hover:scale-105" asChild>
-                <Link href="/login">ログイン</Link>
-              </Button>
             )}
           </div>
         </div>
       </header>
 
-      {/* 背景オーバーレイ */}
+      {/* 背景オーバーレイ（モバイル用） */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity md:hidden"
@@ -165,17 +214,17 @@ function HeaderContent() {
         />
       )}
 
-      {/* スライドメニュー本体 */}
+      {/* スライドメニュー本体（モバイル用） */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-[70] flex w-[300px] flex-col bg-background/95 backdrop-blur-xl border-r border-border/50 shadow-2xl transition-transform duration-300 ease-out md:hidden",
+          "fixed inset-y-0 left-0 z-[70] flex w-[300px] flex-col bg-card/95 backdrop-blur-xl border-r border-border/50 shadow-2xl transition-transform duration-300 ease-out md:hidden",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between px-6 pt-2">
-          <div className="flex items-center gap-1">
-            <LogoIcon className="h-9 w-9" />
-            <span className="font-black italic text-2xl tracking-tighter">i-Score</span>
+          <div className="flex items-center gap-2">
+            <LogoIcon className="h-8 w-8" />
+            <span className="font-black italic text-xl tracking-tighter">i-Score</span>
           </div>
           <button
             onClick={closeMenu}
@@ -188,7 +237,7 @@ function HeaderContent() {
         <div className="flex flex-1 flex-col overflow-y-auto py-6">
           <nav className="flex flex-col gap-2 px-4">
             {navItems.map((item) => {
-              if (!item.show) return null; // 💡 show が false のものはスキップ
+              if (!item.show) return null;
               const isActive = pathname === item.href;
 
               return (
@@ -197,9 +246,9 @@ function HeaderContent() {
                   href={item.href}
                   onClick={closeMenu}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-4 py-3.5 text-base font-semibold transition-all duration-200",
+                    "flex items-center gap-3 rounded-[16px] px-4 py-4 text-base font-bold transition-all duration-200",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-md transform scale-[1.02]"
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 transform scale-[1.02]"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.98]"
                   )}
                 >
@@ -211,28 +260,33 @@ function HeaderContent() {
           </nav>
         </div>
 
-        {/* ユーザープロフィールカード */}
+        {/* モバイル用のユーザープロフィールカード */}
         {session && (
-          <div className="p-4 pb-8">
-            <div className="rounded-2xl bg-muted/50 border border-border/50 p-4 space-y-4 shadow-sm">
+          <div className="p-4 pb-8 mt-auto">
+            <div className="rounded-[24px] bg-muted/30 border border-border/50 p-4 space-y-5 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <UserCircle className="h-6 w-6" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background border border-border/50 text-foreground shadow-sm">
+                  <UserCircle className="h-7 w-7" />
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm font-bold truncate">{session.user.name}</span>
-                  <span className="text-xs text-muted-foreground truncate">{session.user.email}</span>
+                  <span className="text-sm font-black truncate">{session.user.name}</span>
+                  <span className="text-xs font-bold text-muted-foreground truncate">{session.user.email}</span>
                 </div>
               </div>
+
+              <div className="flex items-center justify-between bg-background rounded-[16px] p-2 border border-border/50">
+                <ThemeSwitcher />
+                <ThemeToggle />
+              </div>
+
               <Button
                 variant="outline"
-                className="w-full rounded-xl border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                className="w-full rounded-[16px] h-12 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white font-extrabold transition-colors"
                 onClick={handleLogout}
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 ログアウト
               </Button>
-              <ThemeSwitcher />
             </div>
           </div>
         )}
