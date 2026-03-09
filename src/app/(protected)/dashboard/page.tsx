@@ -211,23 +211,26 @@ export default function DashboardPage() {
     return (
       <div className="container mx-auto max-w-xl px-4 py-20 animate-in slide-in-from-bottom-4 fade-in duration-500">
         <div className="text-center mb-10">
-          <div className="h-28 w-28 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-blue-500/20 relative">
-            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl animate-pulse" />
-            {/* 💡 アイコンを RiTeamFill に変更 */}
-            <RiTeamFill className="h-14 w-14 text-blue-600 relative z-10" />
+          {/* 💡 修正: Blue系をすべて Primary系 に変更 */}
+          <div className="h-28 w-28 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-primary/20 relative">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+            <RiTeamFill className="h-14 w-14 text-primary relative z-10" />
           </div>
-          <h1 className="text-4xl font-black tracking-tight mb-4 drop-shadow-sm">ようこそ i-Score へ！</h1>
+          <h1 className="text-4xl font-black tracking-tight mb-4 drop-shadow-sm text-foreground">ようこそ i-Score へ！</h1>
           <p className="text-muted-foreground font-extrabold text-lg">まずはあなたの「クラブ」と「チーム」を立ち上げましょう。</p>
         </div>
 
-        <Card className="rounded-[32px] border-border/40 shadow-[0_8px_30px_rgba(0,0,0,0.08)] bg-card/60 backdrop-blur-2xl overflow-hidden text-center p-8 sm:p-12 relative group">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 to-blue-600" />
+        {/* 💡 修正: 背景を bg-card/80 にして白く浮き上がらせる */}
+        <Card className="rounded-[32px] border-border/40 shadow-[0_8px_30px_rgba(0,0,0,0.08)] bg-card/80 backdrop-blur-2xl overflow-hidden text-center p-8 sm:p-12 relative group">
+          {/* 💡 修正: 上部のグラデーションラインを Primary に */}
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary/60 to-primary" />
 
           <p className="text-sm font-bold text-muted-foreground mb-8">
             クラブ管理画面から、新しいクラブを作成し、その中に1軍やジュニアチームを追加できます。
           </p>
 
-          <Button asChild className="h-16 px-10 text-lg font-black rounded-[24px] shadow-xl shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:scale-[0.96]">
+          {/* 💡 修正: ボタンも Primary カラーに */}
+          <Button asChild className="h-16 px-10 text-lg font-black rounded-[24px] shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:scale-[0.96]">
             <Link href="/teams">クラブ・チーム管理へ進む <ChevronRight className="ml-2 h-6 w-6 transition-transform group-hover:translate-x-1" /></Link>
           </Button>
         </Card>
@@ -238,7 +241,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-500 pb-24">
       {/* ヘッダー */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/60 backdrop-blur-xl p-4 sm:p-6 rounded-[24px] border border-border/50 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/80 backdrop-blur-xl p-4 sm:p-6 rounded-[24px] border border-border/50 shadow-sm">
         <div>
           <h1 className="text-2xl font-black tracking-tight">ダッシュボード</h1>
           <div className="flex items-center gap-2 mt-1">
@@ -265,7 +268,6 @@ export default function DashboardPage() {
               <div className="relative z-10 flex flex-col h-full justify-between">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl flex items-center gap-3 text-primary font-black">
-                    {/* 💡 先ほど追加した野球アイコン！ */}
                     <div className="p-2.5 bg-primary/20 rounded-2xl"><FaBaseballBatBall className="h-6 w-6" /></div>
                     新しい試合を記録
                   </CardTitle>
@@ -348,7 +350,7 @@ export default function DashboardPage() {
         <button onClick={() => setActiveTab("matches")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "matches" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
           <History className="h-4 w-4" /> <span className="hidden sm:inline">試合</span>結果
         </button>
-        <button onClick={() => setActiveTab("batterStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "batterStats" ? "bg-bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
+        <button onClick={() => setActiveTab("batterStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "batterStats" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
           <BarChart3 className="h-4 w-4" /> 打撃<span className="hidden sm:inline">成績</span>
         </button>
         <button onClick={() => setActiveTab("pitcherStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "pitcherStats" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
