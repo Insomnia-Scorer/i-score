@@ -4,7 +4,7 @@
 :root {
     /* Better Auth風 (Light Mode) */
     /* 💡 1. 背景を真っ白から「極上のオフホワイト」に変更 */
-    --background: #fafafa;
+    --background: #f0f0f0;
     --foreground: #09090b;
 
     /* 💡 2. カードは「純白」を定義。これで背景との間に美しい段差が生まれます */
@@ -14,7 +14,7 @@
     --muted: #f4f4f5;
     --muted-foreground: #71717a;
     --primary: #18181b;
-    --primary-foreground: #fafafa;
+    --primary-foreground: #f0f0f0;
     --border: #e4e4e7;
     --ring: #18181b;
     --radius: 0.5rem;
@@ -45,13 +45,13 @@
 .dark {
     /* Better Auth風 (Dark Mode) */
     --background: #09090b;
-    --foreground: #fafafa;
+    --foreground: #f0f0f0;
     --card: #000000;
     /* ダーク時は背景と同化させてスッキリと */
-    --card-foreground: #fafafa;
+    --card-foreground: #f0f0f0;
     --muted: #27272a;
     --muted-foreground: #a1a1aa;
-    --primary: #fafafa;
+    --primary: #f0f0f0;
     --primary-foreground: #18181b;
     --border: #27272a;
     --ring: #d4d4d8;
