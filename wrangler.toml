@@ -17,6 +17,11 @@ database_name = "i-score-db"
 database_id = "fdcb7241-930e-4ef5-97d2-08f6358faff4"
 migrations_dir = "drizzle"
 
+# R2オブジェクトストレージの設定
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "iscore-images"
+
 # 環境変数の設定
 [vars]
 BETTER_AUTH_URL = "https://i-score.insomnia-scorer.workers.dev"
