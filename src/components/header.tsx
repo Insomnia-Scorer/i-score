@@ -345,18 +345,24 @@ function HeaderContent() {
               <div className="flex items-center gap-3">
                 {/* 💡 モバイルメニューのアバターも画像アップロード対応に！ */}
                 <div
-                  className="relative group cursor-pointer shrink-0"
+                  className="relative cursor-pointer shrink-0 active:scale-95 transition-transform"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background border border-border/50 text-foreground shadow-sm overflow-hidden relative">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-background border border-border/50 text-foreground shadow-sm overflow-hidden relative">
                     {isUploadingAvatar ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     ) : session.user.image ? (
                       <img src={session.user.image} alt={session.user.name} className="h-full w-full object-cover" />
                     ) : (
-                      <UserCircle className="h-7 w-7" />
+                      <UserCircle className="h-8 w-8 text-muted-foreground" />
                     )}
                   </div>
+                  {/* スマホでも一目で「変更できる」と分かる右下のカメラバッジ */}
+                  {!isUploadingAvatar && (
+                    <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1.5 shadow-md border-2 border-background">
+                      <Camera className="h-3.5 w-3.5" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col overflow-hidden">
                   <span className="text-sm font-black truncate">{session.user.name}</span>
