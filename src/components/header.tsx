@@ -154,7 +154,7 @@ function HeaderContent() {
       />
 
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md text-foreground transition-all duration-300">
-        <div className="container mx-auto max-w-4xl flex h-16 items-center justify-between px-4 sm:px-6">
+        <div className="container mx-auto max-w-5xl flex h-16 items-center justify-between px-4 sm:px-6">
 
           <div className="flex items-center gap-4">
             <button

@@ -61,7 +61,7 @@ export default function Home() {
 
             {/* Features Section */}
             <section className="py-24 bg-background">
-                <div className="container mx-auto px-4">
+                <div className="container mx-auto max-w-5xl px-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                         <div className="flex flex-col items-center text-center space-y-4">
                             <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-2">
