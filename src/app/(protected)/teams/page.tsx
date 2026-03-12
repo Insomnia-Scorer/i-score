@@ -6,11 +6,22 @@ import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Shield, Plus, ChevronRight, X, ChevronLeft, Trash2, Settings, Info, Check } from "lucide-react";
+import {
+    Loader2, Shield, Plus, ChevronRight, X, ChevronLeft, Trash2, Settings, Info, Check
+} from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { ROLES } from "@/lib/roles";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+// 💡 shadcn/ui の Drawer をインポート
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+} from "@/components/ui/drawer";
 
 interface Organization {
     id: string;
@@ -35,11 +46,12 @@ export default function TeamsPage() {
     const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
     const [isLoadingTeams, setIsLoadingTeams] = useState(false);
 
-    const [showOrgCreate, setShowOrgCreate] = useState(false);
+    // 💡 Drawerの開閉ステート（これ1つでクラブ・チーム両方対応！）
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
     const [isCreatingOrg, setIsCreatingOrg] = useState(false);
     const [newOrgName, setNewOrgName] = useState("");
 
-    const [showTeamCreate, setShowTeamCreate] = useState(false);
     const [isCreatingTeam, setIsCreatingTeam] = useState(false);
     const [newTeamName, setNewTeamName] = useState("");
     const [newTeamRole, setNewTeamRole] = useState<string>(ROLES.SCORER);
@@ -71,14 +83,12 @@ export default function TeamsPage() {
     const handleSelectOrg = (org: Organization) => {
         setSelectedOrg(org);
         setView('teams');
-        setShowTeamCreate(false);
         fetchTeams(org.id);
     };
 
     const handleBackToOrgs = () => {
         setView('orgs');
         setSelectedOrg(null);
-        setShowOrgCreate(false);
     };
 
     const handleTeamClick = (teamId: string) => {
@@ -100,7 +110,7 @@ export default function TeamsPage() {
             if (res.ok && data.success) {
                 toast.success("クラブを作成しました！");
                 setNewOrgName("");
-                setShowOrgCreate(false);
+                setIsDrawerOpen(false); // 💡 作成成功時にDrawerを閉じる
                 fetchOrgs();
             } else toast.error(data.error || "作成に失敗しました");
         } catch (e) { toast.error("通信エラーが発生しました"); }
@@ -119,6 +129,7 @@ export default function TeamsPage() {
             const data = await res.json() as any;
             if (res.ok && data.success) {
                 toast.success("チームを作成しました！");
+                setIsDrawerOpen(false); // 💡 作成成功時にDrawerを閉じる
                 localStorage.setItem("iScore_selectedTeamId", data.teamId);
                 localStorage.setItem("iScore_selectedOrgId", selectedOrg.id);
                 router.push('/dashboard');
@@ -183,7 +194,7 @@ export default function TeamsPage() {
             <PageHeader href="/dashboard" icon={RiTeamFill} title="クラブ・チーム管理" subtitle="所属するクラブとチームの作成・編集を行います。" />
 
             <main className="flex-1 px-4 sm:px-6 max-w-4xl mx-auto w-full mt-6 sm:mt-8 relative z-10">
-
+                {/* --- クラブ一覧 --- */}
                 {view === 'orgs' && (
                     <div className="animate-in slide-in-from-left-4 fade-in duration-300">
                         <div className="flex items-center justify-between mb-6">
@@ -205,8 +216,6 @@ export default function TeamsPage() {
                             <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 mt-4">
                                 {orgs.map((org) => (
                                     <Card key={org.id} onClick={() => handleSelectOrg(org)} className="group relative overflow-hidden rounded-[28px] border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer">
-
-                                        {/* 💡 復活！右上の3重円（波紋）アニメーション */}
                                         <div className="absolute top-0 right-0 pointer-events-none">
                                             <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-110 group-active:scale-110" />
                                             <div className="absolute top-0 right-0 w-36 h-36 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 delay-75 group-hover:scale-110 group-active:scale-110 group-hover:bg-primary/10 group-active:bg-primary/10" />
@@ -215,13 +224,10 @@ export default function TeamsPage() {
 
                                         <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col h-full pointer-events-none">
                                             <div className="flex justify-between items-start mb-6">
-                                                {/* 💡 アイコンのホバーエフェクト復活 */}
                                                 <div className="p-3.5 bg-muted/50 rounded-[18px] text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary transition-colors duration-300 shadow-sm border border-border/50 group-hover:border-primary/20 group-active:border-primary/20">
                                                     <RiTeamFill className="h-7 w-7" />
                                                 </div>
-
                                                 <div className="flex items-center gap-2 pointer-events-auto">
-                                                    {/* 💡 バッジのホバーエフェクト復活 */}
                                                     <div className="inline-flex items-center rounded-full px-3 py-1.5 text-[10px] sm:text-xs font-black bg-muted/50 text-muted-foreground uppercase tracking-widest group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary transition-colors duration-300 border border-border/50 group-hover:border-primary/20 group-active:border-primary/20 shadow-sm pointer-events-none">
                                                         {org.myRole}
                                                     </div>
@@ -230,13 +236,9 @@ export default function TeamsPage() {
                                                     </Button>
                                                 </div>
                                             </div>
-
-                                            {/* 💡 テキストのホバーエフェクト復活 */}
                                             <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary group-active:text-primary transition-colors duration-300 drop-shadow-sm mt-auto">
                                                 {org.name}
                                             </h3>
-
-                                            {/* 💡 下部リンクのホバーアニメーション復活 */}
                                             <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 group-active:text-primary/80 transition-colors duration-300">
                                                 チーム一覧を開く <ChevronRight className="h-5 w-5 ml-1 transition-transform duration-300 group-hover:translate-x-1 group-active:translate-x-1" />
                                             </div>
@@ -248,6 +250,7 @@ export default function TeamsPage() {
                     </div>
                 )}
 
+                {/* --- チーム一覧 --- */}
                 {view === 'teams' && selectedOrg && (
                     <div className="animate-in slide-in-from-right-4 fade-in duration-300">
                         <div className="mb-6 flex flex-col items-start gap-4">
@@ -279,8 +282,6 @@ export default function TeamsPage() {
                             <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 mt-4">
                                 {teams.map((team) => (
                                     <Card key={team.id} onClick={() => handleTeamClick(team.id)} className="group relative overflow-hidden rounded-[28px] border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer">
-
-                                        {/* 💡 復活！右上の3重円（波紋）アニメーション */}
                                         <div className="absolute top-0 right-0 pointer-events-none">
                                             <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-110 group-active:scale-110" />
                                             <div className="absolute top-0 right-0 w-36 h-36 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 delay-75 group-hover:scale-110 group-active:scale-110 group-hover:bg-primary/10 group-active:bg-primary/10" />
@@ -289,25 +290,19 @@ export default function TeamsPage() {
 
                                         <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col h-full pointer-events-none">
                                             <div className="flex justify-between items-start mb-6">
-                                                {/* 💡 ホバーエフェクト復活 */}
                                                 <div className="p-3.5 bg-muted/50 rounded-[18px] text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary transition-colors duration-300 shadow-sm border border-border/50 group-hover:border-primary/20 group-active:border-primary/20">
                                                     <Shield className="h-7 w-7" />
                                                 </div>
                                                 <div className="flex items-center gap-2 pointer-events-auto">
-                                                    {/* 💡 ホバーエフェクト復活 */}
                                                     <div className="inline-flex items-center rounded-full px-3 py-1.5 text-[10px] sm:text-xs font-black bg-muted/50 text-muted-foreground uppercase tracking-widest group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary transition-colors duration-300 border border-border/50 group-hover:border-primary/20 group-active:border-primary/20 shadow-sm">TEAM</div>
                                                     <Button variant="ghost" size="icon" onClick={(e) => openDetail(e, 'team', team)} className={cn("h-8 w-8 rounded-full transition-colors z-20", selectedOrg.myRole === 'OWNER' ? "text-primary/70 hover:bg-primary/10 hover:text-primary" : "text-muted-foreground hover:bg-muted")}>
                                                         {selectedOrg.myRole === 'OWNER' ? <Settings className="h-4 w-4" /> : <Info className="h-4 w-4" />}
                                                     </Button>
                                                 </div>
                                             </div>
-
-                                            {/* 💡 ホバーエフェクト復活 */}
                                             <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary group-active:text-primary transition-colors duration-300 drop-shadow-sm mt-auto">
                                                 {team.name}
                                             </h3>
-
-                                            {/* 💡 ホバーエフェクト復活 */}
                                             <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 group-active:text-primary/80 transition-colors duration-300">
                                                 ダッシュボードを開く <ChevronRight className="h-5 w-5 ml-1 transition-transform duration-300 group-hover:translate-x-1 group-active:translate-x-1" />
                                             </div>
@@ -320,37 +315,79 @@ export default function TeamsPage() {
                 )}
             </main>
 
-            <Button onClick={() => view === 'orgs' ? setShowOrgCreate(true) : setShowTeamCreate(true)} className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center">
-                <Plus className="h-8 w-8" />
-            </Button>
+            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                💡 究極UI化：shadcn/ui Drawerの実装
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+                <DrawerTrigger asChild>
+                    {/* FAB（トリガーボタン） */}
+                    <Button className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center">
+                        <Plus className="h-8 w-8" />
+                    </Button>
+                </DrawerTrigger>
 
-            {/* モーダル群は変更なしでそのまま機能します */}
-            {(showOrgCreate || showTeamCreate) && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="absolute inset-0" onClick={() => { if (!isCreatingOrg && !isCreatingTeam) { setShowOrgCreate(false); setShowTeamCreate(false); } }} />
-                    <div className="relative w-full max-w-lg bg-gradient-to-br from-primary via-primary to-green-900 shadow-[0_20px_60px_rgba(0,0,0,0.4)] rounded-[32px] sm:rounded-[36px] overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-500 text-white">
-                        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-white/20 blur-[60px] rounded-full pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-black/30 blur-[60px] rounded-full pointer-events-none" />
-                        <div className="relative z-10 flex items-center justify-between p-6 sm:p-8 pb-4">
-                            <h2 className="text-xl sm:text-2xl font-black flex items-center gap-3 tracking-tight"><div className="p-2.5 bg-white/20 rounded-2xl shadow-inner backdrop-blur-md">{showOrgCreate ? <RiTeamFill className="h-6 w-6" /> : <Shield className="h-6 w-6" />}</div>{showOrgCreate ? "クラブを作る" : "チームを追加"}</h2>
-                            <Button variant="ghost" size="icon" onClick={() => { setShowOrgCreate(false); setShowTeamCreate(false); }} className="h-10 w-10 rounded-full hover:bg-white/20 text-white transition-all"><X className="h-6 w-6" /></Button>
-                        </div>
-                        <form onSubmit={showOrgCreate ? handleCreateOrg : handleCreateTeam} className="relative z-10 p-6 sm:p-8 pt-2 space-y-6">
-                            {showOrgCreate && (
-                                <div className="space-y-3"><label className="text-sm font-extrabold text-white/90">クラブ名</label><input type="text" required placeholder="例: 川崎中央シニア" className="flex h-14 w-full rounded-2xl border border-white/30 bg-white/10 px-4 text-base font-bold text-white shadow-inner placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30" value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} disabled={isCreatingOrg} autoFocus /></div>
-                            )}
-                            {showTeamCreate && (
+                {/* Drawerの中身（プライマリーグラデーション＆グラスモーフィズム） */}
+                <DrawerContent className="border-none bg-gradient-to-br from-primary via-primary to-green-900 text-white rounded-t-[36px] shadow-[0_-20px_60px_rgba(0,0,0,0.4)] mx-auto max-w-lg">
+                    {/* 💡 背景エフェクト（光彩） */}
+                    <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-white/20 blur-[60px] rounded-full pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-black/30 blur-[60px] rounded-full pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+
+                    <DrawerHeader className="relative z-10 text-left px-6 sm:px-8 pt-8 pb-2">
+                        <DrawerTitle className="text-xl sm:text-2xl font-black flex items-center gap-3 tracking-tight drop-shadow-sm">
+                            <div className="p-2.5 bg-white/20 rounded-2xl text-white shadow-inner backdrop-blur-md">
+                                {view === 'orgs' ? <RiTeamFill className="h-6 w-6" /> : <Shield className="h-6 w-6" />}
+                            </div>
+                            {view === 'orgs' ? "クラブを新しく作る" : "チームを新しく追加"}
+                        </DrawerTitle>
+                    </DrawerHeader>
+
+                    <div className="relative z-10 px-6 sm:px-8 pt-4 pb-12 space-y-6">
+                        <form onSubmit={view === 'orgs' ? handleCreateOrg : handleCreateTeam} className="space-y-6">
+                            {view === 'orgs' ? (
+                                <div className="space-y-3">
+                                    <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">クラブ（組織）名</label>
+                                    <input
+                                        type="text" required placeholder="例: 川崎中央シニア"
+                                        className="flex h-14 w-full rounded-2xl border border-white/30 bg-white/10 px-4 text-base font-bold shadow-inner placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all text-white"
+                                        value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} disabled={isCreatingOrg} autoFocus
+                                    />
+                                </div>
+                            ) : (
                                 <>
-                                    <div className="space-y-3"><label className="text-sm font-extrabold text-white/90">チーム名</label><input type="text" required placeholder="例: 1軍 / ジュニア" className="flex h-14 w-full rounded-2xl border border-white/30 bg-white/10 px-4 text-base font-bold text-white shadow-inner placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} disabled={isCreatingTeam} autoFocus /></div>
-                                    <div className="space-y-3"><label className="text-sm font-extrabold text-white/90">あなたの役割</label><select className="flex h-14 w-full appearance-none rounded-2xl border border-white/30 bg-white/10 px-4 pr-10 text-base font-bold text-white shadow-inner focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30" value={newTeamRole} onChange={(e) => setNewTeamRole(e.target.value)} disabled={isCreatingTeam}><option value={ROLES.MANAGER} className="text-foreground">監督 / 代表</option><option value={ROLES.COACH} className="text-foreground">コーチ</option><option value={ROLES.SCORER} className="text-foreground">スコアラー</option><option value={ROLES.STAFF} className="text-foreground">スタッフ</option></select></div>
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">チーム名</label>
+                                        <input
+                                            type="text" required placeholder="例: 1軍 / ジュニア"
+                                            className="flex h-14 w-full rounded-2xl border border-white/30 bg-white/10 px-4 text-base font-bold shadow-inner placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all text-white"
+                                            value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} disabled={isCreatingTeam} autoFocus
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">あなたの役割（ロール）</label>
+                                        <select
+                                            className="flex h-14 w-full appearance-none rounded-2xl border border-white/30 bg-white/10 px-4 pr-10 text-base font-bold shadow-inner text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22white%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_16px_center] bg-no-repeat"
+                                            value={newTeamRole} onChange={(e) => setNewTeamRole(e.target.value)} disabled={isCreatingTeam}
+                                        >
+                                            <option value={ROLES.MANAGER} className="text-foreground">監督 / 代表 (Manager)</option>
+                                            <option value={ROLES.COACH} className="text-foreground">コーチ (Coach)</option>
+                                            <option value={ROLES.SCORER} className="text-foreground">スコアラー (Scorer)</option>
+                                            <option value={ROLES.STAFF} className="text-foreground">スタッフ (Staff)</option>
+                                        </select>
+                                    </div>
                                 </>
                             )}
-                            <div className="pt-4"><Button type="submit" disabled={isCreatingOrg || isCreatingTeam} className="w-full h-14 rounded-2xl font-extrabold bg-white text-primary hover:bg-white/90 shadow-xl transition-all hover:-translate-y-1">{(isCreatingOrg || isCreatingTeam) ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : "作成する"}</Button></div>
+                            <div className="pt-2">
+                                <Button type="submit" disabled={isCreatingOrg || isCreatingTeam} className="w-full h-14 rounded-2xl font-extrabold bg-white text-primary hover:bg-white/90 shadow-xl shadow-black/20 transition-all hover:-translate-y-1 active:scale-[0.98]">
+                                    {(isCreatingOrg || isCreatingTeam) ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : (view === 'orgs' ? "クラブを作成する" : "チームを追加する")}
+                                </Button>
+                            </div>
                         </form>
                     </div>
-                </div>
-            )}
+                </DrawerContent>
+            </Drawer>
 
+            {/* --- 詳細・設定モーダル（既存のまま） --- */}
             {detailModal && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="absolute inset-0" onClick={() => !isUpdating && setDetailModal(null)} />
