@@ -315,61 +315,76 @@ export default function TeamsPage() {
                 )}
             </main>
 
+            {/* FAB（トリガーボタン）は変更なし */}
+            <Button onClick={() => setIsDrawerOpen(true)} className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center">
+                <Plus className="h-8 w-8" />
+            </Button>
+
             {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                💡 究極UI化：i-Scoreデザイン統合版 Drawer
+                💡 究極UI化：i-Scoreデザイン統合版 Responsive Drawer (Modal)
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
             <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                <DrawerTrigger asChild>
-                    {/* FAB（トリガーボタン） */}
-                    <Button className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center">
-                        <Plus className="h-8 w-8" />
-                    </Button>
-                </DrawerTrigger>
+                {/* 💡 【キモ】PCでは画面中央のモーダル、スマホではDrawerに見せるCSSを適用 */}
+                <DrawerContent className="
+                    /* スマホ用 (Drawer) */
+                    border-none bg-card rounded-t-[36px] shadow-[0_-20px_60px_rgba(0,0,0,0.1)] mx-auto
+                    
+                    /* PC用 (Modal風に浮く) - メディアクエリで Vaul のfixedを上書き */
+                    sm:fixed sm:top-1/2 sm:left-1/2 sm:inset-auto sm:-translate-x-1/2 sm:-translate-y-1/2
+                    sm:w-full sm:max-w-lg sm:rounded-[36px] sm:shadow-[0_20px_60px_rgba(0,0,0,0.15)]
+                    sm:animate-in sm:fade-in-0 sm:slide-in-from-bottom-12 sm:duration-500
+                    
+                    transition-all duration-300 ease-out relative overflow-hidden
+                ">
+                    {/* globals.css と同じ「滲み出る光彩」をDrawer内部にも配置 */}
+                    <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
+                    <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
 
-                {/* 💡 Drawerの中身を「プライマリーグラデーション＆グラスモーフィズム」に！ */}
-                <DrawerContent className="border-none bg-gradient-to-br from-primary via-primary to-green-900 text-white rounded-t-[36px] shadow-[0_-20px_60px_rgba(0,0,0,0.4)] mx-auto max-w-lg">
+                    {/* Vaulの標準ハンドルを、さりげないグラスモーフィズムに */}
+                    <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-border/40 backdrop-blur-sm sm:hidden" />
 
-                    {/* 💡 背景エフェクト（globals.cssと同じ雰囲気の光彩） */}
-                    <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-white/20 blur-[60px] rounded-full pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-black/30 blur-[60px] rounded-full pointer-events-none" />
-                    {/* 最後に少し暗くして文字の可読性を確保 */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
-
-                    <DrawerHeader className="relative z-10 text-left px-6 sm:px-8 pt-8 pb-2">
-                        <DrawerTitle className="text-xl sm:text-2xl font-black flex items-center gap-3 tracking-tight drop-shadow-sm">
-                            <div className="p-2.5 bg-white/20 rounded-2xl text-white shadow-inner backdrop-blur-md">
-                                {view === 'orgs' ? <RiTeamFill className="h-6 w-6" /> : <Shield className="h-6 w-6" />}
+                    <DrawerHeader className="relative z-10 text-left px-6 sm:px-10 pt-8 pb-3 flex items-center justify-between">
+                        <DrawerTitle className="text-xl sm:text-2xl font-black flex items-center gap-4 tracking-tight text-foreground drop-shadow-sm">
+                            {/* タイトル横アイコン：Wavyパターンを globals.css の background-image から適用 */}
+                            <div className="relative p-3 bg-muted rounded-2xl border border-border shadow-sm text-primary overflow-hidden">
+                                <div className="absolute inset-0 opacity-[0.03] scale-150" style={{ backgroundImage: 'var(--pattern-wavy)' }} />
+                                {view === 'orgs' ? <RiTeamFill className="h-6 w-6 relative z-10" /> : <Shield className="h-6 w-6 relative z-10" />}
                             </div>
                             {view === 'orgs' ? "クラブを新しく作る" : "チームを新しく追加"}
                         </DrawerTitle>
+
+                        {/* PCでのみ閉じるボタンを表示 */}
+                        <Button variant="ghost" size="icon" onClick={() => setIsDrawerOpen(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all hidden sm:flex"><X className="h-5 w-5" /></Button>
                     </DrawerHeader>
 
-                    {/* フォームエリアもDrawer用に最適化 */}
-                    <div className="relative z-10 px-6 sm:px-8 pt-4 pb-12 space-y-6">
-                        <form onSubmit={view === 'orgs' ? handleCreateOrg : handleCreateTeam} className="space-y-6">
+                    {/* フォームエリア */}
+                    <div className="relative z-10 px-6 sm:px-10 pt-4 pb-14 space-y-7">
+                        <form onSubmit={view === 'orgs' ? handleCreateOrg : handleCreateTeam} className="space-y-7">
                             {view === 'orgs' ? (
-                                <div className="space-y-3">
-                                    <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">クラブ（組織）名</label>
+                                <div className="space-y-3.5">
+                                    <label className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-1">クラブ（組織）名</label>
                                     <input
                                         type="text" required placeholder="例: 川崎中央シニア"
-                                        className="flex h-14 w-full rounded-2xl border border-white/30 bg-white/10 px-4 text-base font-bold shadow-inner placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all text-white"
+                                        /* 💡 入力フィールド： globals.css と同じグラスモーフィズム＆R */
+                                        className="flex h-14 w-full rounded-[18px] border border-border/50 bg-muted/30 px-5 text-base font-bold shadow-inner placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all"
                                         value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} disabled={isCreatingOrg} autoFocus
                                     />
                                 </div>
                             ) : (
                                 <>
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">チーム名</label>
+                                    <div className="space-y-3.5">
+                                        <label className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-1">チーム名</label>
                                         <input
                                             type="text" required placeholder="例: 1軍 / ジュニア"
-                                            className="flex h-14 w-full rounded-2xl border border-white/30 bg-white/10 px-4 text-base font-bold shadow-inner placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all text-white"
+                                            className="flex h-14 w-full rounded-[18px] border border-border/50 bg-muted/30 px-5 text-base font-bold shadow-inner placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all"
                                             value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} disabled={isCreatingTeam} autoFocus
                                         />
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">あなたの役割（ロール）</label>
+                                    <div className="space-y-3.5">
+                                        <label className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-1">あなたの役割（ロール）</label>
                                         <select
-                                            className="flex h-14 w-full appearance-none rounded-2xl border border-white/30 bg-white/10 px-4 pr-10 text-base font-bold shadow-inner text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22white%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_16px_center] bg-no-repeat"
+                                            /* 💡 Select：Inputと同じデザイン、プライマリーカラーを適用 */
+                                            className="flex h-14 w-full appearance-none rounded-[18px] border border-border/50 bg-muted/30 px-5 pr-10 text-base font-bold text-foreground shadow-inner focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:18px_18px] bg-[position:right_18px_center] bg-no-repeat"
                                             value={newTeamRole} onChange={(e) => setNewTeamRole(e.target.value)} disabled={isCreatingTeam}
                                         >
                                             <option value={ROLES.MANAGER} className="text-foreground">監督 / 代表 (Manager)</option>
@@ -380,8 +395,8 @@ export default function TeamsPage() {
                                     </div>
                                 </>
                             )}
-                            <div className="pt-2">
-                                <Button type="submit" disabled={isCreatingOrg || isCreatingTeam} className="w-full h-14 rounded-2xl font-extrabold bg-white text-primary hover:bg-white/90 shadow-xl shadow-black/20 transition-all hover:-translate-y-1 active:scale-[0.98]">
+                            <div className="pt-3">
+                                <Button type="submit" disabled={isCreatingOrg || isCreatingTeam} className="w-full h-15 rounded-[20px] font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all hover:-translate-y-1 active:scale-[0.98]">
                                     {(isCreatingOrg || isCreatingTeam) ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : (view === 'orgs' ? "クラブを作成する" : "チームを追加する")}
                                 </Button>
                             </div>
