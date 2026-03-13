@@ -2,6 +2,7 @@
 export interface Organization {
     id: string;
     name: string;
+    category: string;
     myRole: string;
 }
 

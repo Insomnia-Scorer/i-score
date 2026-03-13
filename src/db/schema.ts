@@ -61,6 +61,7 @@ export const verification = sqliteTable("verification", {
 export const organizations = sqliteTable("organizations", {
     id: text("id").primaryKey(),
     name: text("name").notNull(), // 例: "川崎中央シニア"
+    category: text("category").notNull().default('other'),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 

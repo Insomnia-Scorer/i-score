@@ -20,6 +20,7 @@ app.get('/', async (c) => {
     const results = await db.select({
         id: organizations.id,
         name: organizations.name,
+        category: organizations.category,
         myRole: organizationMembers.role,
     })
         .from(organizations)
@@ -39,7 +40,7 @@ app.post('/', async (c) => {
     if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
     // フロントから "isExternal" という一時的なフラグを受け取る
-    const { name, isExternal } = await c.req.json()
+    const { name, isExternal, category } = await c.req.json()
     const db = drizzle(c.env.DB)
 
     try {
@@ -49,6 +50,7 @@ app.post('/', async (c) => {
         await db.insert(organizations).values({
             id: newOrgId,
             name,
+            category: category || 'other',
             createdAt: new Date(),
         })
 

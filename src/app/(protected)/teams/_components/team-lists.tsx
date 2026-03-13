@@ -12,17 +12,34 @@ import { Organization, Team } from "../types";
 interface OrgListProps {
     orgs: Organization[];
     isLoading: boolean;
+    selectedCategory: string;
+    onCategoryChange: (cat: string) => void;
     onSelectOrg: (org: Organization) => void;
     onOpenDetail: (e: React.MouseEvent, type: 'org', data: Organization) => void;
     onOpponentClick: (opponent: any) => void;
     onAddOrg: (isExternal: boolean) => void; // 💡 追加：ヘッダーの「追加ボタン」用
 }
 
-export function OrgList({ orgs, isLoading, onSelectOrg, onOpenDetail, onOpponentClick, onAddOrg }: OrgListProps) {
+// 💡 リボンの選択肢
+const CATEGORIES = [
+    { id: 'all', label: 'すべて', icon: '🌍' },
+    { id: 'gakudo', label: '学童野球', icon: '🧢' },
+    { id: 'junior', label: '中学野球', icon: '⚾️' },
+    { id: 'high', label: '高校野球', icon: '🏫' },
+    { id: 'adult', label: '一般・草野球', icon: '🍺' },
+    { id: 'other', label: 'その他', icon: '📝' },
+];
+
+export function OrgList({ orgs, isLoading, selectedCategory, onCategoryChange, onSelectOrg, onOpenDetail, onOpponentClick, onAddOrg }: OrgListProps) {
+
+    // 💡 選択されたカテゴリで絞り込む（'all' の場合は全て）
+    const filteredOrgs = selectedCategory === 'all'
+        ? orgs
+        : orgs.filter(org => org.category === selectedCategory);
 
     // 💡 取得したクラブ一覧を「Role」で2つに分割
-    const myOrgs = orgs.filter(org => org.myRole !== 'OPPONENT_MANAGER');
-    const opponentOrgs = orgs.filter(org => org.myRole === 'OPPONENT_MANAGER');
+    const myOrgs = filteredOrgs.filter(org => org.myRole !== 'OPPONENT_MANAGER');
+    const opponentOrgs = filteredOrgs.filter(org => org.myRole === 'OPPONENT_MANAGER');
 
     // 💡 データベースの対戦相手組織を、Opponent型（試合履歴付き）にマッピング
     const realOpponents = opponentOrgs.map(org => ({
@@ -45,6 +62,26 @@ export function OrgList({ orgs, isLoading, onSelectOrg, onOpenDetail, onOpponent
 
     return (
         <div className="animate-in slide-in-from-left-4 fade-in duration-300 pb-10">
+            {/* 💡 究極UI化：カテゴリ・リボン（横スクロール） */}
+            <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+                {CATEGORIES.map(c => {
+                    const isSelected = selectedCategory === c.id;
+                    return (
+                        <button
+                            key={c.id}
+                            onClick={() => onCategoryChange(c.id)}
+                            className={cn(
+                                "flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-black transition-all active:scale-95 shadow-sm border",
+                                isSelected
+                                    ? "bg-primary text-primary-foreground border-primary shadow-primary/20"
+                                    : "bg-background/80 text-muted-foreground border-border/50 hover:bg-muted"
+                            )}
+                        >
+                            <span>{c.icon}</span> {c.label}
+                        </button>
+                    );
+                })}
+            </div>
             {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 セクション 1: 所属クラブ
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}

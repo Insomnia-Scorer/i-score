@@ -26,8 +26,24 @@ export default function TeamsPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
 
-    // 💡 新規追加：外部（対戦相手）クラブを作成するかどうかのフラグ
+    // 💡 外部（対戦相手）クラブを作成するかどうかのフラグ
     const [isExternalOrgCreate, setIsExternalOrgCreate] = useState(false);
+
+    // 💡 カテゴリの記憶用 State
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+    // 💡 マウント時に localStorage から復元
+    useEffect(() => {
+        const saved = localStorage.getItem('iScore_selectedCategory');
+        if (saved) setSelectedCategory(saved);
+        fetchOrgs(); // ついでにここで初期フェッチ
+    }, []);
+
+    // 💡 カテゴリが変更されたら保存する関数
+    const handleCategoryChange = (cat: string) => {
+        setSelectedCategory(cat);
+        localStorage.setItem('iScore_selectedCategory', cat);
+    };
 
     const [detailModal, setDetailModal] = useState<{ type: 'org' | 'team', data: Organization | Team } | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -71,19 +87,20 @@ export default function TeamsPage() {
         router.push('/dashboard');
     };
 
-    const handleCreateOrg = async (name: string) => {
+    const handleCreateOrg = async (name: string, category: string) => {
         if (!name.trim()) return;
         setIsCreating(true);
         try {
             // 💡 外部クラブの場合は isExternal フラグを付与してAPIへ送信
             const res = await fetch('/api/organizations', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, isExternal: isExternalOrgCreate }),
+                body: JSON.stringify({ name, isExternal: isExternalOrgCreate, category }),
             });
             const data = await res.json() as { success: boolean; error?: string };
             if (res.ok && data.success) {
                 toast.success(isExternalOrgCreate ? "対戦相手を追加しました！" : "クラブを作成しました！");
                 setIsDrawerOpen(false);
+                handleCategoryChange(category);
                 fetchOrgs();
             } else toast.error(data.error || "作成に失敗しました");
         } catch (e) { toast.error("通信エラーが発生しました"); }
@@ -159,6 +176,8 @@ export default function TeamsPage() {
                     <OrgList
                         orgs={orgs}
                         isLoading={isLoadingOrgs}
+                        selectedCategory={selectedCategory}
+                        onCategoryChange={handleCategoryChange}
                         onSelectOrg={handleSelectOrg}
                         onOpenDetail={(e, type, data) => { e.preventDefault(); e.stopPropagation(); setDetailModal({ type, data }); }}
                         onOpponentClick={(opp) => setSelectedOpponent(opp)}

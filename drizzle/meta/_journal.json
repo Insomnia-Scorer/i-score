@@ -99,6 +99,13 @@
       "when": 1773052439376,
       "tag": "0013_warm_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1773400880882,
+      "tag": "0014_mixed_karnak",
+      "breakpoints": true
     }
   ]
 }
