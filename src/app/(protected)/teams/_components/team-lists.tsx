@@ -14,22 +14,46 @@ interface OrgListProps {
     isLoading: boolean;
     onSelectOrg: (org: Organization) => void;
     onOpenDetail: (e: React.MouseEvent, type: 'org', data: Organization) => void;
+    onOpponentClick: (opponent: any) => void; // 💡 これを追加
 }
 
-export function OrgList({ orgs, isLoading, onSelectOrg, onOpenDetail }: OrgListProps) {
-    // 💡 対戦クラブのモックデータ（後でAPIから取得するように変更します）
+export function OrgList({ orgs, isLoading, onSelectOrg, onOpenDetail, onOpponentClick }: OrgListProps) {
+    // 💡 よりリアルなダミーデータに拡張！
     const mockOpponents = [
-        { id: 'opp-1', name: '横浜青葉シニア', matchCount: 3, lastMatch: '2025-11-12' },
-        { id: 'opp-2', name: '世田谷西シニア', matchCount: 1, lastMatch: '2025-10-05' },
-        { id: 'opp-3', name: '新宿シニア', matchCount: 2, lastMatch: '2025-09-20' },
-        { id: 'opp-4', name: '浦和シニア', matchCount: 5, lastMatch: '2025-08-30' },
+        {
+            id: 'opp-1', name: '横浜青葉シニア', matchCount: 3, lastMatch: '2025-11-12',
+            wins: 2, losses: 1, draws: 0,
+            recentMatches: [
+                { id: 'm1', date: '2025-11-12', myTeamName: '1軍', opponentTeamName: 'レギュラー', myScore: 5, opponentScore: 3, result: 'win' },
+                { id: 'm2', date: '2025-09-08', myTeamName: '1軍', opponentTeamName: 'レギュラー', myScore: 2, opponentScore: 4, result: 'loss' },
+                { id: 'm3', date: '2025-05-20', myTeamName: '2年生', opponentTeamName: '2年生', myScore: 7, opponentScore: 1, result: 'win' },
+            ]
+        },
+        {
+            id: 'opp-2', name: '世田谷西シニア', matchCount: 1, lastMatch: '2025-10-05',
+            wins: 0, losses: 1, draws: 0,
+            recentMatches: [
+                { id: 'm4', date: '2025-10-05', myTeamName: '1軍', opponentTeamName: 'レギュラー', myScore: 0, opponentScore: 8, result: 'loss' },
+            ]
+        },
+        {
+            id: 'opp-3', name: '新宿シニア', matchCount: 2, lastMatch: '2025-09-20',
+            wins: 1, losses: 0, draws: 1,
+            recentMatches: [
+                { id: 'm5', date: '2025-09-20', myTeamName: '1軍', opponentTeamName: 'レギュラー', myScore: 4, opponentScore: 4, result: 'draw' },
+                { id: 'm6', date: '2025-04-15', myTeamName: '1年生', opponentTeamName: '1年生', myScore: 10, opponentScore: 2, result: 'win' },
+            ]
+        },
     ];
 
     if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
     return (
         <div className="animate-in slide-in-from-left-4 fade-in duration-300 pb-10">
-            {/* ─── 所属クラブ セクション ─── */}
+            {/* ... (所属クラブの表示部分は変更なしなので省略せずに残してください) ... */}
+
+            {/* 略：所属クラブのヘッダーから一覧表示までのコード */}
+
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2.5">
                     <RiTeamFill className="h-6 w-6 text-primary" />
@@ -81,11 +105,8 @@ export function OrgList({ orgs, isLoading, onSelectOrg, onOpenDetail }: OrgListP
                 </div>
             )}
 
-            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                💡 新規追加：対戦クラブ（コンパクトリスト） セクション
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+            {/* 対戦クラブ セクション */}
             <div className="mt-16 animate-in slide-in-from-bottom-8 fade-in duration-500 delay-150 fill-mode-both">
-
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
                     <div>
                         <h2 className="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2.5 text-foreground/80">
@@ -95,7 +116,6 @@ export function OrgList({ orgs, isLoading, onSelectOrg, onOpenDetail }: OrgListP
                         <p className="text-xs font-bold text-muted-foreground mt-1">過去に対戦したクラブや、登録されているクラブの一覧です。</p>
                     </div>
 
-                    {/* 検索ボックス（モック） */}
                     <div className="relative w-full sm:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <input
@@ -110,7 +130,7 @@ export function OrgList({ orgs, isLoading, onSelectOrg, onOpenDetail }: OrgListP
                     {mockOpponents.map((opp, index) => (
                         <div
                             key={opp.id}
-                            onClick={() => console.log('TODO: 対戦クラブ詳細を開く', opp.id)}
+                            onClick={() => onOpponentClick(opp)} // 💡 クリックイベントを発火！
                             className={cn(
                                 "group flex items-center justify-between p-4 sm:px-6 hover:bg-muted/50 transition-colors cursor-pointer",
                                 index !== mockOpponents.length - 1 && "border-b border-border/50"
@@ -138,7 +158,6 @@ export function OrgList({ orgs, isLoading, onSelectOrg, onOpenDetail }: OrgListP
                         </div>
                     ))}
 
-                    {/* 「もっと見る」ボタン */}
                     <button className="w-full py-4 text-sm font-black text-primary/70 hover:text-primary hover:bg-primary/5 transition-colors border-t border-border/50">
                         すべてのクラブを表示
                     </button>

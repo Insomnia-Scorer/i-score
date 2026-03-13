@@ -8,31 +8,30 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { toast } from "sonner";
-import { Organization, Team } from "./types";
+import { Organization, Team, Opponent } from "./types";
 import { OrgList, TeamList } from "./_components/team-lists";
-import { CreateDrawer, DetailModal } from "./_components/team-modals";
+import { CreateDrawer, DetailModal, OpponentDetailModal } from "./_components/team-modals";
 
 export default function TeamsPage() {
     const router = useRouter();
 
-    // --- State: 表示管理 ---
     const [view, setView] = useState<'orgs' | 'teams'>('orgs');
     const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
 
-    // --- State: データ ---
     const [orgs, setOrgs] = useState<Organization[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
     const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
     const [isLoadingTeams, setIsLoadingTeams] = useState(false);
 
-    // --- State: ダイアログ制御 ---
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
 
     const [detailModal, setDetailModal] = useState<{ type: 'org' | 'team', data: Organization | Team } | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    // --- API Fetchers ---
+    // 💡 新規追加：対戦クラブの詳細表示用ステート
+    const [selectedOpponent, setSelectedOpponent] = useState<Opponent | null>(null);
+
     const fetchOrgs = async () => {
         setIsLoadingOrgs(true);
         try {
@@ -53,7 +52,6 @@ export default function TeamsPage() {
 
     useEffect(() => { fetchOrgs(); }, []);
 
-    // --- Handlers: ナビゲーション ---
     const handleSelectOrg = (org: Organization) => {
         setSelectedOrg(org);
         setView('teams');
@@ -71,7 +69,6 @@ export default function TeamsPage() {
         router.push('/dashboard');
     };
 
-    // --- Handlers: 作成 (Drawer) ---
     const handleCreateOrg = async (name: string) => {
         if (!name.trim()) return;
         setIsCreating(true);
@@ -110,7 +107,6 @@ export default function TeamsPage() {
         finally { setIsCreating(false); }
     };
 
-    // --- Handlers: 更新・削除 (Modal) ---
     const handleUpdate = async (newName: string) => {
         if (!detailModal || !newName.trim()) return;
         setIsUpdating(true);
@@ -162,6 +158,8 @@ export default function TeamsPage() {
                         isLoading={isLoadingOrgs}
                         onSelectOrg={handleSelectOrg}
                         onOpenDetail={(e, type, data) => { e.preventDefault(); e.stopPropagation(); setDetailModal({ type, data }); }}
+                        // 💡 クリックされた対戦相手をステートにセット
+                        onOpponentClick={(opp) => setSelectedOpponent(opp)}
                     />
                 ) : (
                     selectedOrg && (
@@ -177,7 +175,6 @@ export default function TeamsPage() {
                 )}
             </main>
 
-            {/* 新規作成フロー（FAB + Drawer） */}
             <Button onClick={() => setIsDrawerOpen(true)} className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center">
                 <Plus className="h-8 w-8" />
             </Button>
@@ -191,7 +188,6 @@ export default function TeamsPage() {
                 onSubmitTeam={handleCreateTeam}
             />
 
-            {/* 詳細・編集モーダル */}
             <DetailModal
                 isOpen={!!detailModal}
                 type={detailModal?.type}
@@ -201,6 +197,13 @@ export default function TeamsPage() {
                 onClose={() => setDetailModal(null)}
                 onUpdate={handleUpdate}
                 onDelete={handleDelete}
+            />
+
+            {/* 💡 新規追加：対戦クラブの詳細表示 */}
+            <OpponentDetailModal
+                isOpen={!!selectedOpponent}
+                onOpenChange={(open) => !open && setSelectedOpponent(null)}
+                opponent={selectedOpponent}
             />
         </div>
     );

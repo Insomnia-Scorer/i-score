@@ -2,10 +2,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Loader2, Shield, X, Trash2, Settings, Info, Check } from "lucide-react";
+import { Loader2, Shield, X, Trash2, Settings, Info, Check, Swords, MapPin, CalendarDays, PlusCircle } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { ROLES } from "@/lib/roles";
-import { Organization, Team } from "../types";
+import { Organization, Team, Opponent } from "../types";
+import { cn } from "@/lib/utils";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1. 新規作成ドロワー
@@ -195,5 +196,127 @@ export function DetailModal({ isOpen, type, data, selectedOrgRole, isUpdating, o
                 </div>
             </div>
         </div>
+    );
+}
+
+interface OpponentDetailModalProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    opponent: Opponent | null;
+}
+
+export function OpponentDetailModal({ isOpen, onOpenChange, opponent }: OpponentDetailModalProps) {
+    if (!opponent) return null;
+
+    // 勝敗に応じた色を返すヘルパー（これはテーマカラーに関わらず固定のスポーツ標準色）
+    const getResultColor = (result: string) => {
+        if (result === 'win') return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+        if (result === 'loss') return 'text-red-500 bg-red-500/10 border-red-500/20';
+        return 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20';
+    };
+
+    const getResultText = (result: string) => {
+        if (result === 'win') return '勝利';
+        if (result === 'loss') return '敗北';
+        return '引分';
+    };
+
+    return (
+        <Drawer open={isOpen} onOpenChange={onOpenChange}>
+            <DrawerContent className="
+                border-none bg-card rounded-t-[36px] shadow-[0_-20px_60px_rgba(0,0,0,0.1)] mx-auto
+                sm:fixed sm:top-1/2 sm:left-1/2 sm:inset-auto sm:-translate-x-1/2 sm:-translate-y-1/2
+                sm:w-full sm:max-w-lg sm:rounded-[36px] sm:shadow-[0_20px_60px_rgba(0,0,0,0.15)]
+                sm:animate-in sm:fade-in-0 sm:slide-in-from-bottom-12 sm:duration-500
+                transition-all duration-300 ease-out relative overflow-hidden flex flex-col max-h-[90vh]
+            ">
+                <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
+                <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
+                <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-border/40 backdrop-blur-sm sm:hidden" />
+
+                <DrawerHeader className="relative z-10 text-left px-6 sm:px-8 pt-8 pb-4 flex items-start justify-between border-b border-border/50 shrink-0 bg-background/50 backdrop-blur-sm">
+                    <div className="flex items-center gap-4">
+                        <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-2xl border border-primary/20 shrink-0 shadow-sm">
+                            {opponent.name.charAt(0)}
+                        </div>
+                        <div>
+                            <DrawerTitle className="text-xl sm:text-2xl font-black tracking-tight text-foreground drop-shadow-sm mb-1">
+                                {opponent.name}
+                            </DrawerTitle>
+                            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> 神奈川県</span>
+                                <span>•</span>
+                                <span>ID: {opponent.id}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all hidden sm:flex shrink-0"><X className="h-5 w-5" /></Button>
+                </DrawerHeader>
+
+                {/* スクロール可能なコンテンツエリア */}
+                <div className="relative z-10 px-6 sm:px-8 py-6 space-y-8 overflow-y-auto flex-1">
+
+                    {/* 💡 究極UI化：Head-to-Head (通算成績) */}
+                    <div>
+                        <h3 className="text-sm font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2 mb-3">
+                            <Swords className="h-4 w-4 text-primary/70" /> 通算対戦成績
+                        </h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="bg-blue-500/5 border border-blue-500/10 rounded-[20px] p-4 flex flex-col items-center justify-center text-center">
+                                <span className="text-[10px] font-black text-blue-500/70 uppercase tracking-widest">Wins</span>
+                                <span className="text-2xl font-black text-blue-500">{opponent.wins} <span className="text-sm">勝</span></span>
+                            </div>
+                            <div className="bg-red-500/5 border border-red-500/10 rounded-[20px] p-4 flex flex-col items-center justify-center text-center">
+                                <span className="text-[10px] font-black text-red-500/70 uppercase tracking-widest">Losses</span>
+                                <span className="text-2xl font-black text-red-500">{opponent.losses} <span className="text-sm">敗</span></span>
+                            </div>
+                            <div className="bg-zinc-500/5 border border-zinc-500/10 rounded-[20px] p-4 flex flex-col items-center justify-center text-center">
+                                <span className="text-[10px] font-black text-zinc-500/70 uppercase tracking-widest">Draws</span>
+                                <span className="text-2xl font-black text-zinc-500">{opponent.draws} <span className="text-sm">分</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 💡 究極UI化：直近の試合結果リスト */}
+                    <div>
+                        <h3 className="text-sm font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2 mb-3">
+                            <CalendarDays className="h-4 w-4 text-primary/70" /> 直近の対戦履歴
+                        </h3>
+                        <div className="space-y-3">
+                            {opponent.recentMatches.map((match) => (
+                                <div key={match.id} className="bg-muted/30 border border-border/50 rounded-[20px] p-4 hover:bg-muted/50 transition-colors cursor-pointer">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-[10px] font-black text-muted-foreground tracking-widest bg-background px-2 py-0.5 rounded-full border border-border/50">{match.date}</span>
+                                        <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-widest", getResultColor(match.result))}>
+                                            {getResultText(match.result)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-3">
+                                        <div className="flex flex-col flex-1">
+                                            <span className="text-xs font-bold text-muted-foreground">自チーム</span>
+                                            <span className="font-black text-foreground">{match.myTeamName}</span>
+                                        </div>
+                                        <div className="px-4 text-2xl font-black font-mono tracking-tighter">
+                                            {match.myScore} - {match.opponentScore}
+                                        </div>
+                                        <div className="flex flex-col flex-1 text-right">
+                                            <span className="text-xs font-bold text-muted-foreground">相手チーム</span>
+                                            <span className="font-black text-foreground">{match.opponentTeamName}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* アクションボタン */}
+                <div className="relative z-10 px-6 sm:px-8 py-4 border-t border-border/50 bg-background/50 backdrop-blur-md shrink-0">
+                    <Button className="w-full h-14 rounded-[20px] font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+                        <PlusCircle className="mr-2 h-5 w-5" /> このクラブとの新しい試合を記録
+                    </Button>
+                </div>
+            </DrawerContent>
+        </Drawer>
     );
 }
