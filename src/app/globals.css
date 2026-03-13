@@ -26,7 +26,7 @@
     /* 透明度を 10% → 6% に下げて、さらにさりげなく */
     --wavy-color: color-mix(in srgb, #616670 20%, transparent);
     /* 間隔を 12px → 8px にして、より繊細できめ細かい波紋に */
-    --wavy-size: 4px;
+    --wavy-size: 5px;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
