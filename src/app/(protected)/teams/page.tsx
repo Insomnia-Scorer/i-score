@@ -10,7 +10,7 @@ import { RiTeamFill } from "react-icons/ri";
 import { toast } from "sonner";
 import { Organization, Team, Opponent } from "./types";
 import { OrgList, TeamList } from "./_components/team-lists";
-import { CreateDrawer, DetailModal, OpponentDetailModal } from "./_components/team-modals";
+import { CreateModal, DetailModal, OpponentDetailModal } from "./_components/team-modals";
 
 export default function TeamsPage() {
     const router = useRouter();
@@ -127,17 +127,24 @@ export default function TeamsPage() {
         finally { setIsCreating(false); }
     };
 
-    const handleUpdate = async (newName: string) => {
+    const handleUpdate = async (newName: string, newCategory?: string) => {
         if (!detailModal || !newName.trim()) return;
         setIsUpdating(true);
         try {
             const url = detailModal.type === 'org' ? `/api/organizations/${detailModal.data.id}` : `/api/teams/${detailModal.data.id}`;
+            const bodyPayload: any = { name: newName };
+
+            if (detailModal.type === 'org' && newCategory) {
+                bodyPayload.category = newCategory;
+            }
+
             const res = await fetch(url, {
                 method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newName })
+                body: JSON.stringify(bodyPayload)
             });
+
             if (res.ok) {
-                toast.success("名前を更新しました");
+                toast.success("情報を更新しました");
                 setDetailModal(null);
                 if (detailModal.type === 'org') fetchOrgs();
                 else if (selectedOrg) fetchTeams(selectedOrg.id);
@@ -203,12 +210,13 @@ export default function TeamsPage() {
                 <Plus className="h-8 w-8" />
             </Button>
 
-            <CreateDrawer
+            <CreateModal
                 isOpen={isDrawerOpen}
                 onOpenChange={setIsDrawerOpen}
                 view={view}
                 isCreating={isCreating}
-                isExternalOrgCreate={isExternalOrgCreate} // 💡 モーダルにフラグを渡す
+                isExternalOrgCreate={isExternalOrgCreate}
+                defaultCategory={selectedCategory === 'all' ? 'other' : selectedCategory}
                 onSubmitOrg={handleCreateOrg}
                 onSubmitTeam={handleCreateTeam}
             />

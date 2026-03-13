@@ -144,8 +144,13 @@ app.patch('/:orgId', async (c) => {
             return c.json({ error: '権限がありません' }, 403)
         }
 
-        await c.env.DB.prepare(`UPDATE organizations SET name = ? WHERE id = ?`)
-            .bind(body.name, orgId).run()
+        if (body.category) {
+            await c.env.DB.prepare(`UPDATE organizations SET name = ?, category = ? WHERE id = ?`)
+                .bind(body.name, body.category, orgId).run()
+        } else {
+            await c.env.DB.prepare(`UPDATE organizations SET name = ? WHERE id = ?`)
+                .bind(body.name, orgId).run()
+        }
 
         return c.json({ success: true })
     } catch (e) {

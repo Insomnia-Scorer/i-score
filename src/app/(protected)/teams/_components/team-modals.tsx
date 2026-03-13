@@ -9,84 +9,82 @@ import { Organization, Team, Opponent } from "../types";
 import { cn } from "@/lib/utils";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 1. 新規作成ドロワー
+// 1. 新規作成モーダル
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-interface CreateDrawerProps {
+interface CreateModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     view: 'orgs' | 'teams';
     isCreating: boolean;
     isExternalOrgCreate?: boolean;
-    // 💡 エラーの原因だったここを修正！ category: string を追加しました
+    defaultCategory?: string; // 💡 これを追加！
     onSubmitOrg: (name: string, category: string) => Promise<void>;
     onSubmitTeam: (name: string, role: string) => Promise<void>;
 }
 
-export function CreateDrawer({ isOpen, onOpenChange, view, isCreating, isExternalOrgCreate, onSubmitOrg, onSubmitTeam }: CreateDrawerProps) {
+export function CreateModal({ isOpen, onOpenChange, view, isCreating, isExternalOrgCreate, defaultCategory, onSubmitOrg, onSubmitTeam }: CreateModalProps) {
     const [orgName, setOrgName] = useState("");
-    // 💡 クラブ作成用のカテゴリStateを追加
     const [orgCategory, setOrgCategory] = useState("other");
-
     const [teamName, setTeamName] = useState("");
     const [teamRole, setTeamRole] = useState<string>(ROLES.SCORER);
 
     useEffect(() => {
         if (isOpen) {
             setOrgName("");
-            setOrgCategory("other"); // 💡 初期化に追加
+            // 💡 開かれた時に、現在選択中のカテゴリを自動でセット！
+            setOrgCategory(defaultCategory || "other");
             setTeamName("");
             setTeamRole(ROLES.SCORER);
         }
-    }, [isOpen]);
+    }, [isOpen, defaultCategory]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // 💡 onSubmitOrg に category も渡すように修正！
         if (view === 'orgs') await onSubmitOrg(orgName, orgCategory);
         else await onSubmitTeam(teamName, teamRole);
     };
 
-    return (
-        <Drawer open={isOpen} onOpenChange={onOpenChange}>
-            <DrawerContent className="border-none bg-card rounded-t-[36px] shadow-[0_-20px_60px_rgba(0,0,0,0.1)] mx-auto sm:fixed sm:top-1/2 sm:left-1/2 sm:inset-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg sm:rounded-[36px] sm:shadow-[0_20px_60px_rgba(0,0,0,0.15)] sm:animate-in sm:fade-in-0 sm:slide-in-from-bottom-12 sm:duration-500 transition-all duration-300 ease-out relative overflow-hidden">
-                <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
-                <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
-                <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-border/40 backdrop-blur-sm sm:hidden" />
+    if (!isOpen) return null;
 
-                <DrawerHeader className="relative z-10 text-left px-6 sm:px-10 pt-8 pb-3 flex items-center justify-between">
-                    <DrawerTitle className="text-xl sm:text-2xl font-black flex items-center gap-4 tracking-tight text-foreground drop-shadow-sm">
-                        <div className="relative p-3 bg-muted rounded-2xl border border-border shadow-sm text-primary overflow-hidden">
-                            <div className="absolute inset-0 opacity-[0.03] scale-150" style={{ backgroundImage: 'var(--pattern-wavy)' }} />
+    return (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="absolute inset-0" onClick={() => !isCreating && onOpenChange(false)} />
+            <div className="relative w-full max-w-lg bg-gradient-to-br from-primary via-primary to-green-900 shadow-[0_20px_60px_rgba(0,0,0,0.4)] rounded-[32px] sm:rounded-[36px] overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-500 text-white flex flex-col max-h-[90vh]">
+                <div className="absolute -top-40 -left-40 w-96 h-96 bg-white/10 blur-[100px] rounded-full pointer-events-none" />
+                <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-black/30 blur-[100px] rounded-full pointer-events-none" />
+
+                <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-white/20 sm:hidden" />
+
+                <div className="relative z-10 text-left px-6 sm:px-8 pt-6 pb-3 flex items-center justify-between border-b border-white/10">
+                    <h2 className="text-xl sm:text-2xl font-black flex items-center gap-3 tracking-tight drop-shadow-sm">
+                        <div className="relative p-2.5 bg-white/20 rounded-2xl shadow-inner backdrop-blur-md overflow-hidden">
                             {view === 'orgs' ? (isExternalOrgCreate ? <Swords className="h-6 w-6 relative z-10" /> : <RiTeamFill className="h-6 w-6 relative z-10" />) : <Shield className="h-6 w-6 relative z-10" />}
                         </div>
                         {view === 'orgs' ? (isExternalOrgCreate ? "対戦相手を新しく追加" : "クラブを新しく作る") : "チームを新しく追加"}
-                    </DrawerTitle>
-                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all hidden sm:flex"><X className="h-5 w-5" /></Button>
-                </DrawerHeader>
+                    </h2>
+                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-white/20 text-white transition-all"><X className="h-5 w-5" /></Button>
+                </div>
 
-                <div className="relative z-10 px-6 sm:px-10 pt-4 pb-14 space-y-7">
-                    <form onSubmit={handleSubmit} className="space-y-7">
+                <div className="relative z-10 px-6 sm:px-8 py-6 space-y-6 overflow-y-auto">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         {view === 'orgs' ? (
                             <>
-                                <div className="space-y-3.5">
-                                    <label className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-1">
+                                <div className="space-y-3">
+                                    <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">
                                         {isExternalOrgCreate ? "対戦相手のクラブ名" : "クラブ（組織）名"}
                                     </label>
                                     <input
                                         type="text" required
                                         placeholder={isExternalOrgCreate ? "例: 世田谷西シニア" : "例: 川崎中央シニア"}
-                                        className="flex h-14 w-full rounded-[18px] border border-border/50 bg-muted/30 px-5 text-base font-bold shadow-inner placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all"
+                                        className="flex h-14 w-full rounded-2xl border border-white/30 bg-white/10 px-4 text-base font-bold shadow-inner placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all text-white"
                                         value={orgName} onChange={(e) => setOrgName(e.target.value)} disabled={isCreating} autoFocus
                                     />
                                 </div>
 
-                                {/* 💡 新規追加：カテゴリ選択ドロップダウン */}
-                                <div className="space-y-3.5">
-                                    <label className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-1">
-                                        カテゴリ
-                                    </label>
+                                <div className="space-y-3">
+                                    <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">カテゴリ</label>
                                     <select
-                                        className="flex h-14 w-full appearance-none rounded-[18px] border border-border/50 bg-muted/30 px-5 pr-10 text-base font-bold text-foreground shadow-inner focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:18px_18px] bg-[position:right_18px_center] bg-no-repeat"
+                                        className="flex h-14 w-full appearance-none rounded-2xl border border-white/30 bg-white/10 px-4 pr-10 text-base font-bold text-white shadow-inner focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22white%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_16px_center] bg-no-repeat"
                                         value={orgCategory} onChange={(e) => setOrgCategory(e.target.value)} disabled={isCreating}
                                     >
                                         <option value="gakudo" className="text-foreground">🧢 学童野球（少年野球）</option>
@@ -96,21 +94,21 @@ export function CreateDrawer({ isOpen, onOpenChange, view, isCreating, isExterna
                                         <option value="other" className="text-foreground">📝 その他</option>
                                     </select>
                                     {isExternalOrgCreate && (
-                                        <p className="text-xs font-bold text-muted-foreground pl-1 mt-2 flex items-center gap-1.5">
-                                            <Info className="h-3.5 w-3.5 text-primary" /> 作成後、相手のチーム（1軍など）を追加してください。
+                                        <p className="text-xs font-bold text-white/80 pl-1 mt-2 flex items-center gap-1.5">
+                                            <Info className="h-3.5 w-3.5" /> 作成後、相手のチーム（1軍など）を追加してください。
                                         </p>
                                     )}
                                 </div>
                             </>
                         ) : (
                             <>
-                                <div className="space-y-3.5">
-                                    <label className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-1">チーム名</label>
-                                    <input type="text" required placeholder="例: 1軍 / ジュニア" className="flex h-14 w-full rounded-[18px] border border-border/50 bg-muted/30 px-5 text-base font-bold shadow-inner placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all" value={teamName} onChange={(e) => setTeamName(e.target.value)} disabled={isCreating} autoFocus />
+                                <div className="space-y-3">
+                                    <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">チーム名</label>
+                                    <input type="text" required placeholder="例: 1軍 / ジュニア" className="flex h-14 w-full rounded-2xl border border-white/30 bg-white/10 px-4 text-base font-bold shadow-inner placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all text-white" value={teamName} onChange={(e) => setTeamName(e.target.value)} disabled={isCreating} autoFocus />
                                 </div>
-                                <div className="space-y-3.5">
-                                    <label className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-1">あなたの役割（ロール）</label>
-                                    <select className="flex h-14 w-full appearance-none rounded-[18px] border border-border/50 bg-muted/30 px-5 pr-10 text-base font-bold text-foreground shadow-inner focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:18px_18px] bg-[position:right_18px_center] bg-no-repeat" value={teamRole} onChange={(e) => setTeamRole(e.target.value)} disabled={isCreating}>
+                                <div className="space-y-3">
+                                    <label className="text-sm font-extrabold text-white/90 tracking-wide pl-1">あなたの役割（ロール）</label>
+                                    <select className="flex h-14 w-full appearance-none rounded-2xl border border-white/30 bg-white/10 px-4 pr-10 text-base font-bold text-white shadow-inner focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 focus-visible:bg-white/20 transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22white%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_16px_center] bg-no-repeat" value={teamRole} onChange={(e) => setTeamRole(e.target.value)} disabled={isCreating}>
                                         <option value={ROLES.MANAGER} className="text-foreground">監督 / 代表 (Manager)</option>
                                         <option value={ROLES.COACH} className="text-foreground">コーチ (Coach)</option>
                                         <option value={ROLES.SCORER} className="text-foreground">スコアラー (Scorer)</option>
@@ -119,20 +117,20 @@ export function CreateDrawer({ isOpen, onOpenChange, view, isCreating, isExterna
                                 </div>
                             </>
                         )}
-                        <div className="pt-3">
-                            <Button type="submit" disabled={isCreating} className="w-full h-15 rounded-[20px] font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all hover:-translate-y-1 active:scale-[0.98]">
+                        <div className="pt-2">
+                            <Button type="submit" disabled={isCreating} className="w-full h-14 rounded-2xl font-extrabold bg-white text-primary hover:bg-white/90 shadow-xl shadow-black/20 transition-all hover:-translate-y-1 active:scale-[0.98]">
                                 {isCreating ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : (view === 'orgs' ? (isExternalOrgCreate ? "対戦相手を追加する" : "クラブを作成する") : "チームを追加する")}
                             </Button>
                         </div>
                     </form>
                 </div>
-            </DrawerContent>
-        </Drawer>
+            </div>
+        </div>
     );
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 2. 詳細・設定モーダル（変更なし）
+// 2. 詳細・設定モーダル
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 interface DetailModalProps {
     isOpen: boolean;
@@ -141,42 +139,55 @@ interface DetailModalProps {
     selectedOrgRole?: string;
     isUpdating: boolean;
     onClose: () => void;
-    onUpdate: (newName: string) => Promise<void>;
+    onUpdate: (newName: string, newCategory?: string) => Promise<void>; // 💡 引数追加
     onDelete: () => Promise<void>;
 }
 
 export function DetailModal({ isOpen, type, data, selectedOrgRole, isUpdating, onClose, onUpdate, onDelete }: DetailModalProps) {
     const [editName, setEditName] = useState("");
+    const [editCategory, setEditCategory] = useState("other"); // 💡 カテゴリ編集用State
 
     useEffect(() => {
-        if (data) setEditName(data.name);
-    }, [data]);
+        if (data) {
+            setEditName(data.name);
+            if (type === 'org') {
+                setEditCategory((data as Organization).category || "other");
+            }
+        }
+    }, [data, type]);
 
     if (!isOpen || !data || !type) return null;
 
     const myRole = type === 'org' ? (data as Organization).myRole : selectedOrgRole;
     const canEdit = myRole === 'OWNER' || myRole === 'OPPONENT_MANAGER';
 
+    // 変更があったかどうかを判定
+    const hasChanges = editName.trim() !== "" && (
+        editName !== data.name || (type === 'org' && editCategory !== (data as Organization).category)
+    );
+
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="absolute inset-0" onClick={() => !isUpdating && onClose()} />
-            <div className="relative w-full max-w-lg bg-card shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[32px] sm:rounded-[36px] overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-500 border border-border/50">
+            <div className="relative w-full max-w-lg bg-card shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[32px] sm:rounded-[36px] overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-500 border border-border/50 flex flex-col max-h-[90vh]">
 
-                <div className="relative z-10 flex items-center justify-between p-6 sm:p-8 pb-4 border-b border-border/50 bg-muted/20">
+                <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-border/40 sm:hidden" />
+
+                <div className="relative z-10 flex items-center justify-between p-6 sm:p-8 pb-4 border-b border-border/50 bg-muted/20 shrink-0">
                     <h2 className="text-xl font-black flex items-center gap-3 text-foreground">
                         <div className="p-2.5 bg-background rounded-2xl shadow-sm border border-border/50 text-primary">
-                            {type === 'org' ? <RiTeamFill className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
+                            {type === 'org' ? ((data as Organization).myRole === 'OPPONENT_MANAGER' ? <Swords className="h-5 w-5" /> : <RiTeamFill className="h-5 w-5" />) : <Shield className="h-5 w-5" />}
                         </div>
-                        {type === 'org' ? "クラブ詳細情報" : "チーム詳細情報"}
+                        {type === 'org' ? ((data as Organization).myRole === 'OPPONENT_MANAGER' ? "対戦相手 詳細情報" : "クラブ詳細情報") : "チーム詳細情報"}
                     </h2>
                     <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all"><X className="h-5 w-5" /></Button>
                 </div>
 
-                <div className="relative z-10 p-6 sm:p-8 space-y-6">
+                <div className="relative z-10 p-6 sm:p-8 space-y-6 overflow-y-auto">
                     <div className="space-y-4">
                         <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-[20px] border border-border/50">
                             <div className="h-14 w-14 shrink-0 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                                {type === 'org' ? <RiTeamFill className="h-7 w-7" /> : <Shield className="h-7 w-7" />}
+                                {type === 'org' ? ((data as Organization).myRole === 'OPPONENT_MANAGER' ? <Swords className="h-7 w-7" /> : <RiTeamFill className="h-7 w-7" />) : <Shield className="h-7 w-7" />}
                             </div>
                             <div className="overflow-hidden">
                                 <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">登録名</div>
@@ -191,7 +202,7 @@ export function DetailModal({ isOpen, type, data, selectedOrgRole, isUpdating, o
                             </div>
                             <div className="p-4 bg-muted/30 rounded-[20px] border border-border/50">
                                 <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">権限・ロール</div>
-                                <div className="text-xs font-black text-primary truncate">{myRole}</div>
+                                <div className="text-xs font-black text-primary truncate">{myRole === 'OPPONENT_MANAGER' ? '対戦相手' : (myRole === 'OWNER' ? '代表' : myRole)}</div>
                             </div>
                         </div>
                     </div>
@@ -199,20 +210,42 @@ export function DetailModal({ isOpen, type, data, selectedOrgRole, isUpdating, o
                     {canEdit ? (
                         <>
                             <div className="h-px w-full bg-border/50 my-2" />
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 <label className="text-sm font-extrabold text-foreground/80 flex items-center gap-2">
-                                    <Settings className="h-4 w-4" /> 名前を変更する
+                                    <Settings className="h-4 w-4" /> 情報の編集
                                 </label>
-                                <div className="flex gap-2">
+
+                                <div className="space-y-3">
                                     <input
                                         type="text"
+                                        placeholder="クラブ・チーム名"
                                         className="flex h-12 w-full rounded-[16px] border border-border/50 bg-background px-4 text-base font-bold shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
                                         disabled={isUpdating}
                                     />
-                                    <Button onClick={() => onUpdate(editName)} disabled={isUpdating || editName === data.name || !editName.trim()} className="h-12 px-6 rounded-[16px] font-black shrink-0">
-                                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+
+                                    {/* 💡 組織（クラブ）の場合のみ、カテゴリ変更のセレクトボックスを表示 */}
+                                    {type === 'org' && (
+                                        <select
+                                            className="flex h-12 w-full appearance-none rounded-[16px] border border-border/50 bg-background px-4 pr-10 text-base font-bold text-foreground shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:18px_18px] bg-[position:right_16px_center] bg-no-repeat"
+                                            value={editCategory} onChange={(e) => setEditCategory(e.target.value)} disabled={isUpdating}
+                                        >
+                                            <option value="gakudo" className="text-foreground">🧢 学童野球（少年野球）</option>
+                                            <option value="junior" className="text-foreground">⚾️ 中学野球（シニア/ボーイズ等）</option>
+                                            <option value="high" className="text-foreground">🏫 高校野球</option>
+                                            <option value="adult" className="text-foreground">🍺 一般・草野球</option>
+                                            <option value="other" className="text-foreground">📝 その他</option>
+                                        </select>
+                                    )}
+
+                                    {/* 💡 変更があった時だけ押せるようにスマート化 */}
+                                    <Button
+                                        onClick={() => onUpdate(editName, type === 'org' ? editCategory : undefined)}
+                                        disabled={isUpdating || !hasChanges}
+                                        className="h-12 w-full rounded-[16px] font-black"
+                                    >
+                                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-2" /> 更新を保存する</>}
                                     </Button>
                                 </div>
                             </div>
@@ -235,7 +268,7 @@ export function DetailModal({ isOpen, type, data, selectedOrgRole, isUpdating, o
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 3. 対戦相手詳細モーダル（変更なし）
+// 3. 対戦相手詳細モーダル
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 interface OpponentDetailModalProps {
     isOpen: boolean;
@@ -244,7 +277,7 @@ interface OpponentDetailModalProps {
 }
 
 export function OpponentDetailModal({ isOpen, onOpenChange, opponent }: OpponentDetailModalProps) {
-    if (!opponent) return null;
+    if (!opponent || !isOpen) return null;
 
     const getResultColor = (result: string) => {
         if (result === 'win') return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
@@ -259,21 +292,23 @@ export function OpponentDetailModal({ isOpen, onOpenChange, opponent }: Opponent
     };
 
     return (
-        <Drawer open={isOpen} onOpenChange={onOpenChange}>
-            <DrawerContent className="border-none bg-card rounded-t-[36px] shadow-[0_-20px_60px_rgba(0,0,0,0.1)] mx-auto sm:fixed sm:top-1/2 sm:left-1/2 sm:inset-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg sm:rounded-[36px] sm:shadow-[0_20px_60px_rgba(0,0,0,0.15)] sm:animate-in sm:fade-in-0 sm:slide-in-from-bottom-12 sm:duration-500 transition-all duration-300 ease-out relative overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="absolute inset-0" onClick={() => onOpenChange(false)} />
+            <div className="relative w-full max-w-lg bg-card shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[32px] sm:rounded-[36px] overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-500 border border-border/50 flex flex-col max-h-[90vh]">
+
                 <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
                 <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
                 <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-border/40 backdrop-blur-sm sm:hidden" />
 
-                <DrawerHeader className="relative z-10 text-left px-6 sm:px-8 pt-8 pb-4 flex items-start justify-between border-b border-border/50 shrink-0 bg-background/50 backdrop-blur-sm">
+                <div className="relative z-10 text-left px-6 sm:px-8 pt-6 pb-4 flex items-start justify-between border-b border-border/50 shrink-0 bg-background/50 backdrop-blur-sm">
                     <div className="flex items-center gap-4">
                         <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-2xl border border-primary/20 shrink-0 shadow-sm">
                             {opponent.name.charAt(0)}
                         </div>
                         <div>
-                            <DrawerTitle className="text-xl sm:text-2xl font-black tracking-tight text-foreground drop-shadow-sm mb-1">
+                            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground drop-shadow-sm mb-1">
                                 {opponent.name}
-                            </DrawerTitle>
+                            </h2>
                             <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
                                 <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> 神奈川県</span>
                                 <span>•</span>
@@ -281,8 +316,8 @@ export function OpponentDetailModal({ isOpen, onOpenChange, opponent }: Opponent
                             </div>
                         </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all hidden sm:flex shrink-0"><X className="h-5 w-5" /></Button>
-                </DrawerHeader>
+                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all shrink-0"><X className="h-5 w-5" /></Button>
+                </div>
 
                 <div className="relative z-10 px-6 sm:px-8 py-6 space-y-8 overflow-y-auto flex-1">
                     <div>
@@ -342,7 +377,7 @@ export function OpponentDetailModal({ isOpen, onOpenChange, opponent }: Opponent
                         <PlusCircle className="mr-2 h-5 w-5" /> このクラブとの新しい試合を記録
                     </Button>
                 </div>
-            </DrawerContent>
-        </Drawer>
+            </div>
+        </div>
     );
 }
