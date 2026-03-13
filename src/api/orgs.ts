@@ -7,59 +7,66 @@ import { desc, eq, and } from 'drizzle-orm'
 
 const app = new Hono<{ Bindings: { DB: D1Database, ASSETS: Fetcher } }>()
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💡 1. クラブ一覧取得 (GET /)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 app.get('/', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
     const db = drizzle(c.env.DB)
-    const myOrgs = await db.select({
+
+    const results = await db.select({
         id: organizations.id,
         name: organizations.name,
         myRole: organizationMembers.role,
     })
-        .from(organizationMembers)
-        .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
+        .from(organizations)
+        .innerJoin(organizationMembers, eq(organizations.id, organizationMembers.organizationId))
         .where(eq(organizationMembers.userId, session.user.id))
         .orderBy(desc(organizations.createdAt))
 
-    return c.json(myOrgs)
+    return c.json(results)
 })
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💡 2. 新規クラブ作成 (POST /)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 app.post('/', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
-    const body = await c.req.json()
+    // フロントから "isExternal" という一時的なフラグを受け取る
+    const { name, isExternal } = await c.req.json()
     const db = drizzle(c.env.DB)
 
-    // 💡 究極化：クラブ名の重複チェック（すでに同名のクラブがある場合はエラーを返す）
-    const existingOrg = await db.select().from(organizations).where(eq(organizations.name, body.name)).get()
-    if (existingOrg) {
-        return c.json({ success: false, error: 'このクラブ名はすでに登録されています。別の名前をお試しください。' }, 400)
-    }
-
-    const orgId = crypto.randomUUID()
-
     try {
+        const newOrgId = crypto.randomUUID()
+
+        // 1. クラブの作成（中立な組織として作成）
         await db.insert(organizations).values({
-            id: orgId,
-            name: body.name,
+            id: newOrgId,
+            name,
             createdAt: new Date(),
         })
+
+        // 2. 💡 究極設計：メンバー登録時の「Role（役割）」で関係性を決める！
+        // 外部クラブとして作成された場合は 'OPPONENT_MANAGER'、自クラブなら 'OWNER'
+        const role = isExternal ? 'OPPONENT_MANAGER' : 'OWNER'
 
         await db.insert(organizationMembers).values({
             id: crypto.randomUUID(),
-            organizationId: orgId,
+            organizationId: newOrgId,
             userId: session.user.id,
-            role: 'OWNER',
+            role: role,
             createdAt: new Date(),
         })
 
-        return c.json({ success: true, orgId })
+        return c.json({ success: true, organizationId: newOrgId })
     } catch (e) {
-        console.error("組織作成エラー:", e)
+        console.error("クラブ作成エラー:", e)
         return c.json({ success: false, error: 'Failed to create organization' }, 500)
     }
 })

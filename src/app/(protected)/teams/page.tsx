@@ -26,10 +26,12 @@ export default function TeamsPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
 
+    // 💡 新規追加：外部（対戦相手）クラブを作成するかどうかのフラグ
+    const [isExternalOrgCreate, setIsExternalOrgCreate] = useState(false);
+
     const [detailModal, setDetailModal] = useState<{ type: 'org' | 'team', data: Organization | Team } | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    // 💡 新規追加：対戦クラブの詳細表示用ステート
     const [selectedOpponent, setSelectedOpponent] = useState<Opponent | null>(null);
 
     const fetchOrgs = async () => {
@@ -73,13 +75,14 @@ export default function TeamsPage() {
         if (!name.trim()) return;
         setIsCreating(true);
         try {
+            // 💡 外部クラブの場合は isExternal フラグを付与してAPIへ送信
             const res = await fetch('/api/organizations', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ name, isExternal: isExternalOrgCreate }),
             });
             const data = await res.json() as { success: boolean; error?: string };
             if (res.ok && data.success) {
-                toast.success("クラブを作成しました！");
+                toast.success(isExternalOrgCreate ? "対戦相手を追加しました！" : "クラブを作成しました！");
                 setIsDrawerOpen(false);
                 fetchOrgs();
             } else toast.error(data.error || "作成に失敗しました");
@@ -158,8 +161,9 @@ export default function TeamsPage() {
                         isLoading={isLoadingOrgs}
                         onSelectOrg={handleSelectOrg}
                         onOpenDetail={(e, type, data) => { e.preventDefault(); e.stopPropagation(); setDetailModal({ type, data }); }}
-                        // 💡 クリックされた対戦相手をステートにセット
                         onOpponentClick={(opp) => setSelectedOpponent(opp)}
+                        // 💡 OrgList側にDrawer起動用の関数を渡す
+                        onAddOrg={(isExternal) => { setIsExternalOrgCreate(isExternal); setIsDrawerOpen(true); }}
                     />
                 ) : (
                     selectedOrg && (
@@ -175,7 +179,8 @@ export default function TeamsPage() {
                 )}
             </main>
 
-            <Button onClick={() => setIsDrawerOpen(true)} className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center">
+            {/* FABは通常クラブ作成用（view切り替え時はチーム作成） */}
+            <Button onClick={() => { setIsExternalOrgCreate(false); setIsDrawerOpen(true); }} className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center">
                 <Plus className="h-8 w-8" />
             </Button>
 
@@ -184,6 +189,7 @@ export default function TeamsPage() {
                 onOpenChange={setIsDrawerOpen}
                 view={view}
                 isCreating={isCreating}
+                isExternalOrgCreate={isExternalOrgCreate} // 💡 モーダルにフラグを渡す
                 onSubmitOrg={handleCreateOrg}
                 onSubmitTeam={handleCreateTeam}
             />
@@ -199,7 +205,6 @@ export default function TeamsPage() {
                 onDelete={handleDelete}
             />
 
-            {/* 💡 新規追加：対戦クラブの詳細表示 */}
             <OpponentDetailModal
                 isOpen={!!selectedOpponent}
                 onOpenChange={(open) => !open && setSelectedOpponent(null)}

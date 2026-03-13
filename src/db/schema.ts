@@ -56,7 +56,7 @@ export const verification = sqliteTable("verification", {
 });
 
 // ==========================================
-// 💡 新規追加：組織（クラブ）テーブル
+// 💡 組織（クラブ）テーブル
 // ==========================================
 export const organizations = sqliteTable("organizations", {
     id: text("id").primaryKey(),
@@ -65,7 +65,7 @@ export const organizations = sqliteTable("organizations", {
 });
 
 // ==========================================
-// 💡 新規追加：組織メンバー（権限管理）テーブル
+// 💡 組織メンバー（権限管理）テーブル
 // ==========================================
 export const organizationMembers = sqliteTable("organization_members", {
     id: text("id").primaryKey(),

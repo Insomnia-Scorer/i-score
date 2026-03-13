@@ -16,11 +16,12 @@ interface CreateDrawerProps {
     onOpenChange: (open: boolean) => void;
     view: 'orgs' | 'teams';
     isCreating: boolean;
+    isExternalOrgCreate?: boolean;
     onSubmitOrg: (name: string) => Promise<void>;
     onSubmitTeam: (name: string, role: string) => Promise<void>;
 }
 
-export function CreateDrawer({ isOpen, onOpenChange, view, isCreating, onSubmitOrg, onSubmitTeam }: CreateDrawerProps) {
+export function CreateDrawer({ isOpen, onOpenChange, view, isCreating, isExternalOrgCreate, onSubmitOrg, onSubmitTeam }: CreateDrawerProps) {
     // 💡 入力状態はDrawer内部で管理（親を綺麗に保つため）
     const [orgName, setOrgName] = useState("");
     const [teamName, setTeamName] = useState("");
@@ -52,9 +53,9 @@ export function CreateDrawer({ isOpen, onOpenChange, view, isCreating, onSubmitO
                     <DrawerTitle className="text-xl sm:text-2xl font-black flex items-center gap-4 tracking-tight text-foreground drop-shadow-sm">
                         <div className="relative p-3 bg-muted rounded-2xl border border-border shadow-sm text-primary overflow-hidden">
                             <div className="absolute inset-0 opacity-[0.03] scale-150" style={{ backgroundImage: 'var(--pattern-wavy)' }} />
-                            {view === 'orgs' ? <RiTeamFill className="h-6 w-6 relative z-10" /> : <Shield className="h-6 w-6 relative z-10" />}
+                            {view === 'orgs' ? (isExternalOrgCreate ? <Swords className="h-6 w-6 relative z-10" /> : <RiTeamFill className="h-6 w-6 relative z-10" />) : <Shield className="h-6 w-6 relative z-10" />}
                         </div>
-                        {view === 'orgs' ? "クラブを新しく作る" : "チームを新しく追加"}
+                        {view === 'orgs' ? (isExternalOrgCreate ? "対戦相手を新しく追加" : "クラブを新しく作る") : "チームを新しく追加"}
                     </DrawerTitle>
                     <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all hidden sm:flex"><X className="h-5 w-5" /></Button>
                 </DrawerHeader>
