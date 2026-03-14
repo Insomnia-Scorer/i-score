@@ -45,14 +45,17 @@ export function TeamList({ teams, selectedOrg, isLoading, onBack, onTeamClick, o
                 <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 mt-4">
                     {teams.map((team) => (
                         <Card key={team.id} onClick={() => onTeamClick(team.id)} className="group relative overflow-hidden rounded-[28px] border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer flex flex-col">
+
+                            {/* 💡 復活: 美しい3重の波紋アニメーション */}
                             <div className="absolute top-0 right-0 pointer-events-none">
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-110 group-active:scale-110" />
                                 <div className="absolute top-0 right-0 w-36 h-36 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 delay-75 group-hover:scale-110 group-active:scale-110 group-hover:bg-primary/10 group-active:bg-primary/10" />
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full -mr-4 -mt-4 transition-transform duration-500 delay-150 group-hover:scale-[1.2] group-active:scale-[1.2] group-hover:bg-primary/20 group-active:bg-primary/20" />
                             </div>
 
                             <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col h-full pointer-events-none">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3.5 bg-muted/50 rounded-[18px] text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-300 shadow-sm border border-border/50">
+                                    <div className="p-3.5 bg-muted/50 rounded-[18px] text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary transition-colors duration-300 shadow-sm border border-border/50 group-hover:border-primary/20 group-active:border-primary/20">
                                         <Shield className="h-7 w-7" />
                                     </div>
                                     <div className="flex items-center gap-2 pointer-events-auto">
@@ -75,9 +78,15 @@ export function TeamList({ teams, selectedOrg, isLoading, onBack, onTeamClick, o
                                             </div>
                                         )}
                                     </div>
-                                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary transition-colors duration-300 drop-shadow-sm">
+
+                                    {/* 💡 復活: ホバー・クリック時のテキストカラー変化 */}
+                                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary group-active:text-primary transition-colors duration-300 drop-shadow-sm">
                                         {team.name}
                                     </h3>
+
+                                    <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 group-active:text-primary/80 transition-colors duration-300">
+                                        ダッシュボードを開く <ChevronRight className="h-5 w-5 ml-1 transition-transform duration-300 group-hover:translate-x-1 group-active:translate-x-1" />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
