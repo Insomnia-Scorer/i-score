@@ -97,13 +97,14 @@ export default function TeamsPage() {
         finally { setIsCreating(false); }
     };
 
-    const handleCreateTeam = async (name: string, role: string, year: number, tier: string) => {
+    // 💡 generation と teamType を引数に追加
+    const handleCreateTeam = async (name: string, role: string, year: number, tier: string, generation?: string, teamType?: string) => {
         if (!name.trim() || !selectedOrg) return;
         setIsCreating(true);
         try {
             const res = await fetch('/api/teams', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, role, organizationId: selectedOrg.id, year, tier }),
+                body: JSON.stringify({ name, role, organizationId: selectedOrg.id, year, tier, generation, teamType }),
             });
             const data = await res.json() as any;
             if (res.ok && data.success) {
@@ -117,13 +118,23 @@ export default function TeamsPage() {
         finally { setIsCreating(false); }
     };
 
-    const handleUpdate = async (newName: string, newCategory?: string) => {
+    // 💡 詳細更新用に extraData パラメータを追加
+    const handleUpdate = async (newName: string, extraData?: any) => {
         if (!detailModal || !newName.trim()) return;
         setIsUpdating(true);
         try {
             const url = detailModal.type === 'org' ? `/api/organizations/${detailModal.data.id}` : `/api/teams/${detailModal.data.id}`;
             const bodyPayload: any = { name: newName };
-            if (detailModal.type === 'org' && newCategory) bodyPayload.category = newCategory;
+
+            if (detailModal.type === 'org' && extraData) {
+                bodyPayload.category = extraData; // orgの場合はcategory
+            } else if (detailModal.type === 'team' && extraData) {
+                // 💡 teamの場合は詳細オプション群
+                bodyPayload.year = extraData.year;
+                bodyPayload.tier = extraData.tier;
+                bodyPayload.generation = extraData.generation;
+                bodyPayload.teamType = extraData.teamType;
+            }
 
             const res = await fetch(url, {
                 method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -226,7 +237,8 @@ export default function TeamsPage() {
                 selectedOrgRole={selectedOrg?.myRole}
                 isUpdating={isUpdating}
                 onClose={() => setDetailModal(null)}
-                onUpdate={(name) => handleUpdate(name)}
+                // 💡 更新時に詳細データ群を渡す
+                onUpdate={(name, extraData) => handleUpdate(name, extraData)}
                 onDelete={handleDelete}
             />
 
@@ -235,8 +247,8 @@ export default function TeamsPage() {
                 onOpenChange={(open) => !open && setSelectedOpponent(null)}
                 opponent={selectedOpponent}
                 onOpenSettings={(org) => {
-                    setSelectedOpponent(null); // 成績モーダルを閉じる
-                    setDetailModal({ type: 'org', data: org }); // チーム(旧クラブ)詳細情報モーダルを開く
+                    setSelectedOpponent(null);
+                    setDetailModal({ type: 'org', data: org });
                 }}
             />
         </div>

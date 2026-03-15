@@ -1,3 +1,4 @@
+// src/api/teams.ts
 import { Hono } from 'hono'
 import { getAuth } from "@/lib/auth"
 import { drizzle } from 'drizzle-orm/d1'
@@ -16,6 +17,10 @@ app.get('/', async (c) => {
     const myTeams = await db.select({
         id: teams.id,
         name: teams.name,
+        year: teams.year,
+        tier: teams.tier,
+        generation: teams.generation, // 💡 追加
+        teamType: teams.teamType,     // 💡 追加
         myRole: teamMembers.role,
         isFounder: eq(teams.createdBy, session.user.id)
     })
@@ -32,20 +37,22 @@ app.post('/', async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
-    // 💡 year と tier も受け取るように追加
-    const { name, role, organizationId, year, tier } = await c.req.json()
+    // 💡 generation と teamType も受け取る
+    const { name, role, organizationId, year, tier, generation, teamType } = await c.req.json()
     const db = drizzle(c.env.DB)
 
     try {
         const teamId = crypto.randomUUID()
-                                                
+
         // 1. チームの作成
         await db.insert(teams).values({
             id: teamId,
             organizationId,
             name,
-            year: year || new Date().getFullYear(), // デフォルトは今年
+            year: year || new Date().getFullYear(),
             tier: tier || null,
+            generation: generation || null,   // 💡 追加
+            teamType: teamType || 'regular',  // 💡 追加
             createdBy: session.user.id,
             createdAt: new Date(),
         })
@@ -84,7 +91,15 @@ app.patch('/:id', async (c) => {
             return c.json({ error: '権限がありません' }, 403)
         }
 
-        await db.update(teams).set({ name: body.name }).where(eq(teams.id, teamId))
+        // 💡 オプション項目も含めて更新
+        await db.update(teams).set({
+            name: body.name,
+            year: body.year,
+            tier: body.tier,
+            generation: body.generation,
+            teamType: body.teamType
+        }).where(eq(teams.id, teamId))
+
         return c.json({ success: true })
     } catch (e) {
         console.error("チーム更新エラー:", e)

@@ -1,8 +1,9 @@
 // src/app/(protected)/teams/_components/team-modals.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, X, Trash2, Settings, Info, Check, Calendar, Layers, UserCircle } from "lucide-react";
-import { RiTeamFill } from "react-icons/ri"; // 💡 ShieldからRiTeamFillに変更！
+// 💡 ChevronDown と ChevronUp を追加
+import { Loader2, X, Trash2, Settings, Check, Calendar, Layers, UserCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { RiTeamFill } from "react-icons/ri";
 import { ROLES } from "@/lib/roles";
 import { Team } from "../types";
 
@@ -13,18 +14,25 @@ interface CreateTeamModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     isCreating: boolean;
-    onSubmit: (name: string, role: string, year: number, tier: string) => Promise<void>;
+    // 💡 オプション項目を追加
+    onSubmit: (name: string, role: string, year: number, tier: string, generation?: string, teamType?: string) => Promise<void>;
 }
 
 export function CreateTeamModal({ isOpen, onOpenChange, isCreating, onSubmit }: CreateTeamModalProps) {
     const [name, setName] = useState("");
     const [role, setRole] = useState<string>(ROLES.SCORER);
+
+    // 💡 詳細オプション用のステート
     const [year, setYear] = useState<number>(new Date().getFullYear());
     const [tier, setTier] = useState<string>("");
+    const [generation, setGeneration] = useState("");
+    const [teamType, setTeamType] = useState("regular");
+    const [showOptions, setShowOptions] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            setName(""); setRole(ROLES.SCORER); setYear(new Date().getFullYear()); setTier("");
+            setName(""); setRole(ROLES.SCORER);
+            setYear(new Date().getFullYear()); setTier(""); setGeneration(""); setTeamType("regular"); setShowOptions(false);
         }
     }, [isOpen]);
 
@@ -44,21 +52,12 @@ export function CreateTeamModal({ isOpen, onOpenChange, isCreating, onSubmit }: 
                 </div>
 
                 <div className="relative z-10 px-6 sm:px-8 py-6 space-y-6 overflow-y-auto">
-                    <form onSubmit={(e) => { e.preventDefault(); onSubmit(name, role, year, tier); }} className="space-y-6">
+                    <form onSubmit={(e) => { e.preventDefault(); onSubmit(name, role, year, tier, generation, teamType); }} className="space-y-6">
                         <div className="space-y-3">
                             <label className="text-base font-black text-foreground/90 pl-1 flex items-center gap-2"><RiTeamFill className="h-4 w-4 text-primary/70" />編成名</label>
                             <input type="text" required placeholder="例: 1軍 / ジュニア" className="flex h-14 w-full rounded-[18px] border border-border/50 bg-background px-5 text-base font-bold shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 transition-all text-foreground" value={name} onChange={(e) => setName(e.target.value)} disabled={isCreating} autoFocus />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <label className="text-base font-black text-foreground/90 pl-1 flex items-center gap-2"><Calendar className="h-4 w-4 text-primary/70" />年度</label>
-                                <input type="number" required className="flex h-14 w-full rounded-[18px] border border-border/50 bg-background px-5 text-base font-bold shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 transition-all text-foreground" value={year} onChange={(e) => setYear(Number(e.target.value))} disabled={isCreating} />
-                            </div>
-                            <div className="space-y-3">
-                                <label className="text-base font-black text-foreground/90 pl-1 flex items-center gap-2"><Layers className="h-4 w-4 text-primary/70" />階層 (Tier)</label>
-                                <input type="text" placeholder="例: 1軍, A" className="flex h-14 w-full rounded-[18px] border border-border/50 bg-background px-5 text-base font-bold shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 transition-all text-foreground" value={tier} onChange={(e) => setTier(e.target.value)} disabled={isCreating} />
-                            </div>
-                        </div>
+
                         <div className="space-y-3">
                             <label className="text-base font-black text-foreground/90 pl-1 flex items-center gap-2"><UserCircle className="h-4 w-4 text-primary/70" />あなたの役割（ロール）</label>
                             <select className="flex h-14 w-full appearance-none rounded-[18px] border border-border/50 bg-background px-5 pr-10 text-base font-bold text-foreground shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:18px_18px] bg-[position:right_18px_center] bg-no-repeat" value={role} onChange={(e) => setRole(e.target.value)} disabled={isCreating}>
@@ -68,6 +67,45 @@ export function CreateTeamModal({ isOpen, onOpenChange, isCreating, onSubmit }: 
                                 <option value={ROLES.STAFF}>スタッフ</option>
                             </select>
                         </div>
+
+                        {/* 💡 詳細オプション（アコーディオン） */}
+                        <div className="space-y-3 pt-2">
+                            <button type="button" onClick={() => setShowOptions(!showOptions)} className="flex items-center gap-1.5 text-sm font-bold text-primary/80 hover:text-primary transition-colors">
+                                {showOptions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                詳細オプション（任意）
+                            </button>
+
+                            {showOptions && (
+                                <div className="p-5 bg-muted/30 rounded-[20px] border border-border/50 space-y-4 animate-in slide-in-from-top-2 fade-in duration-200 shadow-inner">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest pl-1">年度 (Year)</label>
+                                            <input type="number" className="flex h-12 w-full rounded-xl border border-border/50 bg-background px-4 text-sm font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" value={year} onChange={(e) => setYear(Number(e.target.value))} disabled={isCreating} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest pl-1">階層 (Tier)</label>
+                                            <input type="text" placeholder="例: 1軍, A" className="flex h-12 w-full rounded-xl border border-border/50 bg-background px-4 text-sm font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" value={tier} onChange={(e) => setTier(e.target.value)} disabled={isCreating} />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest pl-1">世代・入団期</label>
+                                            <input type="text" placeholder="例: 第15期生" className="flex h-12 w-full rounded-xl border border-border/50 bg-background px-4 text-sm font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" value={generation} onChange={(e) => setGeneration(e.target.value)} disabled={isCreating} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest pl-1">チーム特性</label>
+                                            <select className="flex h-12 w-full appearance-none rounded-xl border border-border/50 bg-background px-4 pr-8 text-sm font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" value={teamType} onChange={(e) => setTeamType(e.target.value)} disabled={isCreating}>
+                                                <option value="regular">通常</option>
+                                                <option value="selection">選抜・合同</option>
+                                                <option value="practice">練習・紅白戦</option>
+                                                <option value="ob">OB・その他</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="pt-2">
                             <Button type="submit" disabled={isCreating} className="w-full h-14 rounded-[20px] font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
                                 {isCreating ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : "追加する"}
@@ -89,21 +127,39 @@ interface TeamDetailModalProps {
     selectedOrgRole?: string;
     isUpdating: boolean;
     onClose: () => void;
-    onUpdate: (newName: string) => Promise<void>;
+    // 💡 詳細更新用に引数追加
+    onUpdate: (newName: string, extraData?: any) => Promise<void>;
     onDelete: () => Promise<void>;
 }
 
 export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onClose, onUpdate, onDelete }: TeamDetailModalProps) {
     const [editName, setEditName] = useState("");
 
+    // 💡 編集用の詳細オプションステート
+    const [editYear, setEditYear] = useState<number>(new Date().getFullYear());
+    const [editTier, setEditTier] = useState("");
+    const [editGeneration, setEditGeneration] = useState("");
+    const [editTeamType, setEditTeamType] = useState("regular");
+    const [showOptions, setShowOptions] = useState(false);
+
     useEffect(() => {
-        if (data) setEditName(data.name);
+        if (data) {
+            setEditName(data.name);
+            setEditYear(data.year || new Date().getFullYear());
+            setEditTier(data.tier || "");
+            setEditGeneration(data.generation || "");
+            setEditTeamType(data.teamType || "regular");
+            setShowOptions(false);
+        }
     }, [data]);
 
     if (!isOpen || !data) return null;
 
     const canEdit = selectedOrgRole === 'OWNER';
-    const hasChanges = editName.trim() !== "" && editName !== data.name;
+    // 💡 変更チェックを拡張
+    const hasChanges = (editName.trim() !== "" && editName !== data.name) ||
+        editYear !== data.year || editTier !== (data.tier || "") ||
+        editGeneration !== (data.generation || "") || editTeamType !== (data.teamType || "regular");
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -116,7 +172,7 @@ export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onC
                 <div className="relative z-10 flex items-center justify-between p-6 sm:p-8 pb-4 border-b border-border/50 bg-background/50 shrink-0">
                     <h2 className="text-xl sm:text-2xl font-black flex items-center gap-3 text-foreground tracking-tight drop-shadow-sm">
                         <div className="p-2.5 bg-primary/10 rounded-2xl shadow-sm border border-primary/20 text-primary">
-                            <RiTeamFill className="h-5 w-5" /> {/* 💡 アイコン変更 */}
+                            <RiTeamFill className="h-5 w-5" />
                         </div>
                         編成詳細情報
                     </h2>
@@ -127,7 +183,7 @@ export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onC
                     <div className="space-y-4">
                         <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-[20px] border border-border/50 shadow-sm">
                             <div className="h-14 w-14 shrink-0 rounded-full bg-background border border-border flex items-center justify-center text-primary shadow-sm">
-                                <RiTeamFill className="h-7 w-7" /> {/* 💡 アイコン変更 */}
+                                <RiTeamFill className="h-7 w-7" />
                             </div>
                             <div className="overflow-hidden">
                                 <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">編成名</div>
@@ -159,7 +215,50 @@ export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onC
                                 </label>
                                 <div className="space-y-3">
                                     <input type="text" placeholder="編成名" className="flex h-12 w-full rounded-[16px] border border-border/50 bg-background px-4 text-base font-bold shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 transition-all text-foreground" value={editName} onChange={(e) => setEditName(e.target.value)} disabled={isUpdating} />
-                                    <Button onClick={() => onUpdate(editName)} disabled={isUpdating || !hasChanges} className="h-12 w-full rounded-[16px] font-black mt-2">
+
+                                    {/* 💡 編集用の詳細オプション */}
+                                    <div className="space-y-3 pt-2">
+                                        <button type="button" onClick={() => setShowOptions(!showOptions)} className="flex items-center gap-1.5 text-sm font-bold text-primary/80 hover:text-primary transition-colors">
+                                            {showOptions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                            詳細オプションの編集（任意）
+                                        </button>
+
+                                        {showOptions && (
+                                            <div className="p-4 bg-muted/30 rounded-[18px] border border-border/50 space-y-4 animate-in slide-in-from-top-2 fade-in duration-200 shadow-inner">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">年度 (Year)</label>
+                                                        <input type="number" className="flex h-10 w-full rounded-xl border border-border/50 bg-background px-3 text-sm font-bold shadow-sm" value={editYear} onChange={(e) => setEditYear(Number(e.target.value))} disabled={isUpdating} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">階層 (Tier)</label>
+                                                        <input type="text" className="flex h-10 w-full rounded-xl border border-border/50 bg-background px-3 text-sm font-bold shadow-sm" value={editTier} onChange={(e) => setEditTier(e.target.value)} disabled={isUpdating} />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">世代・入団期</label>
+                                                        <input type="text" className="flex h-10 w-full rounded-xl border border-border/50 bg-background px-3 text-sm font-bold shadow-sm" value={editGeneration} onChange={(e) => setEditGeneration(e.target.value)} disabled={isUpdating} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">チーム特性</label>
+                                                        <select className="flex h-10 w-full rounded-xl border border-border/50 bg-background px-3 text-sm font-bold shadow-sm" value={editTeamType} onChange={(e) => setEditTeamType(e.target.value)} disabled={isUpdating}>
+                                                            <option value="regular">通常</option>
+                                                            <option value="selection">選抜・合同</option>
+                                                            <option value="practice">練習・紅白戦</option>
+                                                            <option value="ob">OB・その他</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Button
+                                        onClick={() => onUpdate(editName, { year: editYear, tier: editTier, generation: editGeneration, teamType: editTeamType })}
+                                        disabled={isUpdating || !hasChanges}
+                                        className="h-12 w-full rounded-[16px] font-black mt-2"
+                                    >
                                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-2" /> 更新を保存する</>}
                                     </Button>
                                 </div>
