@@ -8,7 +8,7 @@ import { desc, eq, and } from 'drizzle-orm'
 const app = new Hono<{ Bindings: { DB: D1Database, ASSETS: Fetcher } }>()
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💡 1. クラブ一覧取得 (GET /)
+// 💡 1. クラブ一覧取得 (カテゴリも取得するように修正！)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 app.get('/', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
@@ -16,35 +16,36 @@ app.get('/', async (c) => {
     if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
     const db = drizzle(c.env.DB)
-
-    const results = await db.select({
+    const myOrgs = await db.select({
         id: organizations.id,
         name: organizations.name,
-        category: organizations.category,
+        category: organizations.category, // 💡 これがないとフロントのタブ絞り込みが効きません
         myRole: organizationMembers.role,
     })
-        .from(organizations)
-        .innerJoin(organizationMembers, eq(organizations.id, organizationMembers.organizationId))
+        .from(organizationMembers)
+        .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
         .where(eq(organizationMembers.userId, session.user.id))
         .orderBy(desc(organizations.createdAt))
 
-    return c.json(results)
+    return c.json(myOrgs)
 })
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💡 2. 新規クラブ作成 (POST /)
+// 💡 2. 新規クラブ作成 (重複チェック ＆ 外部クラブ判定！)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 app.post('/', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
-    // フロントから "isExternal" という一時的なフラグを受け取る
-    const { name, isExternal, category } = await c.req.json()
+    // 💡 body から isExternal と category を受け取る
+    const body = await c.req.json()
+    const { name, isExternal, category } = body
     const db = drizzle(c.env.DB)
 
     try {
-        // 💡 自分が既に同じ名前のクラブに所属（または管理）していないかチェック
+        // 💡 究極化：自分が既に同じ名前のクラブを登録していないかチェック！
+        // （他人が作った同名クラブは関係なく、自分のリストの中だけで重複を弾きます）
         const existingOrgs = await db.select({ id: organizations.id })
             .from(organizations)
             .innerJoin(organizationMembers, eq(organizations.id, organizationMembers.organizationId))
@@ -55,40 +56,41 @@ app.post('/', async (c) => {
                 )
             ).limit(1)
 
-        // もし同じ名前が見つかったらエラーを返す！
         if (existingOrgs.length > 0) {
             return c.json({ success: false, error: `「${name}」は既に登録されています。` }, 400)
         }
 
-        const newOrgId = crypto.randomUUID()
+        const orgId = crypto.randomUUID()
 
-        // 1. クラブの作成（中立な組織として作成）
+        // 1. クラブの作成（カテゴリも保存）
         await db.insert(organizations).values({
-            id: newOrgId,
-            name,
+            id: orgId,
+            name: name,
             category: category || 'other',
             createdAt: new Date(),
         })
 
-        // 2. 💡 究極設計：メンバー登録時の「Role（役割）」で関係性を決める！
-        // 外部クラブとして作成された場合は 'OPPONENT_MANAGER'、自クラブなら 'OWNER'
+        // 2. メンバー登録（💡 対戦相手なら OPPONENT_MANAGER、自チームなら OWNER！）
         const role = isExternal ? 'OPPONENT_MANAGER' : 'OWNER'
 
         await db.insert(organizationMembers).values({
             id: crypto.randomUUID(),
-            organizationId: newOrgId,
+            organizationId: orgId,
             userId: session.user.id,
             role: role,
             createdAt: new Date(),
         })
 
-        return c.json({ success: true, organizationId: newOrgId })
+        return c.json({ success: true, orgId })
     } catch (e) {
-        console.error("クラブ作成エラー:", e)
+        console.error("組織作成エラー:", e)
         return c.json({ success: false, error: 'Failed to create organization' }, 500)
     }
 })
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💡 3. チーム一覧取得
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 app.get('/:orgId/teams', async (c) => {
     const orgId = c.req.param('orgId')
     const db = drizzle(c.env.DB)
@@ -101,6 +103,9 @@ app.get('/:orgId/teams', async (c) => {
     return c.json(orgTeams)
 })
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💡 4. クラブの削除
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 app.delete('/:orgId', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
@@ -113,7 +118,8 @@ app.delete('/:orgId', async (c) => {
         const member = await db.select().from(organizationMembers)
             .where(and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, session.user.id))).get()
 
-        if ((session.user as any).role !== 'admin' && (!member || member.role !== 'OWNER')) {
+        // 対戦相手（OPPONENT_MANAGER）も削除できるように条件追加
+        if ((session.user as any).role !== 'admin' && (!member || (member.role !== 'OWNER' && member.role !== 'OPPONENT_MANAGER'))) {
             return c.json({ error: '権限がありません' }, 403)
         }
 
@@ -141,7 +147,9 @@ app.delete('/:orgId', async (c) => {
     }
 })
 
-// 💡 クラブ（組織）の更新 API
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💡 5. クラブ（組織）の更新 (カテゴリ変更に対応！)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 app.patch('/:orgId', async (c) => {
     const auth = getAuth(c.env.DB, c.env)
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
@@ -152,14 +160,14 @@ app.patch('/:orgId', async (c) => {
     const db = drizzle(c.env.DB)
 
     try {
-        // 権限チェック：OWNERのみ編集可能
         const member = await db.select().from(organizationMembers)
             .where(and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, session.user.id))).get()
 
-        if ((session.user as any).role !== 'admin' && (!member || member.role !== 'OWNER')) {
+        if ((session.user as any).role !== 'admin' && (!member || (member.role !== 'OWNER' && member.role !== 'OPPONENT_MANAGER'))) {
             return c.json({ error: '権限がありません' }, 403)
         }
 
+        // 💡 category が送られてきた場合は一緒に更新
         if (body.category) {
             await c.env.DB.prepare(`UPDATE organizations SET name = ?, category = ? WHERE id = ?`)
                 .bind(body.name, body.category, orgId).run()
