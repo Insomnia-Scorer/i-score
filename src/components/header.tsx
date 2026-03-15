@@ -86,7 +86,7 @@ function HeaderContent() {
   const navItems = [
     { name: "ホーム", href: "/", icon: Home, show: false },
     { name: "ダッシュボード", href: "/dashboard", icon: ClipboardList, show: !!session },
-    { name: "クラブ・チーム", href: "/teams", icon: RiTeamFill, show: !!session },
+    { name: "チーム編成", href: "/teams", icon: RiTeamFill, show: !!session },
     { name: "システム管理", href: "/admin", icon: ShieldAlert, show: !!session && isManager },
   ];
 

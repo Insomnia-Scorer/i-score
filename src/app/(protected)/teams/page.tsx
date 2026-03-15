@@ -163,7 +163,7 @@ export default function TeamsPage() {
 
     return (
         <div className="flex flex-col min-h-screen text-foreground pb-32 relative overflow-x-hidden">
-            <PageHeader href="/dashboard" icon={RiTeamFill} title="チーム・チーム編成管理" subtitle="所属するチームとチーム編成の作成・編集を行います。" />
+            <PageHeader href="/dashboard" icon={RiTeamFill} title="チーム・チーム編成" subtitle="所属するチームとチーム編成の作成・編集を行います。" />
 
             <main className="flex-1 px-4 sm:px-6 max-w-4xl mx-auto w-full mt-6 sm:mt-8 relative z-10">
                 {view === 'orgs' ? (
@@ -234,6 +234,10 @@ export default function TeamsPage() {
                 isOpen={!!selectedOpponent}
                 onOpenChange={(open) => !open && setSelectedOpponent(null)}
                 opponent={selectedOpponent}
+                onOpenSettings={(org) => {
+                    setSelectedOpponent(null); // 成績モーダルを閉じる
+                    setDetailModal({ type: 'org', data: org }); // チーム(旧クラブ)詳細情報モーダルを開く
+                }}
             />
         </div>
     );

@@ -171,7 +171,6 @@ export function OrgList({ orgs, isLoading, selectedCategory, onCategoryChange, o
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-2">
                                             <span className="font-black text-base sm:text-lg text-foreground group-hover:text-primary transition-colors">{opp.name}</span>
-                                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onOpenDetail(e, (opp as any).originalOrg); }} className="h-6 w-6 rounded-full text-muted-foreground hover:bg-muted/80 opacity-0 group-hover:opacity-100 transition-opacity"><Settings className="h-3.5 w-3.5" /></Button>
                                         </div>
                                     </div>
                                 </div>

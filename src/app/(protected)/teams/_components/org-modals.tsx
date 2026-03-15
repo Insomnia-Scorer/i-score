@@ -188,9 +188,10 @@ interface OpponentDetailModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     opponent: Opponent | null;
+    onOpenSettings?: (org: Organization) => void;
 }
 
-export function OpponentDetailModal({ isOpen, onOpenChange, opponent }: OpponentDetailModalProps) {
+export function OpponentDetailModal({ isOpen, onOpenChange, opponent, onOpenSettings }: OpponentDetailModalProps) {
     if (!opponent || !isOpen) return null;
 
     const getResultColor = (result: string) => {
@@ -227,7 +228,21 @@ export function OpponentDetailModal({ isOpen, onOpenChange, opponent }: Opponent
                             </div>
                         </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all shrink-0"><X className="h-5 w-5" /></Button>
+                    {/* 💡 ここに設定(歯車)ボタンと閉じる(X)ボタンを並べる */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {onOpenSettings && (
+                            <Button
+                                variant="outline" size="icon"
+                                onClick={() => onOpenSettings((opponent as any).originalOrg)}
+                                className="h-10 w-10 rounded-full text-muted-foreground hover:text-primary transition-all bg-background shadow-sm border-border/50"
+                            >
+                                <Settings className="h-5 w-5" />
+                            </Button>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground transition-all">
+                            <X className="h-5 w-5" />
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="relative z-10 px-6 sm:px-8 py-6 space-y-8 overflow-y-auto flex-1">
