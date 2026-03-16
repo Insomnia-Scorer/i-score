@@ -1,9 +1,8 @@
 // src/app/(protected)/teams/_components/team-modals.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-// 💡 ChevronDown と ChevronUp を追加
 import { Loader2, X, Trash2, Settings, Check, Calendar, Layers, UserCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { RiTeamFill } from "react-icons/ri";
+import { RiTeamFill } from "react-icons/ri"; 
 import { ROLES } from "@/lib/roles";
 import { Team } from "../types";
 
@@ -14,15 +13,13 @@ interface CreateTeamModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     isCreating: boolean;
-    // 💡 オプション項目を追加
     onSubmit: (name: string, role: string, year: number, tier: string, generation?: string, teamType?: string) => Promise<void>;
 }
 
 export function CreateTeamModal({ isOpen, onOpenChange, isCreating, onSubmit }: CreateTeamModalProps) {
     const [name, setName] = useState("");
     const [role, setRole] = useState<string>(ROLES.SCORER);
-
-    // 💡 詳細オプション用のステート
+    
     const [year, setYear] = useState<number>(new Date().getFullYear());
     const [tier, setTier] = useState<string>("");
     const [generation, setGeneration] = useState("");
@@ -31,7 +28,7 @@ export function CreateTeamModal({ isOpen, onOpenChange, isCreating, onSubmit }: 
 
     useEffect(() => {
         if (isOpen) {
-            setName(""); setRole(ROLES.SCORER);
+            setName(""); setRole(ROLES.SCORER); 
             setYear(new Date().getFullYear()); setTier(""); setGeneration(""); setTeamType("regular"); setShowOptions(false);
         }
     }, [isOpen]);
@@ -45,7 +42,7 @@ export function CreateTeamModal({ isOpen, onOpenChange, isCreating, onSubmit }: 
                 <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
                 <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
                 <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-border/50 sm:hidden" />
-
+                
                 <div className="relative z-10 text-left px-6 sm:px-8 pt-6 pb-4 flex items-center justify-between border-b border-border/50 bg-background/50">
                     <h2 className="text-xl sm:text-2xl font-black flex items-center gap-3 text-foreground drop-shadow-sm"><div className="p-2.5 bg-primary/10 rounded-2xl shadow-sm border border-primary/20 text-primary"><RiTeamFill className="h-6 w-6" /></div>編成を追加</h2>
                     <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground"><X className="h-5 w-5" /></Button>
@@ -57,7 +54,7 @@ export function CreateTeamModal({ isOpen, onOpenChange, isCreating, onSubmit }: 
                             <label className="text-base font-black text-foreground/90 pl-1 flex items-center gap-2"><RiTeamFill className="h-4 w-4 text-primary/70" />編成名</label>
                             <input type="text" required placeholder="例: 1軍 / ジュニア" className="flex h-14 w-full rounded-[18px] border border-border/50 bg-background px-5 text-base font-bold shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 transition-all text-foreground" value={name} onChange={(e) => setName(e.target.value)} disabled={isCreating} autoFocus />
                         </div>
-
+                        
                         <div className="space-y-3">
                             <label className="text-base font-black text-foreground/90 pl-1 flex items-center gap-2"><UserCircle className="h-4 w-4 text-primary/70" />あなたの役割（ロール）</label>
                             <select className="flex h-14 w-full appearance-none rounded-[18px] border border-border/50 bg-background px-5 pr-10 text-base font-bold text-foreground shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 transition-all cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:18px_18px] bg-[position:right_18px_center] bg-no-repeat" value={role} onChange={(e) => setRole(e.target.value)} disabled={isCreating}>
@@ -68,7 +65,6 @@ export function CreateTeamModal({ isOpen, onOpenChange, isCreating, onSubmit }: 
                             </select>
                         </div>
 
-                        {/* 💡 詳細オプション（アコーディオン） */}
                         <div className="space-y-3 pt-2">
                             <button type="button" onClick={() => setShowOptions(!showOptions)} className="flex items-center gap-1.5 text-sm font-bold text-primary/80 hover:text-primary transition-colors">
                                 {showOptions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -127,15 +123,13 @@ interface TeamDetailModalProps {
     selectedOrgRole?: string;
     isUpdating: boolean;
     onClose: () => void;
-    // 💡 詳細更新用に引数追加
-    onUpdate: (newName: string, extraData?: any) => Promise<void>;
+    onUpdate: (newName: string, extraData?: any) => Promise<void>; 
     onDelete: () => Promise<void>;
 }
 
 export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onClose, onUpdate, onDelete }: TeamDetailModalProps) {
     const [editName, setEditName] = useState("");
 
-    // 💡 編集用の詳細オプションステート
     const [editYear, setEditYear] = useState<number>(new Date().getFullYear());
     const [editTier, setEditTier] = useState("");
     const [editGeneration, setEditGeneration] = useState("");
@@ -156,10 +150,9 @@ export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onC
     if (!isOpen || !data) return null;
 
     const canEdit = selectedOrgRole === 'OWNER';
-    // 💡 変更チェックを拡張
-    const hasChanges = (editName.trim() !== "" && editName !== data.name) ||
-        editYear !== data.year || editTier !== (data.tier || "") ||
-        editGeneration !== (data.generation || "") || editTeamType !== (data.teamType || "regular");
+    const hasChanges = (editName.trim() !== "" && editName !== data.name) || 
+                       editYear !== data.year || editTier !== (data.tier || "") || 
+                       editGeneration !== (data.generation || "") || editTeamType !== (data.teamType || "regular");
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -195,7 +188,8 @@ export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onC
                             <div className="p-4 bg-muted/50 rounded-[20px] border border-border/50 shadow-sm">
                                 <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">年度 / 階層</div>
                                 <div className="flex flex-col gap-1 mt-1">
-                                    {data.year && <span className="inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black bg-primary/10 text-primary border border-primary/20"><Calendar className="h-3 w-3" />{data.year}</span>}
+                                    {/* 💡 変更: primary -> emerald (固定の緑色) */}
+                                    {data.year && <span className="inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"><Calendar className="h-3 w-3" />{data.year}</span>}
                                     {data.tier && <span className="inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black bg-blue-500/10 text-blue-500 border border-blue-500/20"><Layers className="h-3 w-3" />{data.tier}</span>}
                                 </div>
                             </div>
@@ -215,8 +209,7 @@ export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onC
                                 </label>
                                 <div className="space-y-3">
                                     <input type="text" placeholder="編成名" className="flex h-12 w-full rounded-[16px] border border-border/50 bg-background px-4 text-base font-bold shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 transition-all text-foreground" value={editName} onChange={(e) => setEditName(e.target.value)} disabled={isUpdating} />
-
-                                    {/* 💡 編集用の詳細オプション */}
+                                    
                                     <div className="space-y-3 pt-2">
                                         <button type="button" onClick={() => setShowOptions(!showOptions)} className="flex items-center gap-1.5 text-sm font-bold text-primary/80 hover:text-primary transition-colors">
                                             {showOptions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -254,9 +247,9 @@ export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onC
                                         )}
                                     </div>
 
-                                    <Button
-                                        onClick={() => onUpdate(editName, { year: editYear, tier: editTier, generation: editGeneration, teamType: editTeamType })}
-                                        disabled={isUpdating || !hasChanges}
+                                    <Button 
+                                        onClick={() => onUpdate(editName, { year: editYear, tier: editTier, generation: editGeneration, teamType: editTeamType })} 
+                                        disabled={isUpdating || !hasChanges} 
                                         className="h-12 w-full rounded-[16px] font-black mt-2"
                                     >
                                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-2" /> 更新を保存する</>}
@@ -279,3 +272,4 @@ export function TeamDetailModal({ isOpen, data, selectedOrgRole, isUpdating, onC
         </div>
     );
 }
+                                          
