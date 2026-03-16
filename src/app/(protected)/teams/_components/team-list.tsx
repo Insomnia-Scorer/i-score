@@ -1,9 +1,8 @@
 // src/app/(protected)/teams/_components/team-list.tsx
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-// 💡 Users と Tag のアイコンを追加
 import { Loader2, ChevronRight, ChevronLeft, Settings, Info, CalendarDays, Layers, Users, Tag } from "lucide-react";
-import { RiTeamFill } from "react-icons/ri";
+import { RiTeamFill } from "react-icons/ri"; 
 import { cn } from "@/lib/utils";
 import { Organization, Team } from "../types";
 
@@ -16,9 +15,8 @@ interface TeamListProps {
     onOpenDetail: (e: React.MouseEvent, team: Team) => void;
 }
 
-// 💡 チーム特性を日本語のラベルに変換
 const getTeamTypeLabel = (type?: string) => {
-    switch (type) {
+    switch(type) {
         case 'regular': return '通常';
         case 'selection': return '選抜・合同';
         case 'practice': return '練習・紅白戦';
@@ -27,9 +25,8 @@ const getTeamTypeLabel = (type?: string) => {
     }
 };
 
-// 💡 ロール（役割）を日本語のラベルに変換
 const getTeamRoleDisplayName = (role?: string) => {
-    switch (role) {
+    switch(role) {
         case 'manager': return '監督 / 代表';
         case 'coach': return 'コーチ';
         case 'scorer': return 'スコアラー';
@@ -69,7 +66,7 @@ export function TeamList({ teams, selectedOrg, isLoading, onBack, onTeamClick, o
                 <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 mt-4">
                     {teams.map((team) => (
                         <Card key={team.id} onClick={() => onTeamClick(team.id)} className="group relative overflow-hidden rounded-[28px] border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer flex flex-col">
-
+                            
                             <div className="absolute top-0 right-0 pointer-events-none">
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-110 group-active:scale-110" />
                                 <div className="absolute top-0 right-0 w-36 h-36 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 delay-75 group-hover:scale-110 group-active:scale-110 group-hover:bg-primary/10 group-active:bg-primary/10" />
@@ -82,7 +79,6 @@ export function TeamList({ teams, selectedOrg, isLoading, onBack, onTeamClick, o
                                         <RiTeamFill className="h-7 w-7" />
                                     </div>
                                     <div className="flex items-center gap-2 pointer-events-auto">
-                                        {/* 💡 追加: 自分のロール（権限）のバッジ */}
                                         {team.myRole && (
                                             <div className="inline-flex items-center rounded-full px-3 py-1.5 text-[10px] sm:text-xs font-black bg-primary/10 text-primary uppercase tracking-widest transition-colors duration-300 border border-primary/20 shadow-sm pointer-events-none">
                                                 {getTeamRoleDisplayName(team.myRole)}
@@ -95,10 +91,10 @@ export function TeamList({ teams, selectedOrg, isLoading, onBack, onTeamClick, o
                                 </div>
 
                                 <div className="mt-auto">
-                                    {/* 💡 追加: 横並びで折り返して表示される詳細オプション群 */}
                                     <div className="flex flex-wrap items-center gap-2 mb-3">
+                                        {/* 💡 変更: primary -> emerald (固定の緑色) */}
                                         {team.year && (
-                                            <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-primary/10 text-primary border border-primary/20 shadow-sm">
+                                            <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm">
                                                 <CalendarDays className="h-3.5 w-3.5" /> {team.year}年度
                                             </div>
                                         )}
@@ -122,7 +118,7 @@ export function TeamList({ teams, selectedOrg, isLoading, onBack, onTeamClick, o
                                     <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary group-active:text-primary transition-colors duration-300 drop-shadow-sm">
                                         {team.name}
                                     </h3>
-
+                                    
                                     <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 group-active:text-primary/80 transition-colors duration-300">
                                         ダッシュボードを開く <ChevronRight className="h-5 w-5 ml-1 transition-transform duration-300 group-hover:translate-x-1 group-active:translate-x-1" />
                                     </div>
