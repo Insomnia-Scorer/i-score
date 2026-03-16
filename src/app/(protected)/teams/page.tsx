@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { toast } from "sonner";
-import { Organization, Team, Opponent } from "./types";
+import { Organization, Team } from "./types"; // 💡 Opponentのインポートを削除
 
 import { OrgList } from "./_components/org-list";
 import { TeamList } from "./_components/team-list";
-import { CreateOrgModal, OrgDetailModal, OpponentDetailModal } from "./_components/org-modals";
+// 💡 OpponentDetailModal のインポートを削除
+import { CreateOrgModal, OrgDetailModal } from "./_components/org-modals";
 import { CreateTeamModal, TeamDetailModal } from "./_components/team-modals";
 
 export default function TeamsPage() {
@@ -35,7 +36,7 @@ export default function TeamsPage() {
     const [detailModal, setDetailModal] = useState<{ type: 'org' | 'team', data: Organization | Team } | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const [selectedOpponent, setSelectedOpponent] = useState<Opponent | null>(null);
+    // 💡 selectedOpponent の状態管理を削除
 
     useEffect(() => {
         const saved = localStorage.getItem('iScore_selectedCategory');
@@ -97,7 +98,6 @@ export default function TeamsPage() {
         finally { setIsCreating(false); }
     };
 
-    // 💡 generation と teamType を引数に追加
     const handleCreateTeam = async (name: string, role: string, year: number, tier: string, generation?: string, teamType?: string) => {
         if (!name.trim() || !selectedOrg) return;
         setIsCreating(true);
@@ -108,28 +108,24 @@ export default function TeamsPage() {
             });
             const data = await res.json() as any;
             if (res.ok && data.success) {
-                toast.success("チーム編成を作成しました！");
+                toast.success("編成を作成しました！");
                 setIsDrawerOpen(false);
-                localStorage.setItem("iScore_selectedTeamId", data.teamId);
-                localStorage.setItem("iScore_selectedOrgId", selectedOrg.id);
-                router.push('/dashboard');
+                fetchTeams(selectedOrg.id); // 💡 一覧を再取得して画面を更新
             } else toast.error(data.error || "作成に失敗しました");
         } catch (e) { toast.error("通信エラーが発生しました"); }
         finally { setIsCreating(false); }
     };
 
-    // 💡 詳細更新用に extraData パラメータを追加
     const handleUpdate = async (newName: string, extraData?: any) => {
         if (!detailModal || !newName.trim()) return;
         setIsUpdating(true);
         try {
             const url = detailModal.type === 'org' ? `/api/organizations/${detailModal.data.id}` : `/api/teams/${detailModal.data.id}`;
             const bodyPayload: any = { name: newName };
-
+            
             if (detailModal.type === 'org' && extraData) {
-                bodyPayload.category = extraData; // orgの場合はcategory
+                bodyPayload.category = extraData;
             } else if (detailModal.type === 'team' && extraData) {
-                // 💡 teamの場合は詳細オプション群
                 bodyPayload.year = extraData.year;
                 bodyPayload.tier = extraData.tier;
                 bodyPayload.generation = extraData.generation;
@@ -153,7 +149,7 @@ export default function TeamsPage() {
 
     const handleDelete = async () => {
         if (!detailModal) return;
-        const typeName = detailModal.type === 'org' ? 'チーム' : 'チーム編成';
+        const typeName = detailModal.type === 'org' ? 'チーム' : '編成';
         if (!confirm(`⚠️ 本当に${typeName}「${detailModal.data.name}」を削除しますか？\n（復旧はできません！）`)) return;
 
         setIsUpdating(true);
@@ -185,7 +181,8 @@ export default function TeamsPage() {
                         onCategoryChange={handleCategoryChange}
                         onSelectOrg={handleSelectOrg}
                         onOpenDetail={(e, org) => { e.preventDefault(); e.stopPropagation(); setDetailModal({ type: 'org', data: org }); }}
-                        onOpponentClick={(opp) => setSelectedOpponent(opp)}
+                        // 💡 究極改修: 対戦相手をタップした時も、自チームと同じ handleSelectOrg に渡す！
+                        onOpponentClick={(opp) => handleSelectOrg(opp.originalOrg)}
                         onAddOrg={(isExternal) => { setIsExternalOrgCreate(isExternal); setIsDrawerOpen(true); }}
                     />
                 ) : (
@@ -237,20 +234,10 @@ export default function TeamsPage() {
                 selectedOrgRole={selectedOrg?.myRole}
                 isUpdating={isUpdating}
                 onClose={() => setDetailModal(null)}
-                // 💡 更新時に詳細データ群を渡す
                 onUpdate={(name, extraData) => handleUpdate(name, extraData)}
                 onDelete={handleDelete}
             />
-
-            <OpponentDetailModal
-                isOpen={!!selectedOpponent}
-                onOpenChange={(open) => !open && setSelectedOpponent(null)}
-                opponent={selectedOpponent}
-                onOpenSettings={(org) => {
-                    setSelectedOpponent(null);
-                    setDetailModal({ type: 'org', data: org });
-                }}
-            />
+            {/* 💡 OpponentDetailModal の呼び出しを完全に削除！スッキリ！ */}
         </div>
     );
 }
