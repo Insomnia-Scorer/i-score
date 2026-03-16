@@ -1,3 +1,4 @@
+// src/app/(protected)/layout.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -23,8 +24,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <>
+    // 💡 究極改修: PCでサイドバーが表示されるため、左側に 260px の余白(md:pl-[260px])を自動で確保！
+    <div className="md:pl-[260px] flex flex-col min-h-screen w-full transition-all duration-300">
       {children}
-    </>
+    </div>
   );
 }
