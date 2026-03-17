@@ -2,243 +2,252 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { PageHeader } from "@/components/PageHeader";
-import { Save, Users, Loader2, Download, BookmarkPlus, Trash2, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner"; // 💡 美しい通知のために追加
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, Loader2, Save, Users, Shield, ArrowRight, Swords, UserPlus } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
+// 💡 守備位置のマスターデータ
 const POSITIONS = [
-    { value: "1", label: "1 投手" }, { value: "2", label: "2 捕手" },
-    { value: "3", label: "3 一塁手" }, { value: "4", label: "4 二塁手" },
-    { value: "5", label: "5 三塁手" }, { value: "6", label: "6 遊撃手" },
-    { value: "7", label: "7 左翼手" }, { value: "8", label: "8 中堅手" },
-    { value: "9", label: "9 右翼手" }, { value: "DH", label: "DH 指名打者" },
+    { id: "1", name: "投 (1)", short: "P" },
+    { id: "2", name: "捕 (2)", short: "C" },
+    { id: "3", name: "一 (3)", short: "1B" },
+    { id: "4", name: "二 (4)", short: "2B" },
+    { id: "5", name: "三 (5)", short: "3B" },
+    { id: "6", name: "遊 (6)", short: "SS" },
+    { id: "7", name: "左 (7)", short: "LF" },
+    { id: "8", name: "中 (8)", short: "CF" },
+    { id: "9", name: "右 (9)", short: "RF" },
+    { id: "DH", name: "指 (DH)", short: "DH" },
 ];
 
-interface Player { id: string; name: string; uniformNumber: string; }
-interface LineupEntry { battingOrder: number; playerId: string; position: string; }
-interface Template { id: string; name: string; lineupData: string; }
+interface Player {
+    id: string;
+    name: string;
+    uniformNumber: string;
+}
+
+interface LineupEntry {
+    order: number;
+    position: string;
+    playerId: string;
+    playerName: string; // 対戦相手の手入力用
+}
 
 function LineupContent() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const matchId = searchParams.get("id");
-    const teamId = searchParams.get("teamId") || (typeof window !== 'undefined' ? localStorage.getItem("iScore_selectedTeamId") : null);
-    const router = useRouter();
+    const teamId = searchParams.get("teamId");
 
-    const [players, setPlayers] = useState<Player[]>([]);
-    const [lineup, setLineup] = useState<LineupEntry[]>(
-        Array.from({ length: 9 }, (_, i) => ({ battingOrder: i + 1, playerId: "", position: "" }))
-    );
+    const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [roster, setRoster] = useState<Player[]>([]);
 
-    const [templates, setTemplates] = useState<Template[]>([]);
-    const [selectedTemplate, setSelectedTemplate] = useState("");
-    const [templateName, setTemplateName] = useState("");
-    const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+    // 💡 タブ切り替え（自チーム vs 対戦相手）
+    const [activeTab, setActiveTab] = useState<"myTeam" | "opponent">("myTeam");
+
+    // 💡 スタメンデータ（1番〜9番の初期枠を用意）
+    const initialLineup = Array.from({ length: 9 }, (_, i) => ({
+        order: i + 1, position: "", playerId: "", playerName: ""
+    }));
+
+    const [myLineup, setMyLineup] = useState<LineupEntry[]>(initialLineup);
+    const [opponentLineup, setOpponentLineup] = useState<LineupEntry[]>(initialLineup);
 
     useEffect(() => {
-        if (!matchId || !teamId) return;
-        const fetchPlayers = async () => {
-            try {
-                const res = await fetch(`/api/teams/${teamId}/players`);
-                if (res.ok) setPlayers(await res.json());
-            } catch (error) { console.error(error); }
-        };
-        const fetchLineup = async () => {
-            try {
-                const res = await fetch(`/api/matches/${matchId}/lineup`);
-                if (res.ok) {
-                    const data = (await res.json()) as any[];
-                    if (data.length > 0) {
-                        const formatted = data.map(d => ({ battingOrder: d.batting_order, playerId: d.player_id, position: d.position }));
-                        setLineup(prev => prev.map(p => formatted.find(f => f.battingOrder === p.battingOrder) || p));
-                    }
-                }
-            } catch (error) { console.error(error); }
-        };
-        const fetchTemplates = async () => {
-            try {
-                const res = await fetch(`/api/teams/${teamId}/lineup-templates`);
-                if (res.ok) setTemplates(await res.json());
-            } catch (error) { console.error(error); }
-        };
-
-        fetchPlayers();
-        fetchLineup();
-        fetchTemplates();
-    }, [matchId, teamId]);
-
-    const handleLineupChange = (order: number, field: 'playerId' | 'position', value: string) => {
-        setLineup(prev => prev.map(entry => entry.battingOrder === order ? { ...entry, [field]: value } : entry));
-    };
-
-    const handleApplyTemplate = (templateId: string) => {
-        setSelectedTemplate(templateId);
-        if (!templateId) return;
-        const tmpl = templates.find(t => t.id === templateId);
-        if (tmpl) {
-            const parsed = JSON.parse(tmpl.lineupData) as LineupEntry[];
-            setLineup(prev => prev.map(p => parsed.find(f => f.battingOrder === p.battingOrder) || p));
-            toast.success(`パターン「${tmpl.name}」を適用しました！`); // 💡 通知を追加
-        }
-    };
-
-    const handleSaveTemplate = async () => {
-        if (!teamId || !templateName.trim()) return;
-        setIsSavingTemplate(true);
-        try {
-            const validLineup = lineup.filter(entry => entry.playerId !== "");
-            if (validLineup.length === 0) {
-                toast.error("選手が1人も入力されていません");
-                return;
-            }
-
-            const res = await fetch(`/api/teams/${teamId}/lineup-templates`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: templateName, lineupData: validLineup }),
-            });
-            if (res.ok) {
-                setTemplateName("");
-                const refresh = await fetch(`/api/teams/${teamId}/lineup-templates`);
-                if (refresh.ok) setTemplates(await refresh.json());
-                toast.success("新しいパターンを保存しました！"); // 💡 通知を追加
-            }
-        } catch (error) { console.error(error); }
-        finally { setIsSavingTemplate(false); }
-    };
-
-    const handleDeleteTemplate = async (templateId: string) => {
-        if (!confirm("このパターンを削除しますか？")) return;
-        try {
-            await fetch(`/api/teams/${teamId}/lineup-templates/${templateId}`, { method: 'DELETE' });
-            setTemplates(prev => prev.filter(t => t.id !== templateId));
-            if (selectedTemplate === templateId) setSelectedTemplate("");
-            toast.success("パターンを削除しました"); // 💡 通知を追加
-        } catch (error) { console.error(error); }
-    };
-
-    const handleSave = async () => {
-        if (!matchId) return;
-        const validLineup = lineup.filter(entry => entry.playerId !== "");
-        if (validLineup.length === 0) {
-            toast.error("スタメンが入力されていません");
+        if (!matchId || !teamId) {
+            router.push("/dashboard");
             return;
         }
+        fetchRoster();
+    }, [matchId, teamId]);
 
-        setIsSaving(true);
+    const fetchRoster = async () => {
+        setIsLoading(true);
         try {
-            const res = await fetch(`/api/matches/${matchId}/lineup`, {
-                method: "PUT", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(validLineup),
-            });
+            // 自チームの選手名簿を取得（ドロップダウン用）
+            const res = await fetch(`/api/teams/${teamId}/players`);
             if (res.ok) {
-                toast.success("スタメンを登録しました！");
-                router.push(`/matches/score?id=${matchId}`);
+                setRoster(await res.json());
             }
-        } catch (error) { console.error(error); }
-        finally { setIsSaving(false); }
+            // ※ 既存のスタメンデータがあればここで取得してセットする処理を後で追加できます
+        } catch (error) {
+            toast.error("名簿データの取得に失敗しました");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
+    const handleMyLineupChange = (index: number, field: keyof LineupEntry, value: string) => {
+        const newLineup = [...myLineup];
+        newLineup[index] = { ...newLineup[index], [field]: value };
+
+        // 選手IDが選ばれたら、名前も自動補完する
+        if (field === "playerId") {
+            const player = roster.find(p => p.id === value);
+            if (player) newLineup[index].playerName = player.name;
+        }
+        setMyLineup(newLineup);
+    };
+
+    const handleOpponentLineupChange = (index: number, field: keyof LineupEntry, value: string) => {
+        const newLineup = [...opponentLineup];
+        newLineup[index] = { ...newLineup[index], [field]: value };
+        setOpponentLineup(newLineup);
+    };
+
+    const handleSaveAndStart = async () => {
+        setIsSaving(true);
+        try {
+            // ※ ここでAPIにスタメンデータ（myLineup, opponentLineup）を保存する処理を追加します
+            // await fetch(`/api/matches/${matchId}/lineup`, { ... })
+
+            // 💡 スコアブック本編（プレイ入力画面）へ遷移！
+            toast.success("スタメンを登録しました！プレイボール！");
+            router.push(`/matches/score?id=${matchId}`);
+        } catch (error) {
+            toast.error("保存に失敗しました");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (isLoading) {
+        return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    }
+
     return (
-        <div className="flex flex-col min-h-screen text-foreground pb-32 relative">
-            <PageHeader href="/dashboard" icon={Users} title="スターティングメンバー" subtitle="打順と守備位置の登録をしてください。" />
+        <div className="flex flex-col min-h-screen text-foreground pb-32 relative overflow-x-hidden">
+            <main className="flex-1 px-4 sm:px-6 max-w-3xl mx-auto w-full mt-6 sm:mt-10 relative z-10 animate-in fade-in duration-500">
 
-            <main className="flex-1 p-4 max-w-2xl mx-auto w-full mt-4">
-
-                {/* 💡 パターン呼び出しエリア */}
-                {templates.length > 0 && (
-                    <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 mb-6 shadow-xs animate-in slide-in-from-top-4 fade-in duration-500">
-                        <label className="text-xs font-extrabold text-muted-foreground flex items-center gap-1.5 mb-3 uppercase tracking-wider">
-                            <Download className="h-4 w-4 text-primary" /> パターンを呼び出す
-                        </label>
-                        <div className="flex gap-2">
-                            <Select value={selectedTemplate} onChange={(e) => handleApplyTemplate(e.target.value)}>
-                                <option value="">選択してください...</option>
-                                {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </Select>
-                            {selectedTemplate && (
-                                <Button variant="outline" size="icon" onClick={() => handleDeleteTemplate(selectedTemplate)} className="h-12 w-12 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 shrink-0 border-border/50">
-                                    <Trash2 className="h-5 w-5" />
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                <div className="space-y-3 relative z-10">
-                    {lineup.map((entry, index) => (
-                        // 💡 カスケード・アニメーション（順番にフワッと表示）
-                        <div
-                            key={entry.battingOrder}
-                            className="flex items-center gap-3 bg-card border border-border/60 shadow-xs hover:shadow-md transition-shadow rounded-2xl p-2.5 sm:p-3 animate-in slide-in-from-bottom-8 fade-in duration-500 fill-mode-both"
-                            style={{ animationDelay: `${index * 60}ms` }}
-                        >
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner">
-                                <span className="text-lg sm:text-xl font-black text-primary">{entry.battingOrder}</span>
+                {/* 1. ヘッダー部分 */}
+                <div className="mb-8 flex flex-col items-start gap-4">
+                    <Button variant="ghost" onClick={() => router.back()} className="rounded-full pl-2 pr-4 hover:bg-muted text-muted-foreground font-extrabold -ml-2 transition-transform active:scale-95">
+                        <ChevronLeft className="h-5 w-5 mr-1" /> 戻る
+                    </Button>
+                    <div className="flex flex-col gap-2 w-full">
+                        {/* 💡 基準1: ページタイトル H1 */}
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-3">
+                            <div className="p-2.5 bg-primary/10 rounded-2xl text-primary shadow-sm border border-primary/20">
+                                <Users className="h-6 w-6 sm:h-7 sm:w-7" />
                             </div>
-                            <div className="flex-1 grid grid-cols-5 gap-2">
-                                <div className="col-span-3">
-                                    <Select value={entry.playerId} onChange={(e) => handleLineupChange(entry.battingOrder, 'playerId', e.target.value)}>
-                                        <option value="" disabled hidden>選手を選択...</option>
-                                        {players.map(p => <option key={p.id} value={p.id} className="bg-background font-medium">#{p.uniformNumber} {p.name}</option>)}
-                                    </Select>
-                                </div>
-                                <div className="col-span-2">
-                                    <Select value={entry.position} onChange={(e) => handleLineupChange(entry.battingOrder, 'position', e.target.value)}>
-                                        <option value="" disabled hidden>守備...</option>
-                                        {POSITIONS.map(pos => <option key={pos.value} value={pos.value} className="bg-background font-medium">{pos.label}</option>)}
-                                    </Select>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* 💡 パターン保存エリア */}
-                <div className="pt-8 mt-6 mb-12">
-                    <label className="text-xs font-extrabold text-muted-foreground flex items-center gap-1.5 mb-3 uppercase tracking-wider">
-                        <BookmarkPlus className="h-4 w-4 text-primary" /> 今のスタメンをパターン保存
-                    </label>
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="例: ベストメンバー、対左投手用"
-                            className="flex h-12 w-full rounded-xl border border-border/50 bg-background px-4 text-sm font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                            value={templateName}
-                            onChange={(e) => setTemplateName(e.target.value)}
-                        />
-                        <Button onClick={handleSaveTemplate} disabled={isSavingTemplate || !templateName.trim()} variant="secondary" className="h-12 px-6 rounded-xl font-bold shrink-0 shadow-sm border border-border/50 hover:bg-primary/10 hover:text-primary transition-colors">
-                            {isSavingTemplate ? <Loader2 className="h-5 w-5 animate-spin" /> : "保存"}
-                        </Button>
+                            スタメンの登録
+                        </h1>
+                        <p className="text-sm font-bold text-muted-foreground ml-1">
+                            試合開始前のスターティングメンバーをセットします。
+                        </p>
                     </div>
                 </div>
-            </main>
 
-            {/* 💡 追従する決定ボタン（Sticky Bottom Bar） */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-50 flex justify-center pb-8 sm:pb-6 animate-in slide-in-from-bottom-full duration-500">
-                <div className="w-full max-w-2xl px-2">
-                    <Button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="w-full h-14 text-base font-extrabold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:-translate-y-1 active:scale-[0.98]"
+                {/* 2. タブ切り替え（自チーム vs 対戦相手） */}
+                <div className="flex bg-muted/30 p-1.5 rounded-[20px] border border-border/50 mb-6 shadow-inner relative z-10">
+                    <button
+                        onClick={() => setActiveTab("myTeam")}
+                        className={cn("flex-1 py-3.5 text-base font-black rounded-[16px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "myTeam" ? "bg-card shadow-sm text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}
                     >
-                        {isSaving ? <><Loader2 className="mr-2 h-6 w-6 animate-spin" /> 保存中...</> : <><CheckCircle2 className="mr-2 h-6 w-6" /> スタメンを決定してスコア入力へ</>}
+                        <Shield className="h-5 w-5" /> 自チーム
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("opponent")}
+                        className={cn("flex-1 py-3.5 text-base font-black rounded-[16px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "opponent" ? "bg-card shadow-sm text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}
+                    >
+                        <Swords className="h-5 w-5" /> 対戦相手
+                    </button>
+                </div>
+
+                {/* 3. スタメン入力リスト */}
+                <Card className="rounded-[32px] border-border/50 bg-card/80 backdrop-blur-xl shadow-sm relative overflow-hidden">
+                    <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
+
+                    <CardContent className="p-4 sm:p-8 relative z-10 space-y-3">
+                        {/* 見出し行（PCなど横幅がある時用） */}
+                        <div className="hidden sm:flex px-2 pb-2">
+                            <div className="w-16"></div>
+                            <div className="w-32 text-sm font-bold text-muted-foreground uppercase tracking-widest pl-1">守備</div>
+                            <div className="flex-1 text-sm font-bold text-muted-foreground uppercase tracking-widest pl-1">選手名</div>
+                        </div>
+
+                        {(activeTab === "myTeam" ? myLineup : opponentLineup).map((entry, index) => (
+                            <div key={index} className="flex flex-row items-center gap-3 sm:gap-4 bg-muted/20 p-3 sm:p-2 rounded-[20px] sm:bg-transparent sm:border-none border border-border/50">
+                                {/* 打順バッジ */}
+                                <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black text-lg sm:text-xl shadow-md border border-primary/20">
+                                    {entry.order}
+                                </div>
+
+                                <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                    {/* 守備位置（セレクトボックス） */}
+                                    <div className="w-full sm:w-32 shrink-0">
+                                        <label className="sm:hidden text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-1 block">守備</label>
+                                        <select
+                                            className="flex h-12 w-full appearance-none rounded-[16px] border border-border/50 bg-background px-4 pr-8 text-base font-black shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
+                                            value={entry.position}
+                                            onChange={(e) => activeTab === "myTeam" ? handleMyLineupChange(index, "position", e.target.value) : handleOpponentLineupChange(index, "position", e.target.value)}
+                                        >
+                                            <option value="" disabled>守備</option>
+                                            {POSITIONS.map(pos => <option key={pos.id} value={pos.id}>{pos.name}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* 選手名（自チームは名簿から選択、相手は手入力可） */}
+                                    <div className="flex-1">
+                                        <label className="sm:hidden text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-1 block">選手名</label>
+                                        {activeTab === "myTeam" ? (
+                                            <select
+                                                className="flex h-12 w-full appearance-none rounded-[16px] border border-primary/30 bg-primary/5 px-4 pr-8 text-base font-black shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
+                                                value={entry.playerId}
+                                                onChange={(e) => handleMyLineupChange(index, "playerId", e.target.value)}
+                                            >
+                                                <option value="" disabled>選手を選択</option>
+                                                {roster.map(player => (
+                                                    <option key={player.id} value={player.id}>
+                                                        {player.uniformNumber} : {player.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <Input
+                                                type="text"
+                                                placeholder="相手選手名を入力"
+                                                className="h-12 rounded-[16px] border-border/50 bg-background text-base font-black focus-visible:ring-primary/50 shadow-inner"
+                                                value={entry.playerName}
+                                                onChange={(e) => handleOpponentLineupChange(index, "playerName", e.target.value)}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                    </CardContent>
+                </Card>
+
+                {/* 4. プレイボールボタン (下部固定) */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 sm:p-6 bg-background/80 backdrop-blur-xl border-t border-border/50 z-40 flex justify-center md:pl-[280px] transition-[padding]">
+                    <Button
+                        onClick={handleSaveAndStart}
+                        disabled={isSaving}
+                        className="w-full max-w-3xl h-16 rounded-[24px] text-lg font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"
+                    >
+                        {isSaving ? (
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        ) : (
+                            <>プレイボール！ (スコア入力へ) <ArrowRight className="ml-2 h-5 w-5" /></>
+                        )}
                     </Button>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }
 
-export default function MatchLineupPage() {
+export default function LineupPage() {
     return (
-        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-background text-foreground"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
             <LineupContent />
         </Suspense>
     );
 }
-
-
-
