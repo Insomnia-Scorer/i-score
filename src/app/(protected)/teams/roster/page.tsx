@@ -1,259 +1,273 @@
 // src/app/(protected)/teams/roster/page.tsx
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Plus, Trash2, X, Save, Loader2, ShieldAlert, BarChart3, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+// 💡 Dialogのインポートを削除し、Xアイコンを追加しました
+import { Users, Plus, Edit2, Trash2, ChevronLeft, Loader2, Save, CalendarDays, Layers, Search, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Team } from "../types";
 
 interface Player {
     id: string;
-    teamId: string;
     name: string;
     uniformNumber: string;
 }
 
+const getTeamTypeLabel = (type?: string) => {
+    switch (type) {
+        case 'regular': return '通常';
+        case 'selection': return '選抜・合同';
+        case 'practice': return '練習・紅白戦';
+        case 'ob': return 'OB・その他';
+        default: return '通常';
+    }
+};
+
 function RosterContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-
-    const teamId = searchParams.get("id") || (typeof window !== 'undefined' ? localStorage.getItem("iScore_selectedTeamId") : null);
+    const [teamId, setTeamId] = useState<string | null>(null);
+    const [team, setTeam] = useState<Team | null>(null);
 
     const [players, setPlayers] = useState<Player[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [isLoading, setIsLoading] = useState(true);
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+    const [newNumber, setNewNumber] = useState("");
+    const [newName, setNewName] = useState("");
+    const [isAdding, setIsAdding] = useState(false);
 
-    const [formData, setFormData] = useState({
-        name: "",
-        uniformNumber: "",
-    });
+    const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
 
-    const fetchPlayers = async () => {
-        if (!teamId) return;
+    useEffect(() => {
+        const id = searchParams.get("id") || localStorage.getItem("iScore_selectedTeamId");
+        if (id) {
+            setTeamId(id);
+            fetchTeamInfo(id);
+            fetchPlayers(id);
+        } else {
+            router.push("/teams");
+        }
+    }, [searchParams, router]);
+
+    const fetchTeamInfo = async (id: string) => {
+        try {
+            const res = await fetch('/api/teams');
+            if (res.ok) {
+                const teams: Team[] = await res.json();
+                const current = teams.find(t => t.id === id);
+                if (current) setTeam(current);
+            }
+        } catch (e) { console.error("編成情報の取得に失敗しました"); }
+    };
+
+    const fetchPlayers = async (id: string) => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/teams/${teamId}/players`);
-            if (res.ok) {
-                const data = await res.json() as Player[];
-                setPlayers(data.sort((a, b) => {
-                    const numA = parseInt(a.uniformNumber) || 999;
-                    const numB = parseInt(b.uniformNumber) || 999;
-                    return numA - numB;
-                }));
-            } else {
-                toast.error("選手データの取得に失敗しました");
-            }
-        } catch (e) { console.error(e); }
+            const res = await fetch(`/api/teams/${id}/players`);
+            if (res.ok) setPlayers(await res.json());
+        } catch (e) { toast.error("選手の取得に失敗しました"); }
         finally { setIsLoading(false); }
     };
 
-    useEffect(() => {
-        if (!teamId) {
-            toast.error("対象チームが選択されていません");
-            router.push('/dashboard');
-            return;
-        }
-        fetchPlayers();
-    }, [teamId, router]);
+    const handleAddPlayer = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!teamId || !newNumber.trim() || !newName.trim()) return;
 
-    const handleSavePlayer = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!formData.name || !formData.uniformNumber || !teamId) return;
-
-        setIsSaving(true);
+        setIsAdding(true);
         try {
             const res = await fetch(`/api/teams/${teamId}/players`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: formData.name,
-                    uniformNumber: formData.uniformNumber,
-                }),
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: newName, uniformNumber: newNumber }),
             });
-
             if (res.ok) {
-                toast.success("選手を名簿に登録しました！");
-                setIsModalOpen(false);
-                setFormData({ name: "", uniformNumber: "" });
-                fetchPlayers();
+                toast.success(`${newName} 選手を名簿に登録しました！`);
+                setNewNumber(""); setNewName("");
+                fetchPlayers(teamId);
+                document.getElementById("newNumberInput")?.focus();
             } else {
-                toast.error("選手の登録に失敗しました");
+                toast.error("登録に失敗しました");
             }
-        } catch (e) {
-            console.error(e);
-            toast.error("通信エラーが発生しました");
-        } finally {
-            setIsSaving(false);
-        }
+        } catch (e) { toast.error("通信エラーが発生しました"); }
+        finally { setIsAdding(false); }
     };
 
-    const handleDeletePlayer = async (e: React.MouseEvent, playerId: string, playerName: string) => {
+    const handleUpdatePlayer = async (e: React.FormEvent) => {
         e.preventDefault();
-        e.stopPropagation();
+        if (!teamId || !editingPlayer || !editingPlayer.name.trim() || !editingPlayer.uniformNumber.trim()) return;
 
-        if (!teamId || !confirm(`本当に選手「${playerName}」を名簿から削除しますか？\n（スコアブック上の記録は残ります）`)) return;
-
+        setIsUpdating(true);
         try {
-            const res = await fetch(`/api/teams/${teamId}/players/${playerId}`, { method: 'DELETE' });
+            const res = await fetch(`/api/teams/${teamId}/players/${editingPlayer.id}`, {
+                method: "PATCH", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: editingPlayer.name, uniformNumber: editingPlayer.uniformNumber }),
+            });
             if (res.ok) {
-                toast.success(`${playerName} を削除しました`);
-                fetchPlayers();
+                toast.success("選手情報を更新しました");
+                setEditingPlayer(null);
+                fetchPlayers(teamId);
             } else {
-                toast.error("選手の削除に失敗しました");
+                toast.error("更新に失敗しました");
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { toast.error("通信エラーが発生しました"); }
+        finally { setIsUpdating(false); }
     };
 
-    if (!teamId) return null;
+    const handleDeletePlayer = async (playerId: string, playerName: string) => {
+        if (!teamId || !confirm(`⚠️ 本当に ${playerName} 選手を名簿から削除しますか？\n（過去の試合データに影響が出る可能性があります）`)) return;
+        try {
+            const res = await fetch(`/api/teams/${teamId}/players/${playerId}`, { method: "DELETE" });
+            if (res.ok) {
+                toast.success("選手を削除しました");
+                fetchPlayers(teamId);
+            } else {
+                toast.error("削除に失敗しました");
+            }
+        } catch (e) { toast.error("通信エラーが発生しました"); }
+    };
+
+    const filteredPlayers = players.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.uniformNumber.includes(searchQuery)
+    );
 
     return (
-        <div className="flex flex-col min-h-screen text-foreground pb-24 relative">
-            <PageHeader
-                href="/dashboard"
-                icon={Users}
-                title="選手名簿・ロースター"
-                subtitle="チーム所属選手の管理と成績確認"
-            />
+        <div className="flex flex-col min-h-screen text-foreground pb-32 relative">
+            <main className="flex-1 px-4 sm:px-6 max-w-4xl mx-auto w-full mt-6 sm:mt-10 relative z-10 animate-in fade-in duration-500">
 
-            <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-6xl mx-auto w-full space-y-6 animate-in fade-in duration-500">
-                {isLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                        {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-48 rounded-[32px] w-full" />)}
+                {/* 1. ヘッダー部分 */}
+                <div className="mb-8 flex flex-col items-start gap-4">
+                    <Button variant="ghost" onClick={() => router.back()} className="rounded-full pl-2 pr-4 hover:bg-muted text-muted-foreground font-extrabold -ml-2 transition-transform active:scale-95">
+                        <ChevronLeft className="h-5 w-5 mr-1" /> 戻る
+                    </Button>
+                    <div className="flex flex-col gap-2 w-full">
+                        {team ? (
+                            <div className="flex flex-wrap items-center gap-2 mb-1 animate-in fade-in zoom-in duration-300">
+                                {team.year && <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm"><CalendarDays className="h-3 w-3 mr-1" />{team.year}年度</span>}
+                                {team.tier && <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-blue-500/10 text-blue-500 border border-blue-500/20 shadow-sm"><Layers className="h-3 w-3 mr-1" />{team.tier}</span>}
+                                {team.generation && <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-purple-500/10 text-purple-500 border border-purple-500/20 shadow-sm"><Users className="h-3 w-3 mr-1" />{team.generation}</span>}
+                                {team.teamType && team.teamType !== 'regular' && <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-orange-500/10 text-orange-500 border border-orange-500/20 shadow-sm"><Tag className="h-3 w-3 mr-1" />{getTeamTypeLabel(team.teamType)}</span>}
+                                <span className="text-sm font-black text-muted-foreground ml-1">{team.name}</span>
+                            </div>
+                        ) : (
+                            <div className="h-6 w-64 bg-muted rounded-md animate-pulse mb-1" />
+                        )}
+                        <h1 className="text-3xl sm:text-4xl font-black tracking-tight flex items-center gap-3">
+                            <div className="p-2.5 bg-primary/10 rounded-2xl text-primary shadow-sm border border-primary/20"><Users className="h-7 w-7 sm:h-8 sm:w-8" /></div>
+                            選手名簿
+                        </h1>
                     </div>
-                ) : players.length === 0 ? (
-                    <div className="text-center py-20 bg-muted/20 rounded-[32px] border border-dashed border-border/60 shadow-sm">
-                        <div className="h-20 w-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-5 border border-primary/10">
-                            <ShieldAlert className="h-10 w-10 text-primary/40" />
-                        </div>
-                        <h3 className="text-xl font-black text-foreground mb-2">まだ選手が登録されていません</h3>
-                        <p className="text-sm font-bold text-muted-foreground mb-8">右下の追加ボタンから、チームの選手を登録しましょう。</p>
-                        <Button onClick={() => setIsModalOpen(true)} className="font-extrabold rounded-full h-12 px-8 shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all">
-                            <Plus className="h-5 w-5 mr-2" /> 最初の選手を登録
-                        </Button>
+                </div>
+
+                {/* 2. 連続追加パネル（サクサク入力用） */}
+                <Card className="mb-8 rounded-[28px] border-primary/20 bg-primary/5 shadow-sm overflow-hidden relative">
+                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-primary/10 blur-[40px] rounded-full pointer-events-none" />
+                    <CardContent className="p-5 sm:p-6 relative z-10">
+                        <h3 className="text-sm font-black text-primary/80 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <Plus className="h-4 w-4" /> 選手を名簿に追加
+                        </h3>
+                        <form onSubmit={handleAddPlayer} className="flex flex-col sm:flex-row items-end gap-3">
+                            <div className="w-full sm:w-28 space-y-1.5">
+                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">背番号</label>
+                                <Input id="newNumberInput" type="number" placeholder="例: 1" required className="h-12 rounded-[16px] border-primary/30 bg-background font-black text-lg focus-visible:ring-primary/50 text-center shadow-sm transition-all" value={newNumber} onChange={(e) => setNewNumber(e.target.value)} disabled={isAdding} autoFocus />
+                            </div>
+                            <div className="w-full flex-1 space-y-1.5">
+                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">選手名</label>
+                                <Input type="text" placeholder="例: 山田 太郎" required className="h-12 rounded-[16px] border-primary/30 bg-background font-black text-lg focus-visible:ring-primary/50 shadow-sm transition-all" value={newName} onChange={(e) => setNewName(e.target.value)} disabled={isAdding} />
+                            </div>
+                            <Button type="submit" disabled={isAdding || !newNumber || !newName} className="w-full sm:w-auto h-12 rounded-[16px] font-black px-8 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all active:scale-95">
+                                {isAdding ? <Loader2 className="h-5 w-5 animate-spin" /> : "追加する"}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+
+                {/* 3. 検索＆リスト */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
+                        登録済みの選手 <span className="text-muted-foreground/50 text-base">({players.length})</span>
+                    </h2>
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input type="text" placeholder="名前・背番号で検索..." className="h-10 rounded-full border-border/50 bg-muted/30 pl-9 font-bold text-sm focus-visible:ring-primary/30 shadow-sm transition-all" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    </div>
+                </div>
+
+                {isLoading ? (
+                    <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary/50" /></div>
+                ) : filteredPlayers.length === 0 ? (
+                    <div className="text-center py-16 bg-muted/20 rounded-[32px] border border-dashed border-border/50 shadow-sm">
+                        <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                        <p className="text-muted-foreground font-bold">
+                            {players.length === 0 ? "まだ選手が登録されていません。\n上部のフォームから追加してください。" : "該当する選手が見つかりません。"}
+                        </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                        {players.map((player) => (
-                            <Link
-                                href={`/players/detail?teamId=${teamId}&playerName=${encodeURIComponent(player.name)}&uniformNumber=${encodeURIComponent(player.uniformNumber)}`}
-                                key={player.id}
-                                className="block group outline-none"
-                            >
-                                <Card className="relative overflow-hidden rounded-[28px] border-border/50 bg-background shadow-sm transition-all duration-200 hover:shadow-lg hover:border-primary/40 active:border-primary/40 active:scale-[0.96] cursor-pointer h-full">
-
-                                    {/* 💡 背景の円を削除し、巨大背番号ウォーターマークだけを主役に！ */}
-                                    <div className="absolute -bottom-6 -right-2 text-[180px] sm:text-[220px] font-black italic text-foreground/[0.03] group-hover:text-primary/10 group-active:text-primary/10 transition-colors duration-300 select-none z-0 tracking-tighter leading-none pointer-events-none">
-                                        {player.uniformNumber}
+                    <div className="bg-card border border-border/50 rounded-[28px] shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+                        {filteredPlayers.map((player, index) => (
+                            <div key={player.id} className={cn("group flex items-center justify-between p-4 sm:px-6 hover:bg-muted/50 transition-colors", index !== filteredPlayers.length - 1 && "border-b border-border/50")}>
+                                <div className="flex items-center gap-4 sm:gap-6">
+                                    <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0 shadow-sm relative overflow-hidden group-hover:scale-105 transition-transform">
+                                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-primary/5" />
+                                        <span className="font-black text-xl sm:text-2xl z-10 font-mono tracking-tighter">{player.uniformNumber}</span>
                                     </div>
-
-                                    <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col h-full pl-8 pointer-events-none">
-                                        <div className="flex justify-between items-start mb-6">
-                                            {/* 背番号アイコン */}
-                                            <div className="flex items-center justify-center w-14 h-14 rounded-[20px] bg-muted/50 text-muted-foreground font-black text-2xl border border-border/50 shadow-sm group-hover:bg-primary/10 group-hover:text-primary group-active:bg-primary/10 group-active:text-primary group-hover:border-primary/20 group-active:border-primary/20 transition-all duration-200">
-                                                {player.uniformNumber}
-                                            </div>
-
-                                            {/* 削除ボタン */}
-                                            <div className="pointer-events-auto">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={(e) => handleDeletePlayer(e, player.id, player.name)}
-                                                    className="h-10 w-10 rounded-full text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                                                    title="選手を削除"
-                                                >
-                                                    <Trash2 className="h-5 w-5" />
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {/* 選手名 */}
-                                        <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 truncate group-hover:text-primary group-active:text-primary transition-colors duration-200 drop-shadow-sm mt-auto">
-                                            {player.name}
-                                        </h3>
-
-                                        {/* 矢印 */}
-                                        <div className="flex items-center text-sm font-extrabold text-muted-foreground mt-4 group-hover:text-primary/80 group-active:text-primary/80 transition-colors duration-200">
-                                            <BarChart3 className="h-4 w-4 mr-1.5 opacity-70" />
-                                            スタッツを見る <ChevronRight className="h-5 w-5 ml-1 transition-transform group-hover:translate-x-1 group-active:translate-x-1" />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </Link>
+                                    <div className="font-black text-lg sm:text-xl text-foreground group-hover:text-primary transition-colors">
+                                        {player.name}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    <Button variant="ghost" size="icon" onClick={() => setEditingPlayer(player)} className="h-10 w-10 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shadow-sm bg-background sm:bg-transparent">
+                                        <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDeletePlayer(player.id, player.name)} className="h-10 w-10 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors shadow-sm bg-background sm:bg-transparent">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 )}
             </main>
 
-            {/* 追従する登録ボタン */}
-            <Button
-                onClick={() => setIsModalOpen(true)}
-                className="fixed bottom-8 right-4 sm:bottom-10 sm:right-8 h-16 w-16 rounded-[24px] shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 active:scale-[0.92] z-40 flex items-center justify-center"
-            >
-                <Plus className="h-8 w-8" />
-                <span className="sr-only">選手を追加</span>
-            </Button>
+            {/* 💡 4. 編集モーダル (独自実装版に差し替え) */}
+            {!!editingPlayer && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    {/* 背景クリックで閉じる */}
+                    <div className="absolute inset-0" onClick={() => !isUpdating && setEditingPlayer(null)} />
 
-            {/* 新規登録モーダル */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-background/60 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="absolute inset-0" onClick={() => !isSaving && setIsModalOpen(false)} />
-                    <div className="relative w-full max-w-lg bg-background/95 backdrop-blur-xl border border-border/50 shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[32px] sm:rounded-[36px] overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-4 duration-300">
-                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary/50 to-primary" />
+                    <div className="relative w-full max-w-md bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[32px] sm:rounded-[36px] overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-500 border border-border/50 flex flex-col max-h-[90vh]">
+                        <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
 
-                        <div className="flex items-center justify-between p-6 sm:p-8 pb-4">
-                            <h2 className="text-xl sm:text-2xl font-black flex items-center gap-3 tracking-tight">
-                                <div className="p-2.5 bg-primary/10 rounded-2xl text-primary"><Users className="h-6 w-6" /></div>
-                                新規選手の登録
+                        <div className="px-6 pt-8 pb-4 border-b border-border/50 bg-muted/20 relative z-10 text-left flex justify-between items-start">
+                            <h2 className="text-xl font-black flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 text-primary shadow-sm"><Edit2 className="h-5 w-5" /></div>
+                                選手情報の編集
                             </h2>
-                            <Button variant="ghost" size="icon" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="h-10 w-10 rounded-full hover:bg-muted/50 transition-all">
-                                <X className="h-6 w-6" />
+                            <Button variant="ghost" size="icon" onClick={() => !isUpdating && setEditingPlayer(null)} className="h-8 w-8 rounded-full hover:bg-muted text-muted-foreground transition-all">
+                                <X className="h-5 w-5" />
                             </Button>
                         </div>
 
-                        <form onSubmit={handleSavePlayer} className="p-6 sm:p-8 pt-2 space-y-6">
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-3 col-span-2">
-                                    <label className="text-xs sm:text-sm font-extrabold text-foreground tracking-wide pl-1">選手名</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="例: 山田 太郎"
-                                        className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-base font-bold shadow-xs focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        disabled={isSaving}
-                                        autoFocus
-                                    />
+                        <form onSubmit={handleUpdatePlayer} className="p-6 sm:p-8 space-y-6 relative z-10">
+                            <div className="flex gap-4">
+                                <div className="w-24 space-y-2">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">背番号</label>
+                                    <Input type="number" required className="h-14 rounded-[16px] bg-muted/30 border-border/50 font-black text-xl text-center focus-visible:ring-primary/50 shadow-inner" value={editingPlayer.uniformNumber} onChange={(e) => setEditingPlayer({ ...editingPlayer, uniformNumber: e.target.value })} disabled={isUpdating} />
                                 </div>
-                                <div className="space-y-3 col-span-1">
-                                    <label className="text-xs sm:text-sm font-extrabold text-foreground tracking-wide pl-1 text-center block">背番号</label>
-                                    <input
-                                        type="number"
-                                        required
-                                        placeholder="1"
-                                        className="flex h-14 w-full rounded-2xl border border-border/60 bg-muted/20 px-4 text-xl font-black shadow-xs focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:bg-background transition-all text-center placeholder:text-muted-foreground/30"
-                                        value={formData.uniformNumber}
-                                        onChange={(e) => setFormData({ ...formData, uniformNumber: e.target.value })}
-                                        disabled={isSaving}
-                                    />
+                                <div className="flex-1 space-y-2">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">選手名</label>
+                                    <Input type="text" required className="h-14 rounded-[16px] bg-muted/30 border-border/50 font-black text-lg focus-visible:ring-primary/50 shadow-inner" value={editingPlayer.name} onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })} disabled={isUpdating} />
                                 </div>
                             </div>
-
-                            <div className="pt-6 mt-4 border-t border-border/50 flex gap-3">
-                                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="flex-1 h-14 rounded-2xl font-extrabold border-border/60 hover:bg-muted/50 shadow-xs">キャンセル</Button>
-                                <Button type="submit" disabled={isSaving} className="flex-1 h-14 rounded-2xl font-extrabold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-1 active:scale-[0.98]">
-                                    {isSaving ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : <><Save className="h-5 w-5 mr-2" /> 登録する</>}
-                                </Button>
-                            </div>
+                            <Button type="submit" disabled={isUpdating || !editingPlayer.name || !editingPlayer.uniformNumber} className="w-full h-14 rounded-[20px] font-black text-base bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+                                {isUpdating ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Save className="mr-2 h-5 w-5" /> 保存する</>}
+                            </Button>
                         </form>
                     </div>
                 </div>
@@ -262,7 +276,7 @@ function RosterContent() {
     );
 }
 
-export default function RosterWrapper() {
+export default function RosterPage() {
     return (
         <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
             <RosterContent />
