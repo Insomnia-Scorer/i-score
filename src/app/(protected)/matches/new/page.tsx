@@ -57,7 +57,7 @@ function NewMatchContent() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { success: boolean; matchId?: string; error?: string };
 
       if (res.ok && data.success) {
         toast.success("試合を作成しました！スタメンを入力しましょう。");
