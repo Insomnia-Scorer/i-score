@@ -18,8 +18,8 @@ export function Footer() {
 
   return (
     <footer className={cn(
-      "w-full border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-md text-zinc-400 mt-auto transition-all duration-300",
-      session && "md:pl-[280px]" // 💡 幅を 260px から 280px に拡張
+      "w-full border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-md text-zinc-400 mt-auto transition-[padding] duration-300 ease-in-out",
+      session && "md:pl-[var(--sidebar-width,300px)]" // 💡 CSS変数による動的パディング
     )}>
       <div className="container mx-auto px-4 py-8 sm:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">

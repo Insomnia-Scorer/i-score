@@ -24,8 +24,8 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    // 💡 幅を 260px から 280px に拡張
-    <div className="md:pl-[280px] flex flex-col min-h-screen w-full transition-all duration-300">
+    // 💡 CSS変数 var(--sidebar-width) を使い、開閉に合わせて padding がなめらかに変化します
+    <div className="md:pl-[var(--sidebar-width,300px)] flex flex-col min-h-screen w-full transition-[padding] duration-300 ease-in-out">
       {children}
     </div>
   );
