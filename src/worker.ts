@@ -7,6 +7,7 @@ import matchesRoute from './api/matches'
 import adminRoute from './api/admin'
 import imagesRouter from './api/images'
 import seed from './api/seed'
+import tournaments from './api/tournaments'
 
 const app = new Hono<{ Bindings: { DB: D1Database, ASSETS: Fetcher } }>()
 
@@ -18,6 +19,7 @@ app.route('/api/matches', matchesRoute)
 app.route('/api/admin', adminRoute)
 app.route('/api/images', imagesRouter)
 app.route('/api/seed', seed)
+app.route('/api/tournaments', tournaments)
 
 export default {
     async fetch(request: Request, env: any, ctx: ExecutionContext) {
