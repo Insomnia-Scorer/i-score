@@ -116,6 +116,7 @@ export const tournaments = sqliteTable("tournaments", {
     id: text("id").primaryKey(),
     name: text("name").notNull(), // 例: 第15回 関東秋季大会
     season: text("season").notNull(), // 例: 2026
+    category: text("category").notNull().default('other'),
     startDate: text("start_date"),
     endDate: text("end_date"),
     createdBy: text('created_by').notNull().references(() => user.id),
