@@ -1,4 +1,4 @@
-// src/components/mobile-sidebar.tsx
+// src/components/mobile-drawer.tsx
 "use client";
 
 import * as React from "react";
@@ -51,7 +51,11 @@ export function MobileDrawer({
                         <div className="px-4 mb-1 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Main Menu</div>
                         {mainNavItems.map((item) => {
                             if (!item.show) return null;
-                            const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                            // 💡 exact 判定の適用
+                            const isActive = item.exact
+                                ? pathname === item.href
+                                : (pathname === item.href || pathname?.startsWith(`${item.href}/`));
+
                             return (
                                 <Link key={item.href} href={item.href} onClick={onClose} className={cn("flex items-center gap-3 rounded-[14px] px-4 py-3 text-base font-bold transition-all duration-200", isActive ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 transform scale-[1.02]" : "text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.98]")}>
                                     <item.icon className={cn("h-5 w-5", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
@@ -65,7 +69,11 @@ export function MobileDrawer({
                         <div className="px-4 mb-1 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Settings & Admin</div>
                         {bottomNavItems.map((item) => {
                             if (!item.show) return null;
-                            const isActive = pathname === item.href;
+                            // 💡 exact 判定の適用
+                            const isActive = item.exact
+                                ? pathname === item.href
+                                : (pathname === item.href || pathname?.startsWith(`${item.href}/`));
+
                             return (
                                 <Link key={item.href} href={item.href} onClick={onClose} className={cn("flex items-center gap-3 rounded-[14px] px-4 py-3 text-base font-bold transition-all duration-200", isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.98]")}>
                                     <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />

@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { UserCircle, LogOut, Camera, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// 💡 exact オプションを追加
 export interface NavItem {
     name: string;
     href: string;
     icon: React.ElementType;
     show: boolean;
+    exact?: boolean;
 }
 
 interface SidebarProps {
@@ -55,7 +57,11 @@ export function Sidebar({
                     {!isCollapsed && <div className="px-3 mb-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Main Menu</div>}
                     {mainNavItems.map((item) => {
                         if (!item.show) return null;
-                        const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                        // 💡 exact が true の場合は完全一致のみ、そうでない場合は前方一致も許可
+                        const isActive = item.exact
+                            ? pathname === item.href
+                            : (pathname === item.href || pathname?.startsWith(`${item.href}/`));
+
                         return (
                             <Link
                                 key={item.href} href={item.href} title={isCollapsed ? item.name : undefined}
@@ -76,7 +82,11 @@ export function Sidebar({
                     {!isCollapsed && <div className="px-3 mb-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Settings & Admin</div>}
                     {bottomNavItems.map((item) => {
                         if (!item.show) return null;
-                        const isActive = pathname === item.href;
+                        // 💡 こちらも同様に判定を更新
+                        const isActive = item.exact
+                            ? pathname === item.href
+                            : (pathname === item.href || pathname?.startsWith(`${item.href}/`));
+
                         return (
                             <Link
                                 key={item.href} href={item.href} title={isCollapsed ? item.name : undefined}

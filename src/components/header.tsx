@@ -13,7 +13,6 @@ import { ClipboardList, ShieldAlert, UserCog, Menu, Users } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { cn } from "@/lib/utils";
 
-// 💡 分割したUIコンポーネントをインポート
 import { Sidebar, NavItem } from "./sidebar";
 import { MobileDrawer } from "./mobile-drawer";
 
@@ -78,7 +77,8 @@ function HeaderContent() {
 
   const mainNavItems: NavItem[] = [
     { name: "ダッシュボード", href: "/dashboard", icon: ClipboardList, show: !!session },
-    { name: "チーム", href: "/teams", icon: RiTeamFill, show: !!session },
+    // 💡 チームメニューに exact: true を指定！
+    { name: "チーム", href: "/teams", icon: RiTeamFill, show: !!session, exact: true },
     { name: "選手名簿", href: "/teams/roster", icon: Users, show: !!session },
   ];
 
@@ -135,7 +135,6 @@ function HeaderContent() {
     <>
       <input type="file" accept="image/jpeg, image/png, image/webp" className="hidden" ref={fileInputRef} onChange={handleAvatarUpload} />
 
-      {/* 💡 トップヘッダー */}
       <header className={cn(
         "sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md text-foreground transition-all duration-300",
         isSaaSMode ? "md:hidden" : "block"
@@ -152,7 +151,6 @@ function HeaderContent() {
         </div>
       </header>
 
-      {/* 💡 PC用サイドバー */}
       {isSaaSMode && (
         <Sidebar
           session={session} pathname={pathname} isCollapsed={isCollapsed} toggleSidebar={toggleSidebar}
@@ -161,7 +159,6 @@ function HeaderContent() {
         />
       )}
 
-      {/* 💡 スマホ用ドロワー */}
       <MobileDrawer
         isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}
         session={session} pathname={pathname}
