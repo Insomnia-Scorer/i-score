@@ -6,7 +6,7 @@ import Link from "next/link";
 import { LogoIcon } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { UserCircle, LogOut, Camera, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { UserCircle, LogOut, Camera, Loader2, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // 💡 exact オプションを追加
