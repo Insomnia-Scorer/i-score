@@ -10,7 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // 💡 守備位置の定義 (ポジション番号と座標)
 export const DEFENSIVE_POSITIONS = [
@@ -36,11 +36,19 @@ export function FieldModal({ open, onOpenChange, onNext }: FieldModalProps) {
     // 選択された守備位置のID
     const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
 
-    // モーダルが閉じる時に選択状態をリセットする
-    const handleOpenChange = (newOpen: boolean) => {
-        if (!newOpen) {
-            setTimeout(() => setSelectedPosition(null), 200); // アニメーション終了後にリセット
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // モーダルが閉じたことを検知して確実にリセットする
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    useEffect(() => {
+        if (!open) {
+            // 閉じるアニメーション（約200ms）を待ってからリセットすることで、
+            // 消える瞬間にボタンの選択が「フッ」と消える不自然さを防ぎます
+            const timer = setTimeout(() => setSelectedPosition(null), 200);
+            return () => clearTimeout(timer); // クリーンアップ関数
         }
+    }, [open]);
+
+    const handleOpenChange = (newOpen: boolean) => {
         onOpenChange(newOpen);
     };
 

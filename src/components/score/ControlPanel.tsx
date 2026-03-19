@@ -11,8 +11,7 @@ import { useScore } from "@/contexts/ScoreContext";
 
 export function ControlPanel() {
     // 💡 ここでContextから「操作するための関数（アクション）」を受け取る！
-    const { addBall, addStrike, addFoul, addOut } = useScore();
-
+    const { addBall, addStrike, addFoul, addOut, addPlayResult } = useScore();
     // モーダルの開閉ステート
     const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
     const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
@@ -107,8 +106,7 @@ export function ControlPanel() {
                 open={isAdvanceModalOpen}
                 onOpenChange={setIsAdvanceModalOpen}
                 onComplete={(resultId) => {
-                    console.log("プレイ確定！", resultId);
-                    // 今後ここにヒットを打った時の処理などを追加します
+                    addPlayResult(resultId);
                 }}
             />
 
