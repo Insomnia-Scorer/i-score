@@ -70,7 +70,7 @@ export function ScoreProvider({ children, matchId }: ScoreProviderProps) {
 
         // 1. 保存するログのデータを作成
         const newLog: PlayEvent = {
-            id: Math.random().toString(36).substring(7), // 簡易的なユニークID
+            id: crypto.randomUUID(),
             inningText,
             resultType,
             batterName: "打者",

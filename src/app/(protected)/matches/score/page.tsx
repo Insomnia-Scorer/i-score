@@ -7,7 +7,7 @@ import { ScoreProvider } from "@/contexts/ScoreContext";
 
 export default function ScorePage() {
     // 💡 本来はURLのパラメータ(params.id)等から取得しますが、今は仮のIDを定義します
-    const currentMatchId = "match_test_001";
+    const currentMatchId = "ed878c76-5ab8-436f-a1a9-83b12cf49e59";
 
     return (
         <ScoreProvider matchId={currentMatchId}>
