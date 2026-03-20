@@ -200,4 +200,63 @@ app.post("/:id/logs", async (c) => {
     }
 });
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚾️ [GET] 実況ログの一覧を取得する（過去の振り返り）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+app.get("/:id/logs", async (c) => {
+    const matchId = c.req.param("id");
+    const db = drizzle(c.env.DB);
+    try {
+        // 最新のログから順番に取得
+        const logs = await db.select().from(playLogs)
+            .where(eq(playLogs.matchId, matchId))
+            .orderBy(desc(playLogs.createdAt));
+        return c.json({ success: true, logs });
+    } catch (error) {
+        return c.json({ success: false, error: "ログの取得に失敗しました" }, 500);
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚾️ [DELETE] 直前のプレイを取り消す（UNDO機能）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+app.delete("/:id/logs/:logId", async (c) => {
+    const matchId = c.req.param("id");
+    const logId = c.req.param("logId");
+    const db = drizzle(c.env.DB);
+    try {
+        // 指定されたIDのログを削除
+        await db.delete(playLogs)
+            .where(and(eq(playLogs.id, logId), eq(playLogs.matchId, matchId)))
+            .run();
+        return c.json({ success: true, message: "プレイを取り消しました" });
+    } catch (error) {
+        return c.json({ success: false, error: "取り消しに失敗しました" }, 500);
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚾️ [PATCH] 試合のスコアとイニングごとの得点を更新する
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+app.patch("/:id/score", async (c) => {
+    const matchId = c.req.param("id");
+    const db = drizzle(c.env.DB);
+    try {
+        const body = await c.req.json();
+
+        // matchesテーブルの myScore, opponentScore などを一気に更新
+        await db.update(matches).set({
+            myScore: body.myScore,
+            opponentScore: body.opponentScore,
+            myInningScores: JSON.stringify(body.myInningScores),
+            opponentInningScores: JSON.stringify(body.opponentInningScores),
+            status: "in_progress"
+        }).where(eq(matches.id, matchId)).run();
+
+        return c.json({ success: true, message: "スコアボードを更新しました！" });
+    } catch (error) {
+        return c.json({ success: false, error: "スコアの更新に失敗しました" }, 500);
+    }
+});
+
 export default app

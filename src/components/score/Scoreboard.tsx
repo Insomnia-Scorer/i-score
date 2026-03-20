@@ -140,15 +140,12 @@ export function Scoreboard({
                                         </div>
                                     </td>
                                     {inningsArray.map((inning, idx) => (
-                                        <td key={inning} className={cn(
-                                            "px-3 py-3 sm:py-4 transition-colors",
-                                            matchInfo.currentInning === inning ? "bg-primary/5" : "",
-                                            (matchInfo.currentInning === inning && matchInfo.isTopHalf) ? "text-primary scale-110" : "text-muted-foreground"
-                                        )}>
-                                            {topTeam.innings[idx] ?? "-"}
+                                        <td key={inning} className={cn("px-3 py-3 sm:py-4 transition-colors", currentInning.num === inning ? "bg-primary/5" : "")}>
+                                            {/* 💡 Context の配列から得点を表示！ */}
+                                            {score.topInnings[idx] !== undefined ? score.topInnings[idx] : "-"}
                                         </td>
                                     ))}
-                                    <td className="px-3 py-3 sm:py-4 border-l border-border/40 bg-muted/10 text-primary text-xl sm:text-2xl">{score.top}</td>
+                                    <td className="px-3 py-3 sm:py-4 border-l bg-muted/10 text-primary">{score.top}</td>
                                     <td className="px-3 py-3 sm:py-4 bg-muted/10 text-muted-foreground text-base sm:text-lg">{topTeam.hits}</td>
                                     <td className="px-3 py-3 sm:py-4 bg-muted/10 text-muted-foreground text-base sm:text-lg">{topTeam.errors}</td>
                                 </tr>
@@ -162,15 +159,12 @@ export function Scoreboard({
                                         </div>
                                     </td>
                                     {inningsArray.map((inning, idx) => (
-                                        <td key={inning} className={cn(
-                                            "px-3 py-3 sm:py-4 transition-colors",
-                                            matchInfo.currentInning === inning ? "bg-primary/5" : "",
-                                            (matchInfo.currentInning === inning && !matchInfo.isTopHalf) ? "text-primary scale-110" : "text-muted-foreground"
-                                        )}>
-                                            {bottomTeam.innings[idx] ?? "-"}
+                                        <td key={inning} className={cn("px-3 py-3 sm:py-4 transition-colors", currentInning.num === inning ? "bg-primary/5" : "")}>
+                                            {/* 💡 Context の配列から得点を表示！ */}
+                                            {score.bottomInnings[idx] !== undefined ? score.bottomInnings[idx] : "-"}
                                         </td>
                                     ))}
-                                    <td className="px-3 py-3 sm:py-4 border-l border-border/40 bg-muted/10 text-primary text-xl sm:text-2xl">{score.bottom}</td>
+                                    <td className="px-3 py-3 sm:py-4 border-l bg-muted/10 text-primary">{score.bottom}</td>
                                     <td className="px-3 py-3 sm:py-4 bg-muted/10 text-muted-foreground text-base sm:text-lg">{bottomTeam.hits}</td>
                                     <td className="px-3 py-3 sm:py-4 bg-muted/10 text-muted-foreground text-base sm:text-lg">{bottomTeam.errors}</td>
                                 </tr>

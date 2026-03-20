@@ -1,13 +1,13 @@
 // src/contexts/ScoreContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useRef, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { toast } from "sonner";
 
 type Count = { ball: number; strike: number; out: number };
 type Inning = { num: number; isTop: boolean };
 type Runners = { 1: boolean; 2: boolean; 3: boolean };
-type Score = { top: number; bottom: number };
+type Score = { top: number; bottom: number; topInnings: number[]; bottomInnings: number[] };
 
 export type PlayEvent = {
     id: string;
@@ -29,6 +29,7 @@ interface ScoreContextType {
     addFoul: () => void;
     addOut: () => void;
     addPlayResult: (result: string, positionId?: number | null) => void; // 💡 打球方向
+    undoLastPlay: () => void;
 }
 
 // 💡 Providerが「どの試合か(matchId)」を受け取れるようにする型
@@ -49,7 +50,7 @@ export function ScoreProvider({ children, matchId }: ScoreProviderProps) {
     const [count, setCount] = useState<Count>({ ball: 0, strike: 0, out: 0 });
     const [currentInning, setCurrentInning] = useState<Inning>({ num: 1, isTop: true });
     const [runners, setRunners] = useState<Runners>({ 1: false, 2: false, 3: false });
-    const [score, setScore] = useState<Score>({ top: 0, bottom: 0 });
+    const [score, setScore] = useState<Score>({ top: 0, bottom: 0, topInnings: [0], bottomInnings: [] });
     const [logs, setLogs] = useState<PlayEvent[]>([]);
 
     const lastActionTime = useRef<number>(0);
@@ -59,6 +60,27 @@ export function ScoreProvider({ children, matchId }: ScoreProviderProps) {
         lastActionTime.current = now;
         return true;
     };
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🚀 画面を開いた時に過去のログを自動取得！
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    useEffect(() => {
+        const fetchMatchData = async () => {
+            try {
+                const res = await fetch(`${apiUrl}/api/matches/${matchId}/logs`);
+                if (res.ok) {
+                    const data = await res.json() as ScoreContextType;
+                    // DBから取得したログを画面にセット！
+                    setLogs(data.logs);
+                }
+            } catch (error) {
+                console.error("データ取得エラー:", error);
+            }
+        };
+        fetchMatchData();
+    }, [matchId, apiUrl]);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ⚾️ 実況ログを生成し、画面に表示 ＆ DBに保存する！
@@ -105,20 +127,51 @@ export function ScoreProvider({ children, matchId }: ScoreProviderProps) {
         }
     };
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⚾️ イニングチェンジ
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     const changeInning = () => {
         setCount({ ball: 0, strike: 0, out: 0 });
         setRunners({ 1: false, 2: false, 3: false });
         addLog("other", "スリーアウト！攻守交替です。");
         setCurrentInning((prev) => ({ num: prev.isTop ? prev.num : prev.num + 1, isTop: !prev.isTop }));
         toast.info("チェンジ！");
+        setCurrentInning((prev) => {
+            const nextIsTop = !prev.isTop;
+            const nextNum = prev.isTop ? prev.num : prev.num + 1;
+
+            // 次のイニングの配列枠を「0」で作っておく
+            setScore(s => {
+                const ns = { ...s };
+                if (nextIsTop) { ns.topInnings[nextNum - 1] = 0; }
+                else { ns.bottomInnings[nextNum - 1] = 0; }
+                return ns;
+            });
+            return { num: nextNum, isTop: nextIsTop };
+        });
     };
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⚾️ 得点追加
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     const addRuns = (runsToAdd: number) => {
         if (runsToAdd <= 0) return;
-        setScore((prev) => ({
-            ...prev,
-            [currentInning.isTop ? "top" : "bottom"]: prev[currentInning.isTop ? "top" : "bottom"] + runsToAdd,
-        }));
+        setScore((prev) => {
+            const isTop = currentInning.isTop;
+            const newScore = { ...prev };
+
+            // 合計得点と、現在のイニングの配列を更新！
+            if (isTop) {
+                newScore.top += runsToAdd;
+                newScore.topInnings[currentInning.num - 1] = (newScore.topInnings[currentInning.num - 1] || 0) + runsToAdd;
+            } else {
+                newScore.bottom += runsToAdd;
+                newScore.bottomInnings[currentInning.num - 1] = (newScore.bottomInnings[currentInning.num - 1] || 0) + runsToAdd;
+            }
+
+            syncScoreToDB(newScore); // ☁️ APIに送信
+            return newScore;
+        });
         addLog("run", `${runsToAdd}点が入りました！`);
         toast.success(`${runsToAdd}点入りました！`);
     };
@@ -212,6 +265,54 @@ export function ScoreProvider({ children, matchId }: ScoreProviderProps) {
         });
     };
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🚀 スコアが変わるたびにDBを更新！(スコアボード連動)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const syncScoreToDB = async (newScore: Score) => {
+        try {
+            // ※ 今回は先攻(top)を自チーム(myScore)と仮定して送ります。
+            // 実際は matchesテーブルの isTop などの情報から判定してください。
+            await fetch(`${apiUrl}/api/matches/${matchId}/score`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    myScore: newScore.top,
+                    opponentScore: newScore.bottom,
+                    myInningScores: newScore.topInnings,
+                    opponentInningScores: newScore.bottomInnings,
+                }),
+            });
+        } catch (error) {
+            console.error("スコア同期エラー", error);
+        }
+    };
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🚀 直前のプレイを取り消す（UNDO）
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const undoLastPlay = async () => {
+        if (logs.length === 0) return;
+
+        // 一番上の最新ログを取得
+        const targetLog = logs[0];
+
+        // 画面からログを消す (楽観的UI)
+        setLogs((prev) => prev.slice(1));
+        toast.info("直前のプレイを取り消しました");
+
+        // カウントを簡易リセット (※本格的な復元は履歴管理が必要ですが、まずはリセットで対応)
+        setCount({ ball: 0, strike: 0, out: count.out });
+
+        try {
+            // ☁️ APIに削除リクエストを送信
+            await fetch(`${apiUrl}/api/matches/${matchId}/logs/${targetLog.id}`, {
+                method: "DELETE",
+            });
+        } catch (error) {
+            console.error("UNDOエラー", error);
+        }
+    };
+
     const addStrike = (isSwinging: boolean = false) => {
         if (!canExecuteAction()) return;
         setCount((prev) => {
@@ -245,7 +346,7 @@ export function ScoreProvider({ children, matchId }: ScoreProviderProps) {
     };
 
     return (
-        <ScoreContext.Provider value={{ count, currentInning, runners, score, logs, addBall, addStrike, addFoul, addOut, addPlayResult }}>
+        <ScoreContext.Provider value={{ count, currentInning, runners, score, logs, addBall, addStrike, addFoul, addOut, addPlayResult, undoLastPlay }}>
             {children}
         </ScoreContext.Provider>
     );

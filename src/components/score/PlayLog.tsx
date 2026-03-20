@@ -1,7 +1,7 @@
 // src/components/score/PlayLog.tsx
 "use client";
 
-import { Activity, Swords, XCircle, Star, Footprints, Info } from "lucide-react";
+import { Activity, Swords, XCircle, Star, Footprints, Info, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useScore, PlayEvent } from "@/contexts/ScoreContext";
@@ -15,7 +15,7 @@ export interface PlayLogProps {
 
 export function PlayLog() {
     // 💡 Contextから「生きたログデータ」を取得！
-    const { logs } = useScore();
+    const { logs, undoLastPlay } = useScore();
 
     const getEventStyle = (type: PlayEvent["resultType"]) => {
         switch (type) {
@@ -49,6 +49,7 @@ export function PlayLog() {
                             {logs.map((log, index) => {
                                 const style = getEventStyle(log.resultType);
                                 const Icon = style.icon;
+                                const isLatest = index === 0; // 💡 最新のログかどうか判定
 
                                 // 💡 イニングが変わったタイミングで区切り線を入れるロジック
                                 // (新しいログが配列の先頭に来るため、"次のログ" とイニングが違うかをチェック)
@@ -78,6 +79,16 @@ export function PlayLog() {
                                             <p className="text-sm sm:text-base font-bold text-muted-foreground leading-relaxed">
                                                 {log.description}
                                             </p>
+                                            {/* 💡 最新ログにのみ UNDO ボタンを表示 */}
+                                            {isLatest && (
+                                                <button
+                                                    onClick={undoLastPlay}
+                                                    className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors shrink-0"
+                                                    title="このプレイを取り消す"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 );
