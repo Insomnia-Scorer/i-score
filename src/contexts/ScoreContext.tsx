@@ -35,6 +35,7 @@ interface ScoreContextType {
     addOut: () => void;
     addPlayResult: (result: string, positionId?: number | null) => void; // 💡 打球方向
     undoLastPlay: () => void;
+    playBall: () => Promise<void>;
 }
 
 // 💡 Providerが「どの試合か(matchId)」を受け取れるようにする型
@@ -189,7 +190,7 @@ export function ScoreProvider({ children, matchId }: ScoreProviderProps) {
         await addLog("other", "⚾️ プレイボール！！！試合開始！");
         toast.success("プレイボール！");
     };
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ⚾️ イニングチェンジ
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
