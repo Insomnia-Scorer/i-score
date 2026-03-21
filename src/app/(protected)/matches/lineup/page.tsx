@@ -123,8 +123,7 @@ function LineupContent() {
                 // スコア画面へ遷移！
                 router.push(`/matches/score?id=${matchId}`);
             } else {
-                const errorData = await res.json().catch(() => ({}));
-                toast.error(errorData.error || "スタメンの保存に失敗しました");
+                toast.error("スタメンの保存に失敗しました");
             }
         } catch (error) {
             toast.error("保存に失敗しました");
