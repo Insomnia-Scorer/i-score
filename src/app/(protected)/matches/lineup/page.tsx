@@ -105,10 +105,27 @@ function LineupContent() {
         try {
             // ※ ここでAPIにスタメンデータ（myLineup, opponentLineup）を保存する処理を追加します
             // await fetch(`/api/matches/${matchId}/lineup`, { ... })
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+            // 💡 1. URLに matchId を含める
+            const res = await fetch(`${apiUrl}/api/matches/${matchId}`, {
+                // 💡 2. 更新なので PATCH メソッドを使う！
+                method: "PATCH", 
+                // 💡 3. 認証Cookieを含める
+                credentials: "include", 
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    battingOrder: lineup, // 入力したスタメンの配列
+                }),
+            });
 
-            // 💡 スコアブック本編（プレイ入力画面）へ遷移！
-            toast.success("スタメンを登録しました！プレイボール！");
-            router.push(`/matches/score?id=${matchId}`);
+            if (res.ok) {
+                toast.success("スタメンを登録しました！試合を開始します！");
+                // スコア画面へ遷移！
+                router.push(`/matches/score?id=${matchId}`);
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(errorData.error || "スタメンの保存に失敗しました");
+            }
         } catch (error) {
             toast.error("保存に失敗しました");
         } finally {
