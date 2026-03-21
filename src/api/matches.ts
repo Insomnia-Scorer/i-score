@@ -272,4 +272,31 @@ app.patch("/:id/score", async (c) => {
     }
 });
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚾️ [PATCH] 試合情報（スタメン等）を更新する
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+app.patch("/:id", async (c) => {
+  // ※必要に応じて getAuth 等の権限チェックを入れてください
+  const matchId = c.req.param("id");
+  const db = drizzle(c.env.DB);
+
+  try {
+    const body = await c.req.json();
+
+    // 💡 battingOrder (スタメン) を上書き更新！
+    await db.update(matches)
+      .set({
+        battingOrder: JSON.stringify(body.battingOrder),
+        // ※必要なら location や opponent 等もここで更新可能にできます
+      })
+      .where(eq(matches.id, matchId))
+      .run();
+
+    return c.json({ success: true, message: "スタメンを更新しました！" });
+  } catch (error) {
+    console.error("スタメン更新エラー:", error);
+    return c.json({ success: false, error: "スタメンの更新に失敗しました" }, 500);
+  }
+});
+
 export default app
