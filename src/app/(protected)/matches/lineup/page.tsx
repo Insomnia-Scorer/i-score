@@ -114,7 +114,7 @@ function LineupContent() {
                 credentials: "include", 
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    battingOrder: lineup, // 入力したスタメンの配列
+                    battingOrder: myLineup, // 入力したスタメンの配列
                 }),
             });
 
