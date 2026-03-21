@@ -6,10 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Loader2, Save, Users, Shield, ArrowRight, Swords, UserPlus } from "lucide-react";
+import { ChevronLeft, Loader2, Users, Shield, ArrowRight, Swords } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// 💡 守備位置のマスターデータ
 const POSITIONS = [
     { id: "1", name: "投 (1)", short: "P" },
     { id: "2", name: "捕 (2)", short: "C" },
@@ -29,7 +30,7 @@ interface Player {
     uniformNumber: string;
 }
 
-// 💡 修正1: ScoreContextが読み取れるように name と uniformNumber に変更！
+// 💡 ScoreContextと互換性のあるデータ構造
 interface LineupEntry {
     order: number;
     position: string;
@@ -50,7 +51,6 @@ function LineupContent() {
 
     const [activeTab, setActiveTab] = useState<"myTeam" | "opponent">("myTeam");
 
-    // 💡 修正2: 初期値にも name と uniformNumber をセット
     const initialLineup = Array.from({ length: 9 }, (_, i) => ({
         order: i + 1, position: "", playerId: "", name: "", uniformNumber: ""
     }));
@@ -87,7 +87,6 @@ function LineupContent() {
         if (field === "playerId") {
             const player = roster.find(p => p.id === value);
             if (player) {
-                // 💡 修正3: 選ばれたら name と uniformNumber を両方セットする！
                 newLineup[index].name = player.name;
                 newLineup[index].uniformNumber = player.uniformNumber;
             }
@@ -177,63 +176,86 @@ function LineupContent() {
                             <div className="flex-1 text-sm font-bold text-muted-foreground uppercase tracking-widest pl-1">選手名</div>
                         </div>
 
-                        {(activeTab === "myTeam" ? myLineup : opponentLineup).map((entry, index) => (
-                            <div key={index} className="flex flex-row items-center gap-3 sm:gap-4 bg-muted/20 p-3 sm:p-2 rounded-[20px] sm:bg-transparent sm:border-none border border-border/50">
-                                <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black text-lg sm:text-xl shadow-md border border-primary/20">
-                                    {entry.order}
-                                </div>
+                        {(activeTab === "myTeam" ? myLineup : opponentLineup).map((entry, index, currentLineup) => {
+                            // 重複チェック用の配列を生成
+                            const otherSelectedPositions = currentLineup
+                                .map((e, i) => i !== index ? e.position : null)
+                                .filter(Boolean);
 
-                                <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-4">
-                                    <div className="w-full sm:w-32 shrink-0">
-                                        <label className="sm:hidden text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-1 block">守備</label>
-                                        <select
-                                            className="flex h-12 w-full appearance-none rounded-[16px] border border-border/50 bg-background px-4 pr-8 text-base font-black shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
-                                            value={entry.position}
-                                            onChange={(e) => activeTab === "myTeam" ? handleMyLineupChange(index, "position", e.target.value) : handleOpponentLineupChange(index, "position", e.target.value)}
-                                        >
-                                            <option value="" disabled>守備</option>
-                                            {POSITIONS.map(pos => <option key={pos.id} value={pos.id}>{pos.name}</option>)}
-                                        </select>
+                            const otherSelectedPlayers = currentLineup
+                                .map((e, i) => i !== index ? e.playerId : null)
+                                .filter(Boolean);
+
+                            return (
+                                <div key={index} className="flex flex-row items-center gap-3 sm:gap-4 bg-muted/20 p-3 sm:p-2 rounded-[20px] sm:bg-transparent sm:border-none border border-border/50">
+                                    <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black text-lg sm:text-xl shadow-md border border-primary/20">
+                                        {entry.order}
                                     </div>
 
-                                    <div className="flex-1">
-                                        <label className="sm:hidden text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-1 block">選手名</label>
-                                        {activeTab === "myTeam" ? (
+                                    <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                        {/* 守備位置の選択 */}
+                                        <div className="w-full sm:w-32 shrink-0">
+                                            <label className="sm:hidden text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-1 block">守備</label>
                                             <select
-                                                className="flex h-12 w-full appearance-none rounded-[16px] border border-primary/30 bg-primary/5 px-4 pr-8 text-base font-black shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
-                                                value={entry.playerId}
-                                                onChange={(e) => handleMyLineupChange(index, "playerId", e.target.value)}
+                                                className="flex h-12 w-full appearance-none rounded-[16px] border border-border/50 bg-background px-4 pr-8 text-base font-black shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
+                                                value={entry.position}
+                                                onChange={(e) => activeTab === "myTeam" ? handleMyLineupChange(index, "position", e.target.value) : handleOpponentLineupChange(index, "position", e.target.value)}
                                             >
-                                                <option value="" disabled>選手を選択</option>
-                                                {roster.map(player => (
-                                                    <option key={player.id} value={player.id}>
-                                                        {player.uniformNumber} : {player.name}
-                                                    </option>
-                                                ))}
+                                                <option value="" disabled>守備</option>
+                                                {POSITIONS.map(pos => {
+                                                    const isDisabled = otherSelectedPositions.includes(pos.id);
+                                                    return (
+                                                        <option key={pos.id} value={pos.id} disabled={isDisabled}>
+                                                            {pos.name} {isDisabled ? "(選択済)" : ""}
+                                                        </option>
+                                                    );
+                                                })}
                                             </select>
-                                        ) : (
-                                            // 💡 修正4: 対戦相手も背番号(uniformNumber)と名前(name)に分割！
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    type="text"
-                                                    placeholder="背番号"
-                                                    className="w-20 h-12 rounded-[16px] border-border/50 bg-background text-base font-black focus-visible:ring-primary/50 shadow-inner font-mono"
-                                                    value={entry.uniformNumber}
-                                                    onChange={(e) => handleOpponentLineupChange(index, "uniformNumber", e.target.value)}
-                                                />
-                                                <Input
-                                                    type="text"
-                                                    placeholder="相手選手名を入力"
-                                                    className="flex-1 h-12 rounded-[16px] border-border/50 bg-background text-base font-black focus-visible:ring-primary/50 shadow-inner"
-                                                    value={entry.name}
-                                                    onChange={(e) => handleOpponentLineupChange(index, "name", e.target.value)}
-                                                />
-                                            </div>
-                                        )}
+                                        </div>
+
+                                        {/* 選手名の選択・入力 */}
+                                        <div className="flex-1">
+                                            <label className="sm:hidden text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-1 block">選手名</label>
+                                            {activeTab === "myTeam" ? (
+                                                <select
+                                                    // 💡 修正: 背景・文字色を明示的に指定してOSの白背景化を防ぐ
+                                                    className="flex h-12 w-full appearance-none rounded-[16px] border border-border/50 bg-background text-foreground px-4 pr-8 text-base font-black shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%2371717a%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
+                                                    value={entry.playerId}
+                                                    onChange={(e) => handleMyLineupChange(index, "playerId", e.target.value)}
+                                                >
+                                                    <option value="" disabled>選手を選択</option>
+                                                    {roster.map(player => {
+                                                        const isDisabled = otherSelectedPlayers.includes(player.id);
+                                                        return (
+                                                            <option key={player.id} value={player.id} disabled={isDisabled}>
+                                                                {player.uniformNumber} : {player.name} {isDisabled ? "(選択済)" : ""}
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="背番号"
+                                                        className="w-20 h-12 rounded-[16px] border-border/50 bg-background text-base font-black focus-visible:ring-primary/50 shadow-inner font-mono"
+                                                        value={entry.uniformNumber}
+                                                        onChange={(e) => handleOpponentLineupChange(index, "uniformNumber", e.target.value)}
+                                                    />
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="相手選手名を入力"
+                                                        className="flex-1 h-12 rounded-[16px] border-border/50 bg-background text-base font-black focus-visible:ring-primary/50 shadow-inner"
+                                                        value={entry.name}
+                                                        onChange={(e) => handleOpponentLineupChange(index, "name", e.target.value)}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                     </CardContent>
                 </Card>
