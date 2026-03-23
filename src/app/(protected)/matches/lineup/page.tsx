@@ -1,3 +1,4 @@
+// src/app/(protected)/matches/lineup/page.tsx
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
@@ -5,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Users, Loader2, ArrowRight, Wand2, Shield, Swords, Save, FolderOpen } from "lucide-react";
+import { ChevronLeft, Users, Loader2, ArrowRight, Wand2, Shield, Swords, Save, FolderOpen, X } from "lucide-react"; // 💡 X を追加
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +23,6 @@ interface Player {
     uniformNumber: string;
 }
 
-// 💡 テンプレートの型定義
 interface LineupTemplate {
     id: string;
     name: string;
@@ -40,7 +40,6 @@ function LineupContent() {
     const [activeTab, setActiveTab] = useState<"myTeam" | "opponent">("myTeam");
 
     const [teamPlayers, setTeamPlayers] = useState<Player[]>([]);
-    // 💡 テンプレート一覧のステート
     const [templates, setTemplates] = useState<LineupTemplate[]>([]);
 
     const [myLineup, setMyLineup] = useState(
@@ -51,13 +50,17 @@ function LineupContent() {
         Array.from({ length: 9 }, (_, i) => ({ order: i + 1, position: "", name: "", uniformNumber: "" }))
     );
 
+    // 💡 テンプレート保存モーダル用のステート
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [templateName, setTemplateName] = useState("");
+    const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🚀 APIから選手一覧 ＆ テンプレート一覧を取得
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     useEffect(() => {
         if (!teamId) return;
 
-        // 選手一覧の取得
         const fetchPlayers = async () => {
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
@@ -71,7 +74,6 @@ function LineupContent() {
             }
         };
 
-        // 💡 テンプレート一覧の取得
         const fetchTemplates = async () => {
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
@@ -118,7 +120,7 @@ function LineupContent() {
     }, [matchId]);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🚀 排他制御ヘルパー
+    // 🚀 排他制御ヘルパー（監督の最高UX仕様！）
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     const getDisabledPositions = (lineup: any[], currentIndex: number) => {
         return lineup.filter((_, i) => i !== currentIndex).map(p => p.position).filter(Boolean);
@@ -129,23 +131,26 @@ function LineupContent() {
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🚀 テンプレート保存・読み込み処理！
+    // 🚀 テンプレート保存・読み込み処理
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const handleSaveTemplate = async () => {
-        const name = window.prompt("このオーダーのテンプレート名を入力してください\n(例: ベストメンバー, 投手戦用)");
-        if (!name || name.trim() === "") return;
+    const executeSaveTemplate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!templateName.trim()) return;
 
+        setIsSavingTemplate(true);
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
             const res = await fetch(`${apiUrl}/api/teams/${teamId}/lineup-templates`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: name, lineupData: myLineup }), // 💡 現在の myLineup を丸ごと保存！
+                body: JSON.stringify({ name: templateName, lineupData: myLineup }),
             });
 
             if (res.ok) {
                 toast.success("テンプレートを保存しました！");
+                setIsTemplateModalOpen(false);
+                setTemplateName("");
                 // 最新のテンプレート一覧を再取得
                 const updatedRes = await fetch(`${apiUrl}/api/teams/${teamId}/lineup-templates`, { credentials: "include" });
                 if (updatedRes.ok) setTemplates(await updatedRes.json());
@@ -154,6 +159,8 @@ function LineupContent() {
             }
         } catch (error) {
             toast.error("通信エラーが発生しました");
+        } finally {
+            setIsSavingTemplate(false);
         }
     };
 
@@ -164,7 +171,7 @@ function LineupContent() {
             try {
                 const parsedData = JSON.parse(template.lineupData);
                 if (Array.isArray(parsedData) && parsedData.length === 9) {
-                    setMyLineup(parsedData); // 💡 JSONを解釈して myLineup を上書き！
+                    setMyLineup(parsedData);
                     toast.success(`「${template.name}」を読み込みました！`);
                 }
             } catch (e) {
@@ -273,21 +280,19 @@ function LineupContent() {
                             {activeTab === "myTeam" ? "自チームのオーダー" : "相手チームのオーダー"}
                         </CardTitle>
 
-                        {/* 💡 相手チーム：ダミー入力ボタン */}
                         {activeTab === "opponent" && (
                             <Button type="button" variant="outline" size="sm" onClick={handleFillDummyOpponent} className="text-xs sm:text-sm font-bold border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-full px-4">
                                 <Wand2 className="w-4 h-4 mr-1.5" /> ダミーで一括入力
                             </Button>
                         )}
 
-                        {/* 💡 自チーム：テンプレートの保存＆読込 UI */}
                         {activeTab === "myTeam" && (
                             <div className="flex items-center gap-2">
                                 <select
-                                    className="h-9 rounded-full border border-primary/30 bg-primary/5 px-3 text-xs sm:text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                                    className="h-9 rounded-full border border-primary/30 bg-primary/5 px-3 text-xs sm:text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer max-w-[140px] truncate"
                                     onChange={(e) => {
                                         handleLoadTemplate(e.target.value);
-                                        e.target.value = ""; // 選択後にリセット
+                                        e.target.value = "";
                                     }}
                                 >
                                     <option value="">📂 テンプレ読込...</option>
@@ -295,7 +300,8 @@ function LineupContent() {
                                         <option key={t.id} value={t.id}>{t.name}</option>
                                     ))}
                                 </select>
-                                <Button type="button" variant="outline" size="sm" onClick={handleSaveTemplate} className="h-9 text-xs sm:text-sm font-bold border-primary/30 text-primary hover:bg-primary/10 rounded-full px-4">
+                                {/* 💡 モーダルを開く処理に変更 */}
+                                <Button type="button" variant="outline" size="sm" onClick={() => setIsTemplateModalOpen(true)} className="h-9 text-xs sm:text-sm font-bold border-primary/30 text-primary hover:bg-primary/10 rounded-full px-4 shrink-0">
                                     <Save className="w-4 h-4 mr-1.5" /> テンプレ保存
                                 </Button>
                             </div>
@@ -306,7 +312,6 @@ function LineupContent() {
                         <form onSubmit={handleSaveLineup} className="space-y-8">
 
                             <div className="space-y-3">
-                                {/* 💡 自チーム */}
                                 {activeTab === "myTeam" && myLineup.map((player, index) => {
                                     const disabledPositions = getDisabledPositions(myLineup, index);
                                     const disabledPlayers = getDisabledPlayers(myLineup, index);
@@ -319,7 +324,7 @@ function LineupContent() {
                                                 <option value="">守備</option>
                                                 {POSITIONS.map(p => {
                                                     const isSelectedByOther = disabledPositions.includes(p.id) && !["DH", "PH", "PR"].includes(p.id);
-                                                    if (isSelectedByOther) return null;
+                                                    if (isSelectedByOther) return null; // 💡 監督のUX大正解！リストから消す！
                                                     return <option key={p.id} value={p.id}>{p.label}</option>;
                                                 })}
                                             </select>
@@ -328,7 +333,7 @@ function LineupContent() {
                                                 <option value="">選手を選択...</option>
                                                 {teamPlayers.map(p => {
                                                     const isSelectedByOther = disabledPlayers.includes(p.id);
-                                                    if (isSelectedByOther) return null;
+                                                    if (isSelectedByOther) return null; // 💡 監督のUX大正解！リストから消す！
                                                     return <option key={p.id} value={p.id}>#{p.uniformNumber} {p.name}</option>;
                                                 })}
                                             </select>
@@ -336,7 +341,6 @@ function LineupContent() {
                                     );
                                 })}
 
-                                {/* 💡 相手チーム */}
                                 {activeTab === "opponent" && opponentLineup.map((player, index) => {
                                     const disabledPositions = getDisabledPositions(opponentLineup, index);
 
@@ -369,6 +373,45 @@ function LineupContent() {
                     </CardContent>
                 </Card>
             </main>
+
+            {/* 💡 テンプレート保存の美しいモーダル */}
+            {isTemplateModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="absolute inset-0" onClick={() => !isSavingTemplate && setIsTemplateModalOpen(false)} />
+                    <div className="relative w-full max-w-md bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[32px] sm:rounded-[36px] overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-500 border border-border/50 flex flex-col">
+                        <div className="absolute -top-40 -left-40 w-80 h-80 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
+                        <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-border/50 sm:hidden" />
+
+                        <div className="relative z-10 px-6 sm:px-8 pt-6 pb-4 flex items-center justify-between border-b border-border/50 bg-background/50">
+                            <h2 className="text-xl font-black flex items-center gap-3 text-foreground drop-shadow-sm">
+                                <div className="p-2.5 bg-primary/10 rounded-2xl shadow-sm border border-primary/20 text-primary"><Save className="h-5 w-5" /></div>
+                                テンプレとして保存
+                            </h2>
+                            <Button variant="ghost" size="icon" onClick={() => setIsTemplateModalOpen(false)} className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground"><X className="h-5 w-5" /></Button>
+                        </div>
+
+                        <div className="relative z-10 p-6 sm:p-8">
+                            <form onSubmit={executeSaveTemplate} className="space-y-6">
+                                <div className="space-y-3">
+                                    <label className="text-sm font-black text-foreground/90 pl-1">テンプレート名</label>
+                                    <Input
+                                        autoFocus
+                                        required
+                                        placeholder="例: ベストメンバー, 投手戦用"
+                                        className="flex h-14 w-full rounded-[18px] border border-border/50 bg-background px-5 text-base font-bold shadow-inner focus-visible:ring-2 focus-visible:ring-primary/50 transition-all text-foreground"
+                                        value={templateName}
+                                        onChange={(e) => setTemplateName(e.target.value)}
+                                        disabled={isSavingTemplate}
+                                    />
+                                </div>
+                                <Button type="submit" disabled={isSavingTemplate} className="w-full h-14 rounded-[20px] font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+                                    {isSavingTemplate ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : "保存する"}
+                                </Button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
