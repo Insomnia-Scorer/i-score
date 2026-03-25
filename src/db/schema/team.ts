@@ -83,10 +83,14 @@ export const organizationMembers = sqliteTable("organization_members", {
     organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
     userId: text("user_id").notNull().references(() => user.id), // Authユーザー
     role: text("role").notNull(), // 例: 'OWNER' (代表), 'ADMIN' (総監督), 'MEMBER' (保護者/選手)
+
+    // 🔥 ここを追加！（'active': 承認済み/参加中, 'pending': 参加申請中）
+    status: text("status").notNull().default("active"),
+
     createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(strftime('%s', 'now'))`),
 }, (table) => ({
     orgIdx: index("idx_org_members_org_id").on(table.organizationId),
-    userIdx: index("idx_org_members_user_id").on(table.userId), // 自分が所属する組織を爆速で探すため
+    userIdx: index("idx_org_members_user_id").on(table.userId),
 }));
 
 // ==========================================
@@ -98,8 +102,12 @@ export const teamMembers = sqliteTable('team_members', {
     teamId: text('team_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
     userId: text('user_id').notNull().references(() => user.id), // Authユーザー
     role: text('role').notNull(), // 例: 'MANAGER'(監督・スコアラー), 'PLAYER'(閲覧のみ)
+
+    // 🔥 ここを追加！（'active': 承認済み/参加中, 'pending': 参加申請中）
+    status: text("status").notNull().default("active"),
+
     joinedAt: integer('joined_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
 }, (table) => ({
     teamIdx: index("idx_team_members_team_id").on(table.teamId),
-    userIdx: index("idx_team_members_user_id").on(table.userId), // 自分がスコアをつけられるチーム一覧を出すため
+    userIdx: index("idx_team_members_user_id").on(table.userId),
 }));

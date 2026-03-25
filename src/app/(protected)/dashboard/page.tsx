@@ -1,400 +1,251 @@
 // src/app/(protected)/dashboard/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
-import { canEditScore, canManageTeam, ROLES } from "@/lib/roles";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, History, ChevronRight, Loader2, Users, Edit2, Trash2, Check, X, BarChart3, Activity, Map } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2, Search, Users, ShieldCheck, Plus, ArrowRight, X, UserPlus } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
-import { FaBaseballBatBall } from "react-icons/fa6";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
 
-import {
-  Match, Team, PlayerStats, PitcherStats, SprayData,
-  RecentMatches, BatterStatsTable, PitcherStatsTable, SprayChartArea
-} from "@/components/dashboard/tab-views";
+// チームの型定義
+interface Team {
+  id: string;
+  name: string;
+  year: number;
+  tier: string | null;
+  myRole?: string;
+  status?: string; // 💡 追加：pending(申請中)かactive(参加中)か
+}
 
 export default function DashboardPage() {
-  const { data: session, isPending: isSessionLoading } = authClient.useSession();
-  const userRole = (session?.user as any)?.role;
-
+  const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
-  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [batterStats, setBatterStats] = useState<PlayerStats[]>([]);
-  const [pitcherStats, setPitcherStats] = useState<PitcherStats[]>([]);
-  const [sprayData, setSprayData] = useState<SprayData[]>([]);
+  // 💡 参加申請モーダル用のステート
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [searchId, setSearchId] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchedTeam, setSearchTeam] = useState<Team | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<"matches" | "batterStats" | "pitcherStats" | "sprayChart">("matches");
+  useEffect(() => {
+    fetchMyTeams();
+  }, []);
 
-  const [isLoadingTeams, setIsLoadingTeams] = useState(true);
-  const [isLoadingData, setIsLoadingData] = useState(false);
-
-  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
-  const [editTeamName, setEditTeamName] = useState("");
-
-  const handleTeamChange = (newTeamId: string) => {
-    setSelectedTeamId(newTeamId);
-    localStorage.setItem("iScore_selectedTeamId", newTeamId);
-  };
-
-  const fetchTeams = async () => {
-    setIsLoadingTeams(true);
+  const fetchMyTeams = async () => {
+    setIsLoading(true);
     try {
-      const res = await fetch('/api/teams');
+      const res = await fetch("/api/teams");
       if (res.ok) {
         const data = await res.json() as Team[];
         setTeams(data);
-
-        const savedTeamId = localStorage.getItem("iScore_selectedTeamId");
-        const isValidSavedTeam = data.some(t => t.id === savedTeamId);
-
-        if (isValidSavedTeam && savedTeamId) {
-          setSelectedTeamId(savedTeamId);
-        } else if (data.length > 0) {
-          setSelectedTeamId(data[0].id);
-          localStorage.setItem("iScore_selectedTeamId", data[0].id);
-        }
       }
-    } catch (e) { console.error(e); }
-    finally { setIsLoadingTeams(false); }
-  };
-
-  const fetchMatchesAndStats = async () => {
-    if (!selectedTeamId) return;
-    setIsLoadingData(true);
-    try {
-      const [matchesRes, bStatsRes, pStatsRes, sprayRes] = await Promise.all([
-        fetch(`/api/matches?teamId=${selectedTeamId}`),
-        fetch(`/api/teams/${selectedTeamId}/stats`),
-        fetch(`/api/teams/${selectedTeamId}/pitcher-stats`),
-        fetch(`/api/teams/${selectedTeamId}/spray-chart`)
-      ]);
-
-      if (matchesRes.ok) setMatches(await matchesRes.json());
-      if (bStatsRes.ok) setBatterStats(await bStatsRes.json());
-      if (pStatsRes.ok) setPitcherStats(await pStatsRes.json());
-      if (sprayRes.ok) setSprayData(await sprayRes.json());
-    } catch (e) { console.error(e); }
-    finally { setIsLoadingData(false); }
-  };
-
-  useEffect(() => { fetchTeams(); }, []);
-  useEffect(() => { fetchMatchesAndStats(); }, [selectedTeamId]);
-
-  const handleDeleteMatch = async (matchId: string) => {
-    if (!confirm('⚠️ 本当にこの試合を削除しますか？\n（入力したスコアや個人の成績データもすべて完全に消去され、元に戻せません！）')) return;
-    try {
-      const res = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' });
-      if (res.ok) {
-        toast.success("試合を削除しました");
-        await fetchMatchesAndStats();
-      } else toast.error('試合の削除に失敗しました');
-    } catch (e) { console.error(e); }
-  };
-
-  const startEditTeam = (team: Team) => { setEditingTeamId(team.id); setEditTeamName(team.name); };
-
-  const handleUpdateTeam = async () => {
-    if (!editTeamName.trim() || !editingTeamId) return;
-    try {
-      const res = await fetch(`/api/teams/${editingTeamId}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editTeamName })
-      });
-      if (res.ok) {
-        setEditingTeamId(null);
-        toast.success("編成名を更新しました");
-        await fetchTeams();
-      } else toast.error('更新に失敗しました');
-    } catch (e) { console.error(e); }
-  };
-
-  const handleDeleteTeam = async (targetTeamId: string) => {
-    if (!confirm('⚠️ 本当にこの編成を削除しますか？\n（所属選手やこれまでの試合データがすべて完全に消去されます！）')) return;
-    try {
-      const res = await fetch(`/api/teams/${targetTeamId}`, { method: 'DELETE' });
-      if (res.ok) {
-        if (selectedTeamId === targetTeamId) setSelectedTeamId("");
-        toast.success("編成を削除しました");
-        await fetchTeams();
-      } else toast.error('削除に失敗しました');
-    } catch (e) { console.error(e); }
-  };
-
-  const handleExportCSV = (type: "batter" | "pitcher") => {
-    let csvContent = "\uFEFF";
-    let filename = "";
-
-    if (type === "batter") {
-      filename = `打撃成績_${currentTeam?.name || "team"}_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}.csv`;
-      csvContent += "選手名,打率(AVG),出塁率(OBP),OPS,試合(打席),打数,安打,本塁打,四死球,三振\n";
-
-      batterStats.forEach(s => {
-        const avg = s.atBats > 0 ? (s.hits / s.atBats).toFixed(3) : "0.000";
-        const obp = s.plateAppearances > 0 ? ((s.hits + s.walks) / s.plateAppearances).toFixed(3) : "0.000";
-        const tb = s.singles + (s.doubles * 2) + (s.triples * 3) + (s.homeRuns * 4);
-        const slg = s.atBats > 0 ? (tb / s.atBats).toFixed(3) : "0.000";
-        const ops = (parseFloat(obp) + parseFloat(slg)).toFixed(3);
-
-        csvContent += `${s.playerName},${avg},${obp},${ops},${s.plateAppearances},${s.atBats},${s.hits},${s.homeRuns},${s.walks},${s.strikeouts}\n`;
-      });
-    } else {
-      filename = `投手成績_${currentTeam?.name || "team"}_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}.csv`;
-      csvContent += "選手名,投球回,奪三振,与四死球,被安打,対打者\n";
-
-      pitcherStats.forEach(s => {
-        const fullInnings = Math.floor(s.outs / 3);
-        const remainingOuts = s.outs % 3;
-        const ip = remainingOuts > 0 ? `${fullInnings} ${remainingOuts}/3` : `${fullInnings}`;
-        csvContent += `${s.playerName},${ip},${s.strikeouts},${s.walks},${s.hitsAllowed},${s.battersFaced}\n`;
-      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
     }
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast.success(`${type === 'batter' ? '打撃' : '投手'}成績をダウンロードしました！`);
   };
 
-  if (isSessionLoading || isLoadingTeams) {
-    return (
-      <div className="container mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-500">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-[24px] border border-border/50">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-          <Skeleton className="h-12 w-full sm:w-64 rounded-xl" />
-        </div>
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🚀 招待IDでチームを検索する
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const handleSearchTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchId.trim()) return;
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-48 rounded-[32px]" />
-          <Skeleton className="h-48 rounded-[32px] md:col-span-2" />
-        </div>
+    setIsSearching(true);
+    setSearchTeam(null);
+    try {
+      const res = await fetch(`/api/teams/search/${searchId.trim()}`);
+      const data = await res.json() as { success: boolean; team: Team; error?: string };
+      if (res.ok && data.success) {
+        setSearchTeam(data.team);
+        toast.success("チームが見つかりました！");
+      } else {
+        toast.error(data.error || "チームが見つかりません。IDを確認してください。");
+      }
+    } catch (e) {
+      toast.error("検索中にエラーが発生しました");
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
-        <Skeleton className="h-14 w-full max-w-2xl rounded-2xl" />
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🚀 見つかったチームに参加申請を送る
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const handleJoinTeam = async () => {
+    if (!searchedTeam) return;
+    setIsJoining(true);
+    try {
+      const res = await fetch(`/api/teams/${searchedTeam.id}/join`, { method: 'POST' });
+      const data = await res.json() as { success: boolean; message: string; error?: string };
+      if (res.ok && data.success) {
+        toast.success("監督に参加申請を送信しました！承認をお待ちください。");
+        setIsJoinModalOpen(false);
+        setSearchId("");
+        setSearchTeam(null);
+        fetchMyTeams(); // 一覧を再取得して「申請中」を表示
+      } else {
+        toast.error(data.error || "参加申請に失敗しました");
+      }
+    } catch (e) {
+      toast.error("通信エラーが発生しました");
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-40" />
-          <div className="grid gap-4 md:grid-cols-2">
-            <Skeleton className="h-56 rounded-[24px]" />
-            <Skeleton className="h-56 rounded-[24px]" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const currentTeam = teams.find(t => t.id === selectedTeamId);
-  const canEdit = currentTeam ? canEditScore(currentTeam.myRole) : false;
-
-  const completedMatches = matches.filter(m => m.status === 'completed');
-  const wins = completedMatches.filter(m => m.myScore > m.opponentScore).length;
-  const losses = completedMatches.filter(m => m.myScore < m.opponentScore).length;
-  const draws = completedMatches.filter(m => m.myScore === m.opponentScore).length;
-  const winRate = completedMatches.length > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
-
-  if (teams.length === 0) {
-    return (
-      <div className="container mx-auto max-w-xl px-4 py-20 animate-in slide-in-from-bottom-4 fade-in duration-500">
-        <div className="text-center mb-10">
-          <div className="h-28 w-28 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-primary/20 relative">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse shadow-xs" />
-            <RiTeamFill className="h-14 w-14 text-primary relative z-10" />
-          </div>
-          <h1 className="text-4xl font-black tracking-tight mb-4 drop-shadow-sm text-foreground">ようこそ i-Score へ！</h1>
-          {/* 💡 クラブ・チーム から チーム・編成 に修正 */}
-          <p className="text-muted-foreground font-extrabold text-lg">まずはあなたの「チーム」と「編成」を立ち上げましょう。</p>
-        </div>
-
-        <Card className="rounded-[32px] border-border/40 shadow-xs bg-card/80 backdrop-blur-2xl overflow-hidden text-center p-8 sm:p-12 relative group">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary/60 to-primary" />
-          {/* 💡 文言修正 */}
-          <p className="text-sm font-bold text-muted-foreground mb-8">
-            管理画面から、新しいチーム（組織）を作成し、その中に「1軍」や「ジュニア」などの編成を追加できます。
-          </p>
-
-          <Button asChild className="h-16 px-10 text-lg font-black rounded-[24px] shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:scale-[0.96]">
-            {/* 💡 ボタンテキスト修正 */}
-            <Link href="/teams">チーム・編成管理へ進む <ChevronRight className="ml-2 h-6 w-6 transition-transform group-hover:translate-x-1" /></Link>
-          </Button>
-        </Card>
-      </div>
-    );
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-500 pb-24">
-      {/* ヘッダー */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/80 backdrop-blur-xl p-4 sm:p-6 rounded-[24px] border border-border/50 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight">ダッシュボード</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">現在の権限</span>
-            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-black border border-primary/20">{currentTeam?.myRole}</span>
+    <div className="flex flex-col min-h-screen text-foreground pb-32 relative overflow-x-hidden p-4 sm:p-6 max-w-5xl mx-auto w-full mt-4">
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* 💡 初期状態（チームが0件の時のウェルカム画面） */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {teams.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 sm:py-20 animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <div className="w-24 h-24 bg-primary/10 rounded-[32px] flex items-center justify-center mb-8 border border-primary/20 shadow-inner rotate-3">
+            <RiTeamFill className="h-12 w-12 text-primary" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-center mb-4">i-score へようこそ！</h1>
+          <p className="text-muted-foreground font-bold text-center mb-12 max-w-md">
+            スコアの入力や成績の確認を行うには、まずチームを作成するか、既存のチームに参加してください。
+          </p>
+
+          <div className="grid sm:grid-cols-2 gap-6 w-full max-w-2xl">
+            {/* アクション1：既存チームに参加する（保護者・選手向けメイン導線） */}
+            <Card className="rounded-[32px] border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group shadow-sm" onClick={() => setIsJoinModalOpen(true)}>
+              <CardContent className="p-8 flex flex-col items-center text-center h-full">
+                <div className="p-4 bg-primary/20 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                  <Search className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-black mb-2 text-primary">チームに参加する</h3>
+                <p className="text-sm font-bold text-primary/70 mb-6">
+                  監督から共有された「招待ID」を使って、既存のチームに参加申請を送ります。
+                </p>
+                <Button variant="default" className="mt-auto rounded-full w-full font-black">
+                  IDを入力する <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* アクション2：新しくチームを作る（監督・代表者向け導線） */}
+            <Card className="rounded-[32px] border-border/50 bg-card hover:border-primary/30 transition-colors cursor-pointer group shadow-sm" onClick={() => router.push('/teams')}>
+              <CardContent className="p-8 flex flex-col items-center text-center h-full">
+                <div className="p-4 bg-muted rounded-full mb-4 group-hover:scale-110 transition-transform">
+                  <Plus className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-black mb-2">チームを新しく作る</h3>
+                <p className="text-sm font-bold text-muted-foreground mb-6">
+                  あなたが監督や代表者として、新しいチームを作成してメンバーを招待します。
+                </p>
+                <Button variant="outline" className="mt-auto rounded-full w-full font-black border-2">
+                  作成画面へ <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* 💡 セレクトボックスの選択肢に「年度」や「階層」を追加！ */}
-          <Select
-            value={selectedTeamId}
-            onChange={(e) => handleTeamChange(e.target.value)}
-            className="w-full sm:w-80 font-bold"
-          >
-            {teams.map(t => (
-              <option key={t.id} value={t.id}>
-                {t.year ? `${t.year}年度 ` : ''}{t.name} {t.tier ? `(${t.tier})` : ''}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </div>
-
-      {/* ヒーローセクション */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {canEdit && (
-          <Link href={`/matches/new?teamId=${selectedTeamId}`} className="block outline-none rounded-[32px]">
-            <Card className="relative overflow-hidden group rounded-[32px] border-primary/30 bg-primary/5 shadow-xs transition-all duration-300 hover:shadow-md hover:border-primary/50 hover:-translate-y-1 cursor-pointer h-full">
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl flex items-center gap-3 text-primary font-black">
-                    <div className="p-2.5 bg-primary/20 rounded-2xl"><FaBaseballBatBall className="h-6 w-6" /></div>
-                    新しい試合を記録
-                  </CardTitle>
-                  <CardDescription className="text-sm font-bold mt-2 text-primary/70">スコアブックの入力を開始します</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-center w-full rounded-2xl h-14 text-base font-black shadow-sm bg-primary text-primary-foreground group-hover:bg-primary/90 transition-colors">
-                    試合作成へ進む <ChevronRight className="ml-2 h-5 w-5" />
-                  </div>
+      ) : (
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+        /* 💡 チーム所属済みのダッシュボード（既存実装のプレースホルダー） */
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+        <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-black">あなたのチーム</h1>
+            <Button variant="outline" onClick={() => setIsJoinModalOpen(true)} className="rounded-full font-bold">
+              <UserPlus className="h-4 w-4 mr-2" /> 他のチームに参加
+            </Button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {teams.map(team => (
+              <Card key={team.id} className="rounded-[24px] border-border/50 shadow-sm cursor-pointer hover:border-primary/50 transition-colors" onClick={() => {
+                // 申請中は入れないようにするガード
+                if (team.status === 'pending') {
+                  toast.info("現在、監督の承認待ちです。");
+                  return;
+                }
+                localStorage.setItem("iScore_selectedTeamId", team.id);
+                router.push('/teams');
+              }}>
+                <CardContent className="p-6">
+                  {team.status === 'pending' && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black bg-orange-500/10 text-orange-500 border border-orange-500/20 mb-3">
+                      ⏳ 承認待ち
+                    </span>
+                  )}
+                  <h3 className="text-xl font-black">{team.name}</h3>
+                  <p className="text-sm text-muted-foreground font-bold mt-1">{team.year}年度 {team.tier ? `/ ${team.tier}` : ''}</p>
                 </CardContent>
-              </div>
-            </Card>
-          </Link>
-        )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
-        <Card className="rounded-[32px] border-border/20 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-black text-white overflow-hidden relative md:col-span-2">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-primary/30 blur-[60px] rounded-full pointer-events-none"></div>
-          <CardContent className="p-6 sm:p-8 relative z-10 h-full flex flex-col justify-center">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
-              <div className="space-y-3 w-full sm:w-auto">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* 💡 チーム参加申請モーダル（美しいDrawer風） */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {isJoinModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setIsJoinModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[32px] overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-500 border border-border/50">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
+            <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-border/50 sm:hidden" />
 
-                {/* 💡 固定文字を廃止し、編成のバッジを美しく並べる */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {currentTeam?.year && (
-                    <span className="inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black bg-emerald-500/20 text-emerald-400 uppercase tracking-widest border border-emerald-500/30 shadow-sm">{currentTeam.year}年度</span>
-                  )}
-                  {currentTeam?.tier && (
-                    <span className="inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black bg-blue-500/20 text-blue-400 uppercase tracking-widest border border-blue-500/30 shadow-sm">{currentTeam.tier}</span>
-                  )}
-                  {currentTeam?.generation && (
-                    <span className="inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black bg-purple-500/20 text-purple-400 uppercase tracking-widest border border-purple-500/30 shadow-sm">{currentTeam.generation}</span>
-                  )}
-                  {!currentTeam?.year && !currentTeam?.tier && !currentTeam?.generation && (
-                    <span className="inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black bg-white/10 text-white/70 uppercase tracking-widest border border-white/20">Active Roster</span>
-                  )}
-                </div>
+            <div className="relative z-10 px-6 sm:px-8 pt-6 pb-4 flex items-center justify-between border-b border-border/50">
+              <h2 className="text-xl font-black flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-2xl text-primary"><Search className="h-5 w-5" /></div>
+                チームを探す
+              </h2>
+              <Button variant="ghost" size="icon" onClick={() => setIsJoinModalOpen(false)} className="rounded-full"><X className="h-5 w-5" /></Button>
+            </div>
 
-                {editingTeamId === currentTeam?.id ? (
-                  <div className="flex items-center gap-2 mt-2 animate-in fade-in zoom-in duration-200">
-                    <input type="text" value={editTeamName} onChange={(e) => setEditTeamName(e.target.value)} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-2 text-2xl sm:text-3xl font-black w-full outline-none focus:border-primary text-white shadow-inner" autoFocus />
-                    <Button size="icon" className="h-12 w-12 bg-green-500 hover:bg-green-600 text-white shrink-0 rounded-2xl shadow-md" onClick={handleUpdateTeam}><Check className="h-6 w-6" /></Button>
-                    <Button size="icon" variant="ghost" className="h-12 w-12 shrink-0 text-white hover:bg-white/10 rounded-2xl" onClick={() => setEditingTeamId(null)}><X className="h-6 w-6" /></Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 group mt-2">
-                    <h2 className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-sm">{currentTeam?.name}</h2>
-                    {(canManageTeam(currentTeam?.myRole) || userRole === ROLES.ADMIN) && (
-                      <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                        <Button size="icon-sm" variant="ghost" className="h-9 w-9 text-white/50 hover:text-white hover:bg-white/10 rounded-xl" onClick={() => currentTeam && startEditTeam(currentTeam)}><Edit2 className="h-4 w-4" /></Button>
-                        <Button size="icon-sm" variant="ghost" className="h-9 w-9 text-white/50 hover:text-red-400 hover:bg-red-400/20 rounded-xl" onClick={() => currentTeam && handleDeleteTeam(currentTeam.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="pt-2">
-                  <Button asChild variant="secondary" size="sm" className="rounded-[14px] font-extrabold bg-white/10 hover:bg-white/20 text-white border border-white/10 backdrop-blur-md h-10 px-4 shadow-sm">
-                    <Link href={`/teams/roster?id=${currentTeam?.id}`}><Users className="h-4 w-4 mr-2 opacity-80" /> 選手名簿の管理</Link>
+            <div className="relative z-10 p-6 sm:p-8 space-y-6">
+              <form onSubmit={handleSearchTeam} className="space-y-4">
+                <label className="text-sm font-black">監督から共有された招待ID</label>
+                <div className="flex gap-2">
+                  <Input
+                    autoFocus
+                    placeholder="例: a1b2c3d4-..."
+                    className="h-12 rounded-[16px] font-mono text-sm bg-background border-border/50"
+                    value={searchId}
+                    onChange={(e) => setSearchId(e.target.value)}
+                    disabled={isSearching || isJoining}
+                  />
+                  <Button type="submit" disabled={isSearching || isJoining || !searchId.trim()} className="h-12 px-6 rounded-[16px] font-black">
+                    {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "検索"}
                   </Button>
                 </div>
-              </div>
+              </form>
 
-              <div className="flex items-center justify-between gap-4 bg-white/5 backdrop-blur-xl p-4 sm:px-6 sm:py-5 rounded-[24px] border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.12)] w-full sm:w-auto">
-                <div className="text-center">
-                  <div className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-1">Wins</div>
-                  <div className="text-3xl sm:text-4xl font-black text-primary drop-shadow-sm leading-none">{wins}</div>
+              {/* チームが見つかった時の表示エリア */}
+              {searchedTeam && (
+                <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                  <div className="p-5 bg-primary/5 border border-primary/20 rounded-[20px] text-center space-y-3 mb-4 shadow-inner">
+                    <ShieldCheck className="h-8 w-8 text-primary mx-auto mb-2" />
+                    <p className="text-xs font-black text-primary/70 uppercase tracking-widest">チームが見つかりました</p>
+                    <h3 className="text-2xl font-black text-foreground">{searchedTeam.name}</h3>
+                    <p className="text-sm font-bold text-muted-foreground">{searchedTeam.year}年度 {searchedTeam.tier ? `/ ${searchedTeam.tier}` : ''}</p>
+                  </div>
+                  <Button onClick={handleJoinTeam} disabled={isJoining} className="w-full h-14 rounded-[20px] text-lg font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all active:scale-[0.98]">
+                    {isJoining ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : "このチームに参加申請を送る"}
+                  </Button>
                 </div>
-                <div className="w-px h-12 bg-white/10 rounded-full" />
-                <div className="text-center">
-                  <div className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-1">Losses</div>
-                  <div className="text-3xl sm:text-4xl font-black text-white/80 leading-none">{losses}</div>
-                </div>
-                {draws > 0 && (
-                  <>
-                    <div className="w-px h-12 bg-white/10 rounded-full" />
-                    <div className="text-center">
-                      <div className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-1">Draws</div>
-                      <div className="text-3xl sm:text-4xl font-black text-white/60 leading-none">{draws}</div>
-                    </div>
-                  </>
-                )}
-                <div className="w-px h-12 bg-white/10 rounded-full" />
-                <div className="text-center">
-                  <div className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-1">Win %</div>
-                  <div className="text-3xl sm:text-4xl font-black text-white drop-shadow-sm leading-none">{winRate}<span className="text-base ml-0.5 text-white/50">%</span></div>
-                </div>
-              </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* セグメントタブ */}
-      <div className="flex bg-muted/30 p-1.5 rounded-[20px] border border-border/50 max-w-3xl overflow-x-auto scrollbar-hide shadow-inner">
-        <button onClick={() => setActiveTab("matches")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "matches" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
-          <History className="h-4 w-4" /> <span className="hidden sm:inline">試合</span>結果
-        </button>
-        <button onClick={() => setActiveTab("batterStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "batterStats" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
-          <BarChart3 className="h-4 w-4" /> 打撃<span className="hidden sm:inline">成績</span>
-        </button>
-        <button onClick={() => setActiveTab("pitcherStats")} className={cn("flex-1 min-w-[110px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "pitcherStats" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
-          <Activity className="h-4 w-4" /> 投手<span className="hidden sm:inline">成績</span>
-        </button>
-        <button onClick={() => setActiveTab("sprayChart")} className={cn("flex-1 min-w-[130px] py-3 text-sm font-extrabold rounded-[14px] transition-all duration-200 flex items-center justify-center gap-2", activeTab === "sprayChart" ? "bg-card shadow-xs text-primary border border-border/50" : "text-muted-foreground hover:text-foreground active:scale-95")}>
-          <Map className="h-4 w-4" /> <span className="hidden sm:inline">スプレー</span>チャート
-        </button>
-      </div>
-
-      {/* タブコンテンツ */}
-      <div className="space-y-6">
-        {activeTab === "matches" && (
-          <RecentMatches matches={matches} isLoadingData={isLoadingData} currentTeam={currentTeam} canEdit={canEdit} onDeleteMatch={handleDeleteMatch} />
-        )}
-        {activeTab === "batterStats" && (
-          <BatterStatsTable stats={batterStats} isLoadingData={isLoadingData} onExportCSV={() => handleExportCSV('batter')} />
-        )}
-        {activeTab === "pitcherStats" && (
-          <PitcherStatsTable stats={pitcherStats} isLoadingData={isLoadingData} onExportCSV={() => handleExportCSV('pitcher')} />
-        )}
-        {activeTab === "sprayChart" && (
-          <SprayChartArea sprayData={sprayData} />
-        )}
-      </div>
-
+          </div>
+        </div>
+      )}
     </div>
   );
 }

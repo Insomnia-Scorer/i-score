@@ -148,6 +148,13 @@
       "when": 1774282642847,
       "tag": "0020_regular_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1774447631317,
+      "tag": "0021_colorful_kronos",
+      "breakpoints": true
     }
   ]
 }
