@@ -1,37 +1,32 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-// 💡 修正: 環境によって next/navigation が解決できない場合があるため、
-// window.location を利用したナビゲーションへ移行し、エラーを回避します。
 import {
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
+  CardContent
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   Play,
-  CheckCircle2,
-  Clock,
   Trophy,
   Users,
-  Calendar,
   ChevronRight,
   Sparkles,
   Loader2,
   TrendingUp,
-  History
+  History,
+  Target,
+  BarChart3,
+  Settings,
+  Moon,
+  Sun
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚾️ 型定義（型安全プロトコル適用）
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💡 テーマ切り替え用のライブラリ（next-themes等）があることを想定
+// もしない場合は標準のクラス制御として機能します
 
 interface Match {
   id: string;
@@ -54,20 +49,9 @@ interface DashboardData {
   };
 }
 
-interface GeminiAnalysisResponse {
-  candidates?: {
-    content?: {
-      parts?: {
-        text?: string;
-      }[];
-    };
-  }[];
-  error?: { message: string };
-}
-
 /**
- * ⚾️ ダッシュボード・コンポーネント
- * 試合一覧、クイック統計、AIチーム分析を表示します。
+ * ⚾️ プロフェッショナル・ハイブリッド・ダッシュボード
+ * ライト/ダーク両モードで「プロの風格」を維持する、セマンティック・デザイン。
  */
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -75,36 +59,25 @@ export default function DashboardPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiTip, setAiTip] = useState<string | null>(null);
 
-  // 💡 ナビゲーション関数の定義 (window.location を使用)
   const navigateTo = (path: string) => {
     if (typeof window !== "undefined") {
       window.location.href = path;
     }
   };
 
-  // 💡 データの取得
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // 本来は Firebase や API から取得
         const res = await fetch('/api/dashboard/summary');
-        // 型アサーションにより unknown 型エラーを防止
         const result = (await res.json()) as DashboardData;
-
-        if (result.success) {
-          setData(result);
-        } else {
-          // モックデータをセット（デモ用）
-          setMockData();
-        }
+        if (result.success) setData(result);
+        else setMockData();
       } catch (e) {
-        console.error("Dashboard fetch error:", e);
         setMockData();
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchDashboardData();
   }, []);
 
@@ -114,34 +87,28 @@ export default function DashboardPage() {
       matches: [
         { id: "m1", opponentName: "ライオンズ", date: "2024-03-27", status: 'ongoing', myScore: 5, opponentScore: 3, venue: "第一球場" },
         { id: "m2", opponentName: "タイガース", date: "2024-03-24", status: 'finished', myScore: 2, opponentScore: 1, venue: "市民球場" },
-        { id: "m3", opponentName: "ホークス", date: "2024-04-01", status: 'scheduled', myScore: 0, opponentScore: 0, venue: "河川敷A" },
       ],
       stats: { totalGames: 12, wins: 8, draws: 1, losses: 3 }
     });
   };
 
-  // 💡 Gemini による「今日のチーム方針」生成
   const generateAiTip = async () => {
     setIsAnalyzing(true);
     try {
-      const prompt = `現在の戦績は${data?.stats.wins}勝${data?.stats.losses}敗です。次の試合に向けて、チームの士気を高める短い格言またはアドバイスを1つ、野球の監督風に日本語で生成してください。`;
       const apiKey = "";
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          systemInstruction: { parts: [{ text: "あなたは情熱的で信頼される野球チームの監督です。" }] }
+          contents: [{ parts: [{ text: "野球の監督として短い激励を。" }] }],
         })
       });
-
-      const result = (await res.json()) as GeminiAnalysisResponse;
+      const result = await res.json();
       const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (text) setAiTip(text.trim());
     } catch (e) {
-      toast.error("AIアドバイスの生成に失敗しました");
+      toast.error("AI分析に失敗しました");
     } finally {
       setIsAnalyzing(false);
     }
@@ -149,168 +116,218 @@ export default function DashboardPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-950">
+      <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
+  const winRate = Math.round((data.stats.wins / data.stats.totalGames) * 100);
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pb-20">
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          1. ヘッダー: 監督挨拶 & 新規試合
-          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <header className="px-6 pt-10 pb-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-black tracking-tighter uppercase italic text-white">
-              Manager Dashboard
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-white transition-colors duration-500">
+
+      {/* 💡 動的背景: モードによって色調が変化 */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/10 blur-[100px] rounded-full dark:bg-primary/20" />
+        <div className="absolute bottom-[10%] -right-[5%] w-[30%] h-[30%] bg-blue-500/5 blur-[80px] rounded-full dark:bg-blue-500/10" />
+      </div>
+
+      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
+
+        {/* HEADER: モードに関わらず「白文字」が映えるスタイルから、セマンティックへ */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 rounded-full px-3 py-0.5 text-[10px] font-black tracking-widest uppercase">
+                Team Control
+              </Badge>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Analytics Ready</span>
+            </div>
+            <h1 className="text-5xl font-black tracking-tighter italic uppercase text-foreground drop-shadow-sm">
+              I-SCORE <span className="text-primary underline decoration-primary/30 underline-offset-8">DASH</span>
             </h1>
-            <p className="text-zinc-500 font-bold text-sm">Welcome back, Coach!</p>
           </div>
-          <Button
-            onClick={() => navigateTo('/matches/create')}
-            className="rounded-2xl h-14 px-6 bg-primary text-primary-foreground font-black shadow-lg shadow-primary/20 active:scale-95 transition-all"
-          >
-            <Plus className="h-5 w-5 mr-2" /> 新規試合
-          </Button>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="rounded-2xl border-input bg-background hover:bg-accent h-14 w-14 p-0 shadow-sm"
+              onClick={() => navigateTo('/settings')}
+            >
+              <Settings className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <Button
+              onClick={() => navigateTo('/matches/create')}
+              className="rounded-2xl h-14 px-8 bg-primary text-primary-foreground font-black text-lg shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3"
+            >
+              <Plus className="h-6 w-6 stroke-[3px]" /> PLAY BALL
+            </Button>
+          </div>
         </div>
 
-        {/* 💡 AI チームアドバイス */}
-        <Card className="border-primary/20 bg-primary/5 rounded-[32px] overflow-hidden">
-          <CardContent className="p-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/20 rounded-2xl text-primary animate-pulse">
-                <Sparkles className="h-5 w-5" />
+        {/* AI INSIGHT: ライト/ダークで背景透過度を調整 */}
+        <section
+          className="relative group cursor-pointer"
+          onClick={!aiTip ? generateAiTip : undefined}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-blue-500/10 blur-xl opacity-30 group-hover:opacity-60 transition-opacity" />
+          <Card className="relative border-border bg-card/60 dark:bg-zinc-900/40 backdrop-blur-md rounded-[32px] overflow-hidden shadow-sm">
+            <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-6">
+              <div className="relative">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                  <Sparkles className={cn("h-8 w-8", isAnalyzing && "animate-spin")} />
+                </div>
               </div>
-              <p className="text-sm font-bold leading-relaxed">
-                {aiTip || "今日のチームへのアドバイスを生成しましょう。"}
-              </p>
-            </div>
-            {!aiTip && (
-              <Button size="sm" onClick={generateAiTip} disabled={isAnalyzing} variant="ghost" className="text-primary font-black text-xs shrink-0">
-                {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
-                分析
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </header>
-
-      <main className="px-6 space-y-8">
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            2. 統計サマリー
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Total Games", value: data.stats.totalGames, icon: History, color: "text-blue-500" },
-            { label: "Wins", value: data.stats.wins, icon: Trophy, color: "text-yellow-500" },
-            { label: "Draws", value: data.stats.draws, icon: Calendar, color: "text-zinc-500" },
-            { label: "Win Rate", value: `${Math.round((data.stats.wins / data.stats.totalGames) * 100)}%`, icon: TrendingUp, color: "text-emerald-500" },
-          ].map((item, i) => (
-            <Card key={i} className="bg-zinc-900 border-zinc-800 rounded-3xl">
-              <CardContent className="p-5 flex flex-col items-center gap-2">
-                <item.icon className={cn("h-5 w-5 opacity-50", item.color)} />
-                <p className="text-2xl font-black tabular-nums">{item.value}</p>
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{item.label}</p>
-              </CardContent>
-            </Card>
-          ))}
+              <div className="flex-1 space-y-1 text-center sm:text-left">
+                <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Strategy Insight</p>
+                <h3 className="text-xl font-bold leading-tight text-foreground">
+                  {aiTip ? aiTip : "現在の戦績を分析し、今日の勝利への格言を提示します。"}
+                </h3>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            3. 直近の試合リスト
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-lg font-black uppercase tracking-widest flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" /> Recent Matches
-            </h2>
-            <Button variant="link" className="text-xs text-zinc-500 font-bold">すべて見る</Button>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          <div className="grid grid-cols-1 gap-4">
-            {data.matches.map((match) => (
-              <Card
-                key={match.id}
-                className="bg-zinc-900 border-zinc-800 rounded-[32px] overflow-hidden hover:border-primary/30 transition-all group cursor-pointer"
-                onClick={() => navigateTo(match.status === 'finished' ? `/matches/result?id=${match.id}` : `/matches/score?id=${match.id}`)}
-              >
-                <CardContent className="p-0">
-                  <div className="flex items-stretch">
-                    {/* ステータスバー */}
-                    <div className={cn(
-                      "w-2",
-                      match.status === 'ongoing' ? "bg-primary" :
-                        match.status === 'finished' ? "bg-zinc-700" : "bg-blue-500"
-                    )} />
+          {/* STATS: グラデーションの色調を調整 */}
+          <div className="lg:col-span-1 space-y-6">
+            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground pl-2">Season Stats</h2>
 
-                    <div className="flex-1 p-6 flex items-center justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={cn(
-                            "rounded-full text-[10px] font-black px-2 py-0",
-                            match.status === 'ongoing' ? "border-primary text-primary bg-primary/5" : "text-zinc-500"
-                          )}>
-                            {match.status.toUpperCase()}
-                          </Badge>
-                          <span className="text-xs font-bold text-zinc-500">{match.date} @ {match.venue}</span>
-                        </div>
-                        <h3 className="text-xl font-black">
-                          vs <span className="text-white group-hover:text-primary transition-colors">{match.opponentName}</span>
-                        </h3>
-                      </div>
-
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Score</p>
-                          <p className="text-2xl font-black tabular-nums">
-                            {match.myScore} - {match.opponentScore}
-                          </p>
-                        </div>
-                        <div className="h-12 w-12 rounded-2xl bg-zinc-800 flex items-center justify-center group-hover:bg-primary transition-all">
-                          {match.status === 'finished' ? (
-                            <CheckCircle2 className="h-6 w-6 text-zinc-500 group-hover:text-primary-foreground" />
-                          ) : (
-                            <Play className="h-6 w-6 text-primary group-hover:text-primary-foreground fill-current" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
+            <div className="grid grid-cols-1 gap-4">
+              <Card className="bg-gradient-to-br from-card to-background dark:from-zinc-900 dark:to-black border-border rounded-[32px] overflow-hidden shadow-lg">
+                <CardContent className="p-8 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Trophy className="h-8 w-8 text-yellow-500" />
+                    <span className="text-[10px] font-black uppercase text-muted-foreground">Win Rate</span>
+                  </div>
+                  <div>
+                    <span className="text-6xl font-black tabular-nums tracking-tighter text-foreground">{winRate}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-primary" style={{ width: `${winRate}%` }} />
+                  </div>
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-2">
+                    <span>{data.stats.wins} WINS</span>
+                    <span>{data.stats.losses} LOSSES</span>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </section>
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            4. クイックメニュー
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <section className="grid grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            onClick={() => navigateTo('/players')}
-            className="h-20 rounded-[28px] border-zinc-800 bg-zinc-900/50 font-black flex flex-col gap-1 transition-all hover:bg-zinc-800"
-          >
-            <Users className="h-5 w-5 text-zinc-500" />
-            <span className="text-xs">選手名簿</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigateTo('/stats/season')}
-            className="h-20 rounded-[28px] border-zinc-800 bg-zinc-900/50 font-black flex flex-col gap-1 transition-all hover:bg-zinc-800"
-          >
-            <TrendingUp className="h-5 w-5 text-zinc-500" />
-            <span className="text-xs">全体統計</span>
-          </Button>
-        </section>
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-card border-border rounded-3xl">
+                  <CardContent className="p-5 space-y-1 text-center">
+                    <p className="text-2xl font-black tabular-nums text-foreground">{data.stats.totalGames}</p>
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Total</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card border-border rounded-3xl">
+                  <CardContent className="p-5 space-y-1 text-center">
+                    <p className="text-2xl font-black tabular-nums text-foreground">{data.stats.draws}</p>
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Draws</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigateTo('/players')}
+                className="h-16 rounded-2xl border-border bg-card hover:bg-primary hover:text-primary-foreground group transition-all shadow-sm"
+              >
+                <Users className="h-5 w-5 mr-3 text-muted-foreground group-hover:text-primary-foreground" />
+                <span className="font-black text-xs uppercase tracking-widest">Player Roster</span>
+                <ChevronRight className="ml-auto h-4 w-4 opacity-0 group-hover:opacity-100" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigateTo('/tournaments')}
+                className="h-16 rounded-2xl border-border bg-card hover:bg-primary hover:text-primary-foreground group transition-all shadow-sm"
+              >
+                <BarChart3 className="h-5 w-5 mr-3 text-muted-foreground group-hover:text-primary-foreground" />
+                <span className="font-black text-xs uppercase tracking-widest">Tournaments</span>
+                <ChevronRight className="ml-auto h-4 w-4 opacity-0 group-hover:opacity-100" />
+              </Button>
+            </div>
+          </div>
+
+          {/* MATCH LIST: モードでホバー時の挙動を調整 */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">Match History</h2>
+              <Button variant="ghost" className="text-[10px] font-black uppercase text-muted-foreground hover:text-primary">More View</Button>
+            </div>
+
+            <div className="space-y-4">
+              {data.matches.map((match) => (
+                <Card
+                  key={match.id}
+                  className={cn(
+                    "bg-card/40 dark:bg-zinc-900/30 border-border rounded-[32px] overflow-hidden transition-all duration-300 group hover:-translate-y-1 cursor-pointer shadow-sm",
+                    match.status === 'ongoing' ? "ring-2 ring-primary/40 dark:ring-primary/20 shadow-xl" : "hover:bg-card dark:hover:bg-zinc-900/50"
+                  )}
+                  onClick={() => navigateTo(match.status === 'finished' ? `/matches/result?id=${match.id}` : `/matches/score?id=${match.id}`)}
+                >
+                  <CardContent className="p-0">
+                    <div className="flex flex-col sm:flex-row items-stretch">
+                      <div className={cn(
+                        "w-full sm:w-24 flex items-center justify-center p-4 border-b sm:border-b-0 sm:border-r border-border transition-colors",
+                        match.status === 'ongoing' ? "bg-primary/10" : "bg-muted/50"
+                      )}>
+                        {match.status === 'ongoing' ? (
+                          <div className="flex flex-col items-center gap-1 animate-pulse">
+                            <span className="relative flex h-3 w-3">
+                              <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                            </span>
+                            <span className="text-[9px] font-black text-primary uppercase">Live</span>
+                          </div>
+                        ) : (
+                          <History className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 p-6 flex items-center justify-between gap-6">
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-bold text-muted-foreground tracking-tight">{match.date} • {match.venue}</p>
+                          <h3 className="text-2xl font-black italic text-foreground">
+                            VS <span className="group-hover:text-primary transition-colors">{match.opponentName}</span>
+                          </h3>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                          <div className="text-center">
+                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Score</p>
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                "text-3xl font-black tabular-nums tracking-tighter",
+                                match.myScore > match.opponentScore ? "text-primary" : "text-foreground"
+                              )}>{match.myScore}</span>
+                              <span className="text-muted-foreground font-black">-</span>
+                              <span className="text-3xl font-black tabular-nums tracking-tighter text-muted-foreground">{match.opponentScore}</span>
+                            </div>
+                          </div>
+                          <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center border border-border group-hover:bg-primary group-hover:border-primary transition-all">
+                            <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary-foreground" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
       </main>
 
-      {/* フッター装飾 */}
-      <div className="mt-12 text-center opacity-20">
-        <p className="text-[10px] font-black tracking-[0.3em] uppercase">i-Score Professional Baseball Analytics</p>
-      </div>
+      <footer className="mt-20 py-10 border-t border-border text-center">
+        <p className="text-[10px] font-black tracking-[0.5em] text-muted-foreground uppercase">
+          Precision Integrity Passion & Analytics
+        </p>
+      </footer>
     </div>
   );
 }
