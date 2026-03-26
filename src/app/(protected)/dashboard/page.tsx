@@ -155,7 +155,7 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 relative pb-20 overflow-x-hidden">
+    <div className="min-h-screen text-foreground transition-colors duration-500 relative pb-20 overflow-x-hidden">
 
       {/* 💡 背景グラデーション: TeamPage/ScorePageと完全に統一（5%濃度） */}
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(var(--primary),0.05),transparent)] pointer-events-none -z-10" />
