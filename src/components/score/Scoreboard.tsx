@@ -1,178 +1,156 @@
 // src/components/score/Scoreboard.tsx
 "use client";
 
-import { ChevronLeft, CalendarDays, Trophy, MapPin, Shield, Swords } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useScore } from "@/contexts/ScoreContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { useScore } from "@/contexts/ScoreContext";
 
-// 💡 チームのスコア情報
-export interface TeamScore {
-    name: string;
-    isSelf: boolean;
-    innings: (number | null)[]; // イニングごとの得点 (null はまだプレイしていない回)
-    runs: number;   // R: 合計得点
-    hits: number;   // H: 安打数
-    errors: number; // E: 失策数
-}
+export function Scoreboard() {
+    const { state } = useScore();
 
-export interface ScoreboardProps {
-    matchInfo?: {
-        season: string;
-        matchType: string;
-        location: string;
-        totalInnings: number; // 試合作成時に設定したイニング数 (例: 7)
-        currentInning: number;
-        isTopHalf: boolean;
-    };
-    topTeam?: TeamScore;    // 先攻
-    bottomTeam?: TeamScore; // 後攻
-}
-
-export function Scoreboard({
-    // 💡 確認用にデフォルト値(ダミーデータ)を設定しています
-    matchInfo = {
-        season: "2026",
-        matchType: "official",
-        location: "多摩川グラウンド",
-        totalInnings: 7, // 7回制
-        currentInning: 3,
-        isTopHalf: false, // 3回裏
-    },
-    topTeam = {
-        name: "世田谷西シニア",
-        isSelf: false,
-        innings: [0, 2, 0, null, null, null, null],
-        runs: 2,
-        hits: 4,
-        errors: 0,
-    },
-    bottomTeam = {
-        name: "自チーム名イーグルス",
-        isSelf: true,
-        innings: [1, 0, null, null, null, null, null], // 現在3回裏攻撃中
-        runs: 1,
-        hits: 2,
-        errors: 1,
-    }
-}: ScoreboardProps) {
-    // 💡 ここでContextから「現在のイニング」と「得点」を取得！
-    const { currentInning, score } = useScore();
-    // 試合種別のラベル変換
-    const getMatchTypeLabel = (type: string) => {
-        switch (type) {
-            case "practice": return "練習試合";
-            case "official": return "公式戦";
-            case "tournament": return "大会";
-            default: return "その他";
-        }
+    // BSOのドットを描画するヘルパー
+    const renderDots = (count: number, max: number, activeColor: string) => {
+        return Array.from({ length: max }).map((_, i) => (
+            <div
+                key={i}
+                className={cn(
+                    "h-4 w-4 rounded-full border-2 transition-all duration-200",
+                    i < count
+                        ? `${activeColor} border-transparent scale-110`
+                        : "bg-zinc-800 border-zinc-700"
+                )}
+            />
+        ));
     };
 
-    // 💡 描画するイニング列の数を計算 (設定イニングか、現在のイニングの大きい方。延長戦対応)
-    const displayInningsCount = Math.max(matchInfo.totalInnings, currentInning.num);
-    const inningsArray = Array.from({ length: displayInningsCount }, (_, i) => i + 1);
+    // ラインスコア（1〜9回＋α）の表示用配列を作成
+    const maxInnings = Math.max(9, state.inning, state.myInningScores.length, state.opponentInningScores.length);
+    const inningsArray = Array.from({ length: maxInnings }, (_, i) => i + 1);
 
     return (
-        <div className="animate-in fade-in duration-500 mb-6">
-            {/* 1. ヘッダー情報 (戻るボタン & バッジ) */}
-            <div className="flex flex-col items-start gap-3 mb-4">
-                <Button variant="ghost" asChild className="rounded-full pl-2 pr-4 hover:bg-muted text-muted-foreground font-extrabold -ml-2 transition-transform active:scale-95">
-                    <Link href="/dashboard"><ChevronLeft className="h-5 w-5 mr-1" /> ダッシュボード</Link>
-                </Button>
-                <div className="flex flex-wrap items-center gap-2">
-                    {matchInfo.season && (
-                        <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                            <CalendarDays className="h-3.5 w-3.5 mr-1" /> {matchInfo.season}年度
-                        </span>
-                    )}
-                    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                        <Trophy className="h-3.5 w-3.5 mr-1" /> {getMatchTypeLabel(matchInfo.matchType)}
-                    </span>
-                    {matchInfo.location && (
-                        <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black bg-orange-500/10 text-orange-500 border border-orange-500/20 hidden sm:inline-flex">
-                            <MapPin className="h-3.5 w-3.5 mr-1" /> {matchInfo.location}
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            {/* 2. 電光掲示板 (スコアボード本体) */}
-            <Card className="rounded-[24px] border-border/50 bg-card/90 backdrop-blur-xl shadow-lg overflow-hidden relative">
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-primary/5 blur-[60px] rounded-full pointer-events-none" />
-
-                <CardContent className="p-0 relative z-10">
-                    {/* 横スクロール可能なコンテナ (スマホでイニングが増えても破綻しない) */}
-                    <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm sm:text-base text-center whitespace-nowrap">
-                            <thead>
-                                <tr className="border-b border-border/40 bg-muted/20">
-                                    {/* チーム名列のヘッダー */}
-                                    <th className="px-4 py-2 sm:py-3 text-left font-bold text-muted-foreground w-32 sm:w-48 sticky left-0 bg-card/95 backdrop-blur-sm z-20 border-r border-border/40">
-                                        TEAM
-                                    </th>
-                                    {/* イニング列 */}
-                                    {inningsArray.map((inning) => (
-                                        <th
-                                            key={inning}
-                                            className={cn(
-                                                "px-3 py-2 sm:py-3 font-black w-10 sm:w-12 transition-colors",
-                                                matchInfo.currentInning === inning ? "text-primary bg-primary/5" : "text-muted-foreground"
-                                            )}
-                                        >
-                                            {inning}
-                                        </th>
-                                    ))}
-                                    {/* R, H, E 列 */}
-                                    <th className="px-3 py-2 sm:py-3 font-black text-foreground w-12 border-l border-border/40 bg-muted/30">R</th>
-                                    <th className="px-3 py-2 sm:py-3 font-bold text-muted-foreground w-10 bg-muted/30 text-xs sm:text-sm">H</th>
-                                    <th className="px-3 py-2 sm:py-3 font-bold text-muted-foreground w-10 bg-muted/30 text-xs sm:text-sm">E</th>
-                                </tr>
-                            </thead>
-                            <tbody className="font-mono tabular-nums text-lg sm:text-xl font-black">
-                                {/* ⚾️ 先攻チームの行 */}
-                                <tr className="border-b border-border/20">
-                                    <td className="px-4 py-3 sm:py-4 text-left sticky left-0 bg-card/95 backdrop-blur-sm z-20 border-r border-border/40">
-                                        <div className="flex items-center gap-2 truncate font-sans text-base sm:text-lg">
-                                            {topTeam.isSelf ? <Shield className="h-4 w-4 text-primary shrink-0" /> : <Swords className="h-4 w-4 text-muted-foreground shrink-0" />}
-                                            <span className={cn("truncate", topTeam.isSelf ? "text-primary" : "text-foreground")}>{topTeam.name}</span>
-                                        </div>
-                                    </td>
-                                    {inningsArray.map((inning, idx) => (
-                                        <td key={inning} className={cn("px-3 py-3 sm:py-4 transition-colors", currentInning.num === inning ? "bg-primary/5" : "")}>
-                                            {/* 💡 Context の配列から得点を表示！ */}
-                                            {score.topInnings[idx] !== undefined ? score.topInnings[idx] : "-"}
-                                        </td>
-                                    ))}
-                                    <td className="px-3 py-3 sm:py-4 border-l bg-muted/10 text-primary">{score.top}</td>
-                                    <td className="px-3 py-3 sm:py-4 bg-muted/10 text-muted-foreground text-base sm:text-lg">{topTeam.hits}</td>
-                                    <td className="px-3 py-3 sm:py-4 bg-muted/10 text-muted-foreground text-base sm:text-lg">{topTeam.errors}</td>
-                                </tr>
-
-                                {/* ⚾️ 後攻チームの行 */}
-                                <tr>
-                                    <td className="px-4 py-3 sm:py-4 text-left sticky left-0 bg-card/95 backdrop-blur-sm z-20 border-r border-border/40">
-                                        <div className="flex items-center gap-2 truncate font-sans text-base sm:text-lg">
-                                            {bottomTeam.isSelf ? <Shield className="h-4 w-4 text-primary shrink-0" /> : <Swords className="h-4 w-4 text-muted-foreground shrink-0" />}
-                                            <span className={cn("truncate", bottomTeam.isSelf ? "text-primary" : "text-foreground")}>{bottomTeam.name}</span>
-                                        </div>
-                                    </td>
-                                    {inningsArray.map((inning, idx) => (
-                                        <td key={inning} className={cn("px-3 py-3 sm:py-4 transition-colors", currentInning.num === inning ? "bg-primary/5" : "")}>
-                                            {/* 💡 Context の配列から得点を表示！ */}
-                                            {score.bottomInnings[idx] !== undefined ? score.bottomInnings[idx] : "-"}
-                                        </td>
-                                    ))}
-                                    <td className="px-3 py-3 sm:py-4 border-l bg-muted/10 text-primary">{score.bottom}</td>
-                                    <td className="px-3 py-3 sm:py-4 bg-muted/10 text-muted-foreground text-base sm:text-lg">{bottomTeam.hits}</td>
-                                    <td className="px-3 py-3 sm:py-4 bg-muted/10 text-muted-foreground text-base sm:text-lg">{bottomTeam.errors}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+        <Card className="bg-zinc-950 border-zinc-800 text-white overflow-hidden shadow-2xl">
+            <CardContent className="p-0">
+                {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                1. メインスコア & イニング表示
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                <div className="flex items-stretch border-b border-zinc-800">
+                    {/* 左側：チーム名と合計得点 */}
+                    <div className="flex-1 grid grid-cols-1 divide-y divide-zinc-800">
+                        {/* 自チーム（Self） */}
+                        <div className={cn(
+                            "flex items-center justify-between px-4 py-3 transition-colors",
+                            state.isTop ? "bg-primary/10" : "bg-transparent"
+                        )}>
+                            <div className="flex items-center gap-3">
+                                <div className={cn(
+                                    "w-1.5 h-8 rounded-full",
+                                    state.isTop ? "bg-primary shadow-[0_0_12px_rgba(var(--primary),0.6)]" : "bg-zinc-800"
+                                )} />
+                                <span className="font-black text-zinc-400 text-sm uppercase tracking-tighter">Self</span>
+                            </div>
+                            <span className="text-4xl font-black tabular-nums tracking-tighter">{state.myScore}</span>
+                        </div>
+                        {/* 相手チーム（Guest） */}
+                        <div className={cn(
+                            "flex items-center justify-between px-4 py-3 transition-colors",
+                            !state.isTop ? "bg-red-500/10" : "bg-transparent"
+                        )}>
+                            <div className="flex items-center gap-3">
+                                <div className={cn(
+                                    "w-1.5 h-8 rounded-full",
+                                    !state.isTop ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.6)]" : "bg-zinc-800"
+                                )} />
+                                <span className="font-black text-zinc-400 text-sm uppercase tracking-tighter">Guest</span>
+                            </div>
+                            <span className="text-4xl font-black tabular-nums tracking-tighter">{state.opponentScore}</span>
+                        </div>
                     </div>
-                </CardContent>
-            </Card>
-        </div>
+
+                    {/* 右側：現在の回表示 */}
+                    <div className="w-24 bg-zinc-900 flex flex-col items-center justify-center border-l border-zinc-800">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Inning</span>
+                        <div className="flex items-baseline">
+                            <span className="text-4xl font-black tabular-nums">{state.inning}</span>
+                            <span className={cn(
+                                "text-xl ml-1 font-black",
+                                state.isTop ? "text-primary" : "text-red-500"
+                            )}>
+                                {state.isTop ? "▲" : "▼"}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                2. ラインスコア（回別得点）※横スクロール可能
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                <div className="overflow-x-auto bg-zinc-900/50">
+                    <table className="w-full text-center border-collapse">
+                        <thead>
+                            <tr className="border-b border-zinc-800/50">
+                                <th className="px-2 py-1 text-[10px] font-black text-zinc-600 uppercase">Team</th>
+                                {inningsArray.map(i => (
+                                    <th key={i} className={cn(
+                                        "px-2 py-1 text-[10px] font-black min-w-[28px]",
+                                        state.inning === i ? "text-white bg-zinc-800" : "text-zinc-600"
+                                    )}>{i}</th>
+                                ))}
+                                <th className="px-3 py-1 text-[10px] font-black text-zinc-600 border-l border-zinc-800">R</th>
+                            </tr>
+                        </thead>
+                        <tbody className="font-bold tabular-nums text-sm">
+                            <tr className="border-b border-zinc-800/30">
+                                <td className="text-[10px] text-zinc-500 px-2 font-black uppercase text-left">S</td>
+                                {inningsArray.map((_, i) => (
+                                    <td key={i} className={cn(
+                                        "py-1",
+                                        state.inning === i + 1 && state.isTop ? "text-primary" : "text-zinc-400"
+                                    )}>
+                                        {state.myInningScores[i] ?? (state.inning > i + 1 ? 0 : "-")}
+                                    </td>
+                                ))}
+                                <td className="bg-zinc-800/30 font-black px-3 border-l border-zinc-800">{state.myScore}</td>
+                            </tr>
+                            <tr>
+                                <td className="text-[10px] text-zinc-500 px-2 font-black uppercase text-left">G</td>
+                                {inningsArray.map((_, i) => (
+                                    <td key={i} className={cn(
+                                        "py-1",
+                                        state.inning === i + 1 && !state.isTop ? "text-red-500" : "text-zinc-400"
+                                    )}>
+                                        {state.opponentInningScores[i] ?? (state.inning > i + 1 || (state.inning === i + 1 && !state.isTop) ? 0 : "-")}
+                                    </td>
+                                ))}
+                                <td className="bg-zinc-800/30 font-black px-3 border-l border-zinc-800">{state.opponentScore}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                3. BSO カウントエリア
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                <div className="p-4 grid grid-cols-3 gap-2 bg-zinc-950">
+                    <div className="flex flex-col items-center gap-2">
+                        <span className="text-xs font-black text-zinc-600 tracking-tighter">BALL</span>
+                        <div className="flex gap-1.5">
+                            {renderDots(state.balls, 3, "bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.6)]")}
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 border-x border-zinc-900">
+                        <span className="text-xs font-black text-zinc-600 tracking-tighter">STRIKE</span>
+                        <div className="flex gap-1.5">
+                            {renderDots(state.strikes, 2, "bg-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.6)]")}
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                        <span className="text-xs font-black text-zinc-600 tracking-tighter">OUT</span>
+                        <div className="flex gap-1.5">
+                            {renderDots(state.outs, 2, "bg-red-600 shadow-[0_0_12px_rgba(220,38,38,0.6)]")}
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
