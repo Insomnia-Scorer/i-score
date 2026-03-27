@@ -85,11 +85,11 @@ function HeaderContent() {
   ];
 
   const bottomNavItems: NavItem[] = [
-    { name: "アカウント設定", href: "/user", icon: UserCog, show: !!session },
-    { name: "システム管理", href: "/admin", icon: ShieldAlert, show: !!session && isManager },
     { name: "大会管理", href: "/tournaments/register", icon: PlusSquare, show: !!session },
     { name: "参加申請", href: "/teams/requests", icon: UserCheck, show: !!session, badge: 1 },
     { name: "設定", href: "/settings", icon: Settings, show: !!session },
+    { name: "アカウント", href: "/user", icon: UserCog, show: !!session },
+    { name: "システム管理", href: "/admin", icon: ShieldAlert, show: !!session && isManager },
   ];
 
   const handleLogout = async () => {
