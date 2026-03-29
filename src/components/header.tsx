@@ -1,159 +1,79 @@
 // src/components/header.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 /**
- * 💡 グローバルヘッダー・コンポーネント (Type-Safe 厳格版)
- * 1. デザイン: NO SHADOW ルールを厳守。透過・ブラー・微細ボーダーで構成。
- * 2. 型安全: anyを排除し、APIレスポンスやパス名のnullチェックを徹底。
- * 3. 機能: 現在のパスから動的にページタイトルとパンくずリストを生成。
- * 4. 連携: ログイン中のチーム情報をD1からフェッチし表示。
+ * 💡 究極のヘッダー・コンポーネント
+ * 1. 役割: 現在のページタイトルの表示、通知、テーマ切り替え、チーム情報の集約。
+ * 2. 意匠: 影を排除し、背景透過 (bg-background/40) とブラー (backdrop-blur-md) で質感を表現。
+ * 3. 連携: ThemeToggle を組み込み、PC版でのクイックなモード変更を実現。
+ * 4. 応答性: モバイル時はコンパクトなロゴを表示し、デスクトップ時はチームバッジを表示。
  */
 import { usePathname } from "next/navigation";
-import {
-  ChevronRight,
-  Search,
-  Bell,
-  Command,
-  Shield,
-  Zap
-} from "lucide-react";
+import { Bell, Shield, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚾️ 型定義 (Schema Protocol)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// APIレスポンス用の型定義
-interface UserProfileResponse {
-  organizationName?: string;
-  name?: string;
-  role?: string;
-  image?: string | null;
-}
-
-// ページ名マッピングの型定義
-const routeMap: Record<string, string> = {
-  "dashboard": "ダッシュボード",
-  "teams": "チーム管理",
-  "profile": "プロフィール",
-  "players": "選手名簿",
-  "tournaments": "大会マップ",
-  "map": "大会マップ",
-  "register": "大会管理",
-  "requests": "参加申請",
-  "matches": "試合記録",
-  "history": "試合履歴",
-  "score": "スコア入力",
-  "result": "試合結果",
-  "stats": "成績分析",
-  "settings": "設定",
-  "user": "アカウント"
-};
+import { ThemeToggle } from "./theme-toggle";
 
 export function Header() {
-  // 💡 修正: usePathname() は null を返す可能性があるため空文字でフォールバック
   const pathname = usePathname() || "";
-  const [teamName, setTeamName] = useState<string>("Loading Team...");
 
-  // パスを分割してパンくずリストを生成
-  const pathSegments = pathname.split("/").filter(Boolean).filter(s => s !== "(protected)");
-
-  // 現在のページタイトルを決定
-  const currentKey = pathSegments[pathSegments.length - 1] || "dashboard";
-  const pageTitle = routeMap[currentKey] || "i-Score";
-
-  useEffect(() => {
-    /**
-     * 🚀 D1データベースから所属チーム名を取得
-     */
-    const fetchTeamInfo = async () => {
-      try {
-        const res = await fetch("/api/user/profile");
-        if (res.ok) {
-          // 💡 修正: res.json() を UserProfileResponse でキャストして any を排除
-          const data = (await res.json()) as UserProfileResponse;
-          setTeamName(data.organizationName || "プライム・ベアーズ");
-        }
-      } catch (e) {
-        console.error("Header data fetch failed:", e);
-        setTeamName("プライム・ベアーズ");
-      }
-    };
-    fetchTeamInfo();
-  }, []);
+  // パス名から現在のページタイトルを抽出 (例: /dashboard -> DASHBOARD)
+  const getPageTitle = () => {
+    const segment = pathname.split("/").pop();
+    if (!segment || segment === "(protected)" || segment === "protected") return "DASHBOARD";
+    return segment.toUpperCase();
+  };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background/40 backdrop-blur-md border-b border-border/40 transition-all duration-300">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-8">
+    <header className="sticky top-0 z-40 w-full bg-background/40 backdrop-blur-md border-b border-border/40">
+      <div className="flex h-16 items-center justify-between px-6 sm:px-8">
 
-        {/* 1. 左側：タイトル & パンくず */}
-        <div className="flex items-center gap-4 overflow-hidden">
-          {/* モバイル用ロゴ（サイドバー非表示時） */}
-          <div className="md:hidden flex h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 items-center justify-center shrink-0">
-            <img src="/logo.png" alt="logo" className="h-5 w-5 object-contain" />
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            左側: ロゴ (モバイル用) & タイトル
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <div className="flex items-center gap-4">
+          {/* モバイル用ミニロゴ: PCサイドバーが隠れている時に表示 */}
+          <div className="md:hidden h-9 w-9 rounded-xl bg-card border border-border/60 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+            <img src="/logo.png" alt="i-Score" className="h-6 w-6 object-contain" />
           </div>
 
-          <div className="flex flex-col min-w-0">
-            {/* パンくずリスト */}
-            <nav className="hidden sm:flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 mb-0.5">
-              <span>i-Score</span>
-              {pathSegments.map((seg, i) => (
-                <React.Fragment key={seg + i}>
-                  <ChevronRight className="h-2.5 w-2.5 opacity-40" />
-                  <span className={cn(i === pathSegments.length - 1 && "text-primary/80")}>
-                    {routeMap[seg] || seg}
-                  </span>
-                </React.Fragment>
-              ))}
-            </nav>
-            {/* メインタイトル */}
-            <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter text-foreground truncate uppercase">
-              {pageTitle}
+          <div className="flex flex-col">
+            <h1 className="text-xl font-black italic tracking-tighter text-foreground uppercase leading-none">
+              {getPageTitle()}
             </h1>
-          </div>
-        </div>
-
-        {/* 2. 右側：ツール & ステータス */}
-        <div className="flex items-center gap-2 sm:gap-4">
-
-          {/* 検索 (Desktop) */}
-          <div className="hidden lg:flex items-center relative group">
-            <Search className="absolute left-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <input
-              type="text"
-              placeholder="Search data..."
-              className="h-10 w-64 pl-10 pr-4 rounded-full bg-muted/30 border border-border/40 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background/60 transition-all"
-            />
-            <div className="absolute right-3 hidden xl:flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/60 bg-muted/50 text-[9px] font-black text-muted-foreground">
-              <Command className="h-2.5 w-2.5" /> K
+            <div className="flex items-center gap-1 opacity-40 md:hidden">
+              <Zap className="h-2.5 w-2.5 text-primary" />
+              <span className="text-[8px] font-black uppercase tracking-widest">Tactical Hub</span>
             </div>
           </div>
-
-          {/* チーム表示バッジ */}
-          <div className="hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/20 text-primary">
-            <Shield className="h-3.5 w-3.5" />
-            <span className="text-[11px] font-black tracking-tight">{teamName}</span>
-            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse ml-1" />
-          </div>
-
-          {/* 通知・クイックアクション */}
-          <div className="flex items-center gap-1">
-            <button className="relative p-2.5 rounded-full hover:bg-muted/50 text-muted-foreground transition-colors group" aria-label="Notifications">
-              <Bell className="h-5 w-5 group-hover:scale-110 transition-transform" />
-              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 border-2 border-background" />
-            </button>
-            <button className="p-2.5 rounded-full hover:bg-primary/10 text-primary transition-colors lg:hidden" aria-label="Quick Action">
-              <Zap className="h-5 w-5" />
-            </button>
-          </div>
-
         </div>
 
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            右側: ツールエリア (テーマ・通知・チーム)
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <div className="flex items-center gap-2">
+
+          {/* PC版：所属チームバッジ */}
+          <div className="hidden sm:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/20 text-primary mr-2 transition-colors hover:bg-primary/10">
+            <Shield className="h-3.5 w-3.5" />
+            <span className="text-[10px] font-black tracking-[0.15em] uppercase whitespace-nowrap">Prime Bears</span>
+          </div>
+
+          {/* 🌗 究極UI: テーマ切り替え (PC版はアイコン循環型) */}
+          <ThemeToggle variant="icon" />
+
+          {/* 通知ボタン */}
+          <button className="relative p-2.5 rounded-full hover:bg-muted/50 text-muted-foreground transition-all group active:scale-90 shadow-none border-none">
+            <Bell className="h-5 w-5 group-hover:scale-110 transition-transform" />
+            {/* 通知バッジ (Stadium Sync 赤) */}
+            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 border-2 border-background animate-pulse" />
+          </button>
+
+        </div>
       </div>
 
-      {/* STADIUM SYNC: ヘッダー直下の装飾ライン */}
-      <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      {/* ヘッダー下部の微細なアクセントライン (Stadium Sync) */}
+      <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/15 to-transparent opacity-50" />
     </header>
   );
 }
