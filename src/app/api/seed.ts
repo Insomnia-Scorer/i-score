@@ -1,10 +1,10 @@
 // src/api/seed.ts
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { getAuth } from '../lib/auth';
+import { getAuth } from '../../lib/auth';
 import {
     organizations, organizationMembers, teams, teamMembers, players, matches
-} from '../db/schema';
+} from '../../db/schema';
 
 type Env = {
     DB: D1Database;
