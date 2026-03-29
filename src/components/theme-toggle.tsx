@@ -4,10 +4,11 @@
 import * as React from "react";
 /**
  * 💡 テーマトグル・コンポーネント (再構築版)
- * 1. 役割: next-themes と連携し、外観モードを切り替える。
+ * 1. 役割: next-themes と連携し、ライト/ダーク/システムモードを切り替える。
  * 2. 意匠: 
- * - icon variant: ヘッダー用。Sun/Moonが入れ替わるアニメーション。
- * - segmented variant: ドロワー用。3つの選択肢をカプセル型に配置。
+ * - icon variant: ヘッダー用。Sun/Moonが入れ替わるアニメーション。影なし・枠なし。
+ * - segmented variant: ドロワー用。3つの選択肢をカプセル型に配置し、タップしやすく設計。
+ * 3. 安定性: マウント状態をチェックし、SSR時の Hydration Error を防止。
  */
 import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -19,7 +20,9 @@ export function ThemeToggle({ variant = "icon" }: { variant?: "icon" | "segmente
 
   // クライアントサイドでのマウントを待機 (Hydrationエラー防止)
   React.useEffect(() => setMounted(true), []);
-  if (!mounted) return <div className="h-9 w-9" />;
+
+  // マウント前はレイアウトシフトを防ぐためにプレースホルダーを表示
+  if (!mounted) return <div className="h-10 w-10 md:h-9 md:w-9" />;
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 💻 PC版: アイコン循環トグル
@@ -41,7 +44,7 @@ export function ThemeToggle({ variant = "icon" }: { variant?: "icon" | "segmente
   // 📱 モバイル版: セグメント・コントロール
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   return (
-    <div className="flex p-1 bg-muted/20 rounded-2xl border border-border/40 w-full backdrop-blur-sm">
+    <div className="flex p-1 bg-muted/20 rounded-2xl border border-border/40 w-full backdrop-blur-sm shadow-none">
       {[
         { id: "light", icon: Sun, label: "Light" },
         { id: "dark", icon: Moon, label: "Dark" },
@@ -51,14 +54,17 @@ export function ThemeToggle({ variant = "icon" }: { variant?: "icon" | "segmente
           key={item.id}
           onClick={() => setTheme(item.id)}
           className={cn(
-            "flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-all duration-300",
+            "flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-all duration-300",
             theme === item.id
               ? "bg-background text-primary shadow-sm ring-1 ring-border/10"
               : "text-muted-foreground opacity-40 hover:opacity-100"
           )}
         >
-          <item.icon className={cn("h-4 w-4", theme === item.id && "animate-in zoom-in-75 duration-300")} />
-          <span className="text-[9px] font-black uppercase tracking-widest leading-none">
+          <item.icon className={cn(
+            "h-4.5 w-4.5 transition-transform duration-300",
+            theme === item.id && "animate-in zoom-in-75 duration-300 text-primary"
+          )} />
+          <span className="text-[9px] font-black uppercase tracking-[0.15em] leading-none">
             {item.label}
           </span>
         </button>
