@@ -2,111 +2,157 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+/**
+ * 💡 打球結果記録モーダル (究極UI版)
+ * 1. 意匠: bg-background/60 と backdrop-blur-2xl による極上の透過感。
+ * 2. 構造: ポジション選択(1-9)を野球の守備位置に合わせたグリッドで配置。
+ * 3. 整理: 打点 (RBI) 入力と結果選択を1つのフローに集約。
+ * 4. 規則: 影なし。角丸40px。border-border/40。
+ */
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Minus, Plus, Check, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// 💡 型安全プロトコル: インターフェースを最新のスコアリング仕様に更新
 export interface FieldModalProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    // 💡 onSelect から onResult に変更し、引数を拡張
-    onResult: (result: string, rbi: number, advances: any[]) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onResult: (result: string, rbi: number, advances: any[]) => void;
 }
 
 export function FieldModal({ open, onOpenChange, onResult }: FieldModalProps) {
-    const [selectedPos, setSelectedPos] = useState<string | null>(null);
-    const [rbi, setRbi] = useState(0);
+  const [selectedPos, setSelectedPos] = useState<string | null>(null);
+  const [hitType, setHitType] = useState<string>("GO"); // GO: Ground Out, 1B: Single, etc.
+  const [rbi, setRbi] = useState(0);
 
-    const positions = [
-        { id: "1", label: "投", color: "bg-zinc-500" },
-        { id: "2", label: "捕", color: "bg-zinc-500" },
-        { id: "3", label: "一", color: "bg-orange-500" },
-        { id: "4", label: "二", color: "bg-orange-500" },
-        { id: "5", label: "三", color: "bg-orange-500" },
-        { id: "6", label: "遊", color: "bg-orange-500" },
-        { id: "7", label: "左", color: "bg-emerald-500" },
-        { id: "8", label: "中", color: "bg-emerald-500" },
-        { id: "9", label: "右", color: "bg-emerald-500" },
-    ];
+  const positions = [
+    { id: "1", label: "P", name: "投手" },
+    { id: "2", label: "C", name: "捕手" },
+    { id: "3", label: "1B", name: "一塁" },
+    { id: "4", label: "2B", name: "二塁" },
+    { id: "5", label: "3B", name: "三塁" },
+    { id: "6", label: "SS", name: "遊撃" },
+    { id: "7", label: "LF", name: "左翼" },
+    { id: "8", label: "CF", name: "中堅" },
+    { id: "9", label: "RF", name: "右翼" },
+  ];
 
-    const results = [
-        { id: "1B", label: "単打", rbi: 0 },
-        { id: "2B", label: "二塁打", rbi: 0 },
-        { id: "3B", label: "三塁打", rbi: 0 },
-        { id: "HR", label: "本塁打", rbi: 1 },
-        { id: "GO", label: "ゴロ", rbi: 0 },
-        { id: "FO", label: "飛球", rbi: 0 },
-        { id: "E", label: "失策", rbi: 0 },
-    ];
+  const results = [
+    { id: "GO", label: "ゴロ", color: "bg-zinc-500/10" },
+    { id: "FO", label: "飛球", color: "bg-zinc-500/10" },
+    { id: "1B", label: "単打", color: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" },
+    { id: "2B", label: "二塁打", color: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" },
+    { id: "3B", label: "三塁打", color: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" },
+    { id: "HR", label: "本塁打", color: "bg-primary text-primary-foreground" },
+    { id: "E", label: "失策", color: "bg-red-500/20 text-red-600 dark:text-red-400" },
+  ];
 
-    const handleConfirm = () => {
-        if (!selectedPos) return;
-        // 💡 advancesは将来的に詳細な走塁モーダルで選択させますが、一旦空配列で返します
-        onResult(`${selectedPos}-${selectedPos === "HR" ? "HR" : "Hit"}`, rbi, []);
-        setSelectedPos(null);
-        setRbi(0);
-    };
+  const handleConfirm = () => {
+    if (!selectedPos || !hitType) return;
+    onResult(`${selectedPos}-${hitType}`, rbi, []);
+    // Reset
+    setSelectedPos(null);
+    setHitType("GO");
+    setRbi(0);
+  };
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="rounded-[32px] max-w-sm sm:max-w-md border-none shadow-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-black italic tracking-tighter">IN PLAY RESULT</DialogTitle>
-                </DialogHeader>
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md bg-background/60 backdrop-blur-3xl border-border/40 rounded-[40px] shadow-none p-8 gap-8 animate-in zoom-in-95 duration-300">
+        <DialogHeader>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 rounded-full px-3 py-0.5 text-[9px] font-black tracking-widest uppercase">In Play Action</Badge>
+          </div>
+          <DialogTitle className="text-3xl font-black italic tracking-tighter uppercase italic leading-none">打球結果<span className="text-primary">記録</span></DialogTitle>
+        </DialogHeader>
 
-                <div className="space-y-6 py-4">
-                    {/* ポジション選択 */}
-                    <div className="space-y-3">
-                        <Label className="font-black text-xs uppercase text-muted-foreground tracking-widest">Select Position</Label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {positions.map((pos) => (
-                                <Button
-                                    key={pos.id}
-                                    variant={selectedPos === pos.id ? "default" : "outline"}
-                                    onClick={() => setSelectedPos(pos.id)}
-                                    className={cn(
-                                        "h-12 rounded-2xl font-black text-lg transition-all active:scale-95",
-                                        selectedPos === pos.id ? pos.color : "bg-card"
-                                    )}
-                                >
-                                    {pos.id}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
+        <div className="space-y-8">
+          {/* 1. ポジション選択 (野球の配置を意識したグリッド) */}
+          <div className="space-y-4">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+              <Target className="h-3 w-3 text-primary" /> Select Field Position
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {positions.map((pos) => (
+                <button
+                  key={pos.id}
+                  onClick={() => setSelectedPos(pos.id)}
+                  className={cn(
+                    "h-16 rounded-2xl border-2 font-black italic text-lg transition-all active:scale-95 flex flex-col items-center justify-center relative overflow-hidden group",
+                    selectedPos === pos.id
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "bg-muted/20 border-border/20 text-muted-foreground hover:bg-muted/40"
+                  )}
+                >
+                  <span className="text-[10px] opacity-40 group-hover:opacity-100 transition-opacity uppercase">{pos.name}</span>
+                  <span className="text-xl leading-none">{pos.id}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-                    {/* 打点入力 */}
-                    <div className="space-y-3">
-                        <Label className="font-black text-xs uppercase text-muted-foreground tracking-widest">RBI (打点)</Label>
-                        <div className="flex items-center gap-4">
-                            <Button
-                                variant="outline"
-                                className="h-12 w-12 rounded-full font-black text-xl"
-                                onClick={() => setRbi(Math.max(0, rbi - 1))}
-                            >-</Button>
-                            <span className="text-3xl font-black w-12 text-center tabular-nums">{rbi}</span>
-                            <Button
-                                variant="outline"
-                                className="h-12 w-12 rounded-full font-black text-xl"
-                                onClick={() => setRbi(Math.min(4, rbi + 1))}
-                            >+</Button>
-                        </div>
-                    </div>
-                </div>
+          {/* 2. 結果種別 */}
+          <div className="space-y-4">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] px-2">Result Type</p>
+            <div className="flex flex-wrap gap-2">
+              {results.map((res) => (
+                <button
+                  key={res.id}
+                  onClick={() => setHitType(res.id)}
+                  className={cn(
+                    "px-6 py-3 rounded-full border-2 font-black text-sm tracking-tight transition-all active:scale-95",
+                    hitType === res.id
+                      ? (res.id === 'HR' ? "bg-primary border-primary text-primary-foreground" : "bg-card border-primary text-primary")
+                      : "bg-muted/10 border-border/20 text-muted-foreground opacity-60"
+                  )}
+                >
+                  {res.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-                <DialogFooter>
-                    <Button
-                        onClick={handleConfirm}
-                        disabled={!selectedPos}
-                        className="w-full h-14 rounded-2xl font-black text-xl bg-primary shadow-lg shadow-primary/20"
-                    >
-                        記録を確定
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
+          {/* 3. 打点入力 */}
+          <div className="bg-muted/20 p-6 rounded-[32px] border border-border/20 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">RBI (打点)</p>
+              <p className="text-2xl font-black italic text-foreground tracking-tighter">TOTAL RUNS</p>
+            </div>
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => setRbi(Math.max(0, rbi - 1))}
+                className="h-12 w-12 rounded-full border-2 border-border/40 flex items-center justify-center hover:bg-muted/50 active:scale-90 transition-all"
+              >
+                <Minus className="h-5 w-5" />
+              </button>
+              <span className="text-4xl font-black tabular-nums italic text-primary w-8 text-center">{rbi}</span>
+              <button
+                onClick={() => setRbi(Math.min(4, rbi + 1))}
+                className="h-12 w-12 rounded-full border-2 border-border/40 flex items-center justify-center hover:bg-muted/50 active:scale-90 transition-all"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-center">
+          <Button
+            onClick={handleConfirm}
+            disabled={!selectedPos}
+            className="w-full h-16 rounded-[24px] bg-primary text-primary-foreground font-black text-xl shadow-lg shadow-primary/10 hover:bg-primary/90 transition-all active:scale-95 flex items-center gap-3"
+          >
+            <Check className="h-6 w-6 stroke-[3px]" /> RECORD PLAY
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

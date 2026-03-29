@@ -2,115 +2,89 @@
 "use client";
 
 import { useScore } from "@/contexts/ScoreContext";
+/**
+ * 💡 プレイエリア・コンポーネント (究極UI版)
+ * 1. 意匠: bg-card/20 と backdrop-blur-xl で「ダイヤモンド」を表現。
+ * 2. 視覚: 芝生を感じさせる放射状のラインと、光り輝くベース。
+ * 3. 規則: 影なし。角丸40px。border-border/40。
+ * 4. 反応: ランナーの状態に合わせてベースが OKLCH Primary に発光。
+ */
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { User } from "lucide-react";
 
-/**
- * ⚾️ プレイエリア・コンポーネント
- * 野球のダイヤモンドを視覚的に表現し、ランナーの状況を表示します。
- */
 export function PlayArea() {
-    const { state } = useScore();
+  const { state } = useScore();
 
-    // 各塁のランナー存在確認（型安全プロトコル適用）
-    const hasRunner1 = !!state.runners.base1;
-    const hasRunner2 = !!state.runners.base2;
-    const hasRunner3 = !!state.runners.base3;
+  const hasRunner1 = !!state.runners.base1;
+  const hasRunner2 = !!state.runners.base2;
+  const hasRunner3 = !!state.runners.base3;
 
-    /**
-     * 💡 ベース（塁）を描画するサブコンポーネント
-     */
-    const Base = ({
-        active,
-        label,
-        className
-    }: {
-        active: boolean;
-        label: string;
-        className: string
-    }) => (
-        <div className={cn(
-            "absolute w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-500",
-            className
-        )}>
-            {/* ベースの四角形（45度回転させてダイヤ型に） */}
-            <div className={cn(
-                "absolute inset-0 rotate-45 border-2 rounded-sm sm:rounded-md transition-all duration-300",
-                active
-                    ? "bg-primary border-primary shadow-[0_0_15px_rgba(var(--primary),0.6)] scale-110"
-                    : "bg-zinc-800 border-zinc-700"
-            )} />
-
-            {/* ランナーアイコン（アクティブ時のみ表示） */}
-            {active && (
-                <User className="relative z-10 w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground animate-in zoom-in duration-300" />
-            )}
-
-            {/* 塁のラベル（1, 2, 3） */}
-            <span className={cn(
-                "absolute -bottom-6 text-[10px] font-black uppercase tracking-tighter",
-                active ? "text-primary" : "text-zinc-600"
-            )}>
-                {label}
-            </span>
+  const Base = ({ active, label, className }: { active: boolean, label: string, className: string }) => (
+    <div className={cn("absolute w-12 h-12 flex items-center justify-center transition-all duration-700", className)}>
+      <div className={cn(
+        "absolute inset-0 rotate-45 border-2 rounded-lg transition-all duration-500",
+        active
+          ? "bg-primary border-primary ring-8 ring-primary/10 scale-110"
+          : "bg-background/40 border-border/40"
+      )} />
+      {active && (
+        <div className="relative z-10 animate-in zoom-in duration-300">
+          <User className="h-6 w-6 text-primary-foreground stroke-[3px]" />
         </div>
-    );
+      )}
+      <span className={cn(
+        "absolute -bottom-7 text-[10px] font-black uppercase tracking-widest transition-opacity duration-500",
+        active ? "text-primary opacity-100" : "text-muted-foreground opacity-30"
+      )}>
+        {label}
+      </span>
+    </div>
+  );
 
-    return (
-        <Card className="bg-zinc-950 border-zinc-900 rounded-[32px] overflow-hidden shadow-xl">
-            <CardContent className="p-8 sm:p-12">
-                <div className="relative aspect-square max-w-[240px] mx-auto">
+  return (
+    <Card className="bg-card/20 backdrop-blur-xl border-border/40 rounded-[40px] overflow-hidden shadow-none aspect-square max-w-sm mx-auto relative group">
+      {/* 🏟 背景デザイン：芝生の同心円パターン */}
+      <div className="absolute inset-0 pointer-events-none opacity-20 dark:opacity-10">
+        <div className="absolute inset-0 bg-[repeating-radial-gradient(circle_at_50%_50%,transparent_0,transparent_40px,var(--primary)_41px,transparent_42px)]" />
+      </div>
 
-                    {/* 💡 ダイヤモンドのライン（芝生・土のイメージ） */}
-                    <div className="absolute inset-4 border-2 border-dashed border-zinc-800 rotate-45 rounded-sm" />
+      <CardContent className="p-0 h-full flex items-center justify-center">
+        <div className="relative w-64 h-64">
 
-                    {/* 2塁 (Second Base) */}
-                    <Base
-                        active={hasRunner2}
-                        label="2nd"
-                        className="top-0 left-1/2 -translate-x-1/2"
-                    />
+          {/* ダイヤモンドの境界線 (透過ライン) */}
+          <div className="absolute inset-6 border border-dashed border-border/40 rotate-45 rounded-sm" />
 
-                    {/* 3塁 (Third Base) */}
-                    <Base
-                        active={hasRunner3}
-                        label="3rd"
-                        className="top-1/2 left-0 -translate-y-1/2"
-                    />
+          {/* 各塁の配置 */}
+          <Base active={hasRunner2} label="2nd" className="top-0 left-1/2 -translate-x-1/2" />
+          <Base active={hasRunner3} label="3rd" className="top-1/2 left-0 -translate-y-1/2" />
+          <Base active={hasRunner1} label="1st" className="top-1/2 right-0 -translate-y-1/2" />
 
-                    {/* 1塁 (First Base) */}
-                    <Base
-                        active={hasRunner1}
-                        label="1st"
-                        className="top-1/2 right-0 -translate-y-1/2"
-                    />
+          {/* 本塁 (Home Plate) */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-muted/40 backdrop-blur-md border border-border/40"
+              style={{ clipPath: 'polygon(0% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%)' }}
+            />
+            <span className="relative z-10 text-[9px] font-black text-muted-foreground/40 mt-1 uppercase tracking-widest">Home</span>
+          </div>
 
-                    {/* 本塁 (Home Plate) */}
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
-                        {/* 五角形を模したホームベース（簡易版） */}
-                        <div className="absolute inset-0 bg-zinc-700 clip-path-home-plate"
-                            style={{ clipPath: 'polygon(0% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%)' }} />
-                        <span className="relative z-10 text-[10px] font-black text-zinc-400 mt-2 uppercase tracking-tighter">Home</span>
-                    </div>
+          {/* マウンド (投手板) */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-10 bg-border/20 rounded-full" />
+        </div>
+      </CardContent>
 
-                    {/* 💡 投手板（中心点） */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-2 bg-zinc-800 rounded-full shadow-inner" />
-
-                </div>
-
-                {/* 💡 ステータステキスト */}
-                <div className="mt-8 flex justify-center gap-4">
-                    <div className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-black tracking-widest border transition-colors",
-                        (hasRunner1 || hasRunner2 || hasRunner3)
-                            ? "bg-primary/10 border-primary/20 text-primary"
-                            : "bg-zinc-900 border-zinc-800 text-zinc-600"
-                    )}>
-                        {(hasRunner1 || hasRunner2 || hasRunner3) ? "RUNNER ON BASE" : "NO RUNNERS"}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
+      {/* 状態ラベル */}
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+        <div className={cn(
+          "px-5 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-[0.2em] transition-all",
+          (hasRunner1 || hasRunner2 || hasRunner3)
+            ? "bg-primary text-primary-foreground border-primary"
+            : "bg-muted/10 text-muted-foreground/40 border-border/20"
+        )}>
+          {(hasRunner1 || hasRunner2 || hasRunner3) ? "Runners Occupied" : "Bases Empty"}
+        </div>
+      </div>
+    </Card>
+  );
 }
