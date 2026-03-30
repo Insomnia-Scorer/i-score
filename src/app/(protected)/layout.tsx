@@ -3,10 +3,10 @@
 
 import React, { useState } from "react";
 /**
- * 💡 保護ルート共通レイアウト (モバイルヘッダー固定版)
- * 1. 修正: モバイルでもヘッダーを上部固定。
- * 2. 意匠: 画面の横揺れを抑えつつ、ヘッダー・サイドバー・ボトムナビの三権分立を確立。
- * 3. 構造: メインエリアの z-index を適切に設定し、背景グラデーションを最背面に配置。
+ * 💡 保護ルート共通レイアウト (透過背景・決定版)
+ * 1. 修正: 最外枠の `bg-background` を削除し、`bg-transparent` に変更。
+ * 2. 修正: 独自に追加していた背景グラデーションの div を撤去し、globals.css に一任。
+ * これにより、全画面で globals.css の「光彩＋波紋」が完璧に表示されます。
  */
 import { usePathname, useRouter } from "next/navigation";
 import { MAIN_NAV_ITEMS, BOTTOM_NAV_ITEMS } from "../../config/navigation";
@@ -36,13 +36,9 @@ export default function ProtectedLayout({
   };
 
   return (
-    <div className="relative flex min-h-screen w-full bg-background text-foreground selection:bg-primary/20">
+    // 💡 bg-background を削除し、背景を完全に透過させます
+    <div className="relative flex min-h-screen w-full bg-transparent text-foreground selection:bg-primary/20">
       
-      {/* 🏟 STADIUM SYNC: 全画面共通背景 (最背面) */}
-      <div className="fixed inset-0 pointer-events-none -z-50 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,theme(colors.primary.DEFAULT/5%),transparent)]" />
-      </div>
-
       {/* 💻 PC版サイドバー (z-50) */}
       <Sidebar
         session={session}
@@ -56,31 +52,27 @@ export default function ProtectedLayout({
         onLogout={() => console.log("Logout")}
       />
 
-      {/* 🏟 メインコンテンツラッパー
-          サイドバーの幅に応じて padding-left を制御
-      */}
+      {/* 🏟 メインコンテンツラッパー */}
       <div className={cn(
         "flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out",
         isCollapsed ? "md:pl-16" : "md:pl-56"
       )}>
         
-        {/* 🏆 ヘッダー (sticky top-0 でモバイル・PC共に固定) */}
+        {/* 🏆 ヘッダー */}
         <Header />
 
-        {/* コンテンツ本体
-            ヘッダーが固定されているため、中身が隠れないよう配置
-        */}
+        {/* コンテンツ本体 */}
         <main className="flex-1 w-full relative z-0">
           <div className={cn(
             "w-full max-w-7xl mx-auto p-4 md:p-8",
-            "pb-24 md:pb-12" // ボトムナビ用の余白
+            "pb-24 md:pb-12"
           )}>
             {children}
           </div>
         </main>
       </div>
 
-      {/* 📱 モバイルパーツ (z-50) */}
+      {/* 📱 モバイルパーツ */}
       <div className="md:hidden">
         <BottomNavigation
           activeTab={pathname}
