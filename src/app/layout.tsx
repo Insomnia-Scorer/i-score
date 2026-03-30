@@ -2,9 +2,9 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 /**
- * 💡 究極のルートレイアウト (Tailwind v4 安定化版)
- * 1. 修正: ThemeProvider の設定を調整。v4 の .dark クラス運用を確実にします。
- * 2. 意匠: globals.css の oklch 変数と背景グラデーションを最大限活かす構成。
+ * 💡 究極のルートレイアウト (背景一任版)
+ * 1. 修正: body タグから `bg-background` クラスを削除。
+ * これにより、globals.css で定義した background-image と完全に同期します。
  */
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -31,22 +31,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // suppressHydrationWarning は next-themes 使用時に必須です
     <html lang="ja" suppressHydrationWarning>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
+          // 💡 ここにあった bg-background を削除し、CSSに完全に委ねます
+          "min-h-screen font-sans antialiased",
           inter.variable
         )}
       >
         <ThemeProvider
-          attribute="class"    // 💡 <html> に .dark クラスを付与
-          defaultTheme="system" // 💡 デフォルトはシステム設定
+          attribute="class"
+          defaultTheme="system"
           enableSystem={true}
-          disableTransitionOnChange={false} // アニメーションを有効にして変化を分かりやすく
+          disableTransitionOnChange={false}
         >
-          <Toaster
-            position="top-center"
+          <Toaster 
+            position="top-center" 
             toastOptions={{
               className: "rounded-2xl border-border bg-background/80 backdrop-blur-md font-bold shadow-none",
             }}
