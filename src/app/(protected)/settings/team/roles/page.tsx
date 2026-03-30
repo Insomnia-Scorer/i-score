@@ -22,6 +22,7 @@ import {
   Lock,
   Unlock
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const ALL_PERMISSIONS = [
   { id: 'score_write', label: 'スコア入力', desc: '試合のプレイ記録・編集' },
