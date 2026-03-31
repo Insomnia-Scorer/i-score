@@ -158,6 +158,7 @@ function DashboardContent() {
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 rounded-full px-4 py-1 text-[10px] font-black tracking-[0.2em] uppercase">
+              {/* 💡 Command Center から Team Base へ変更 */}
               Team Base
             </Badge>
             <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
@@ -165,6 +166,7 @@ function DashboardContent() {
             </div>
           </div>
           <h1 className="text-5xl sm:text-7xl font-black tracking-tighter italic uppercase text-foreground leading-none">
+            {/* 💡 Manager を Team に変更 */}
             Team <span className="text-primary underline decoration-primary/20 underline-offset-8">Hub</span>
           </h1>
         </div>
