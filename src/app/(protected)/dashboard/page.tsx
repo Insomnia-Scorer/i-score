@@ -2,18 +2,20 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from "react";
+import { useRouter } from "next/navigation"; // 💡 爆速ルーティング用
+import { Skeleton } from "@/components/ui/skeleton"; // 💡 スケルトンUI用
+
 /**
  * 💡 プロフェッショナル・ダッシュボード (究極UI/UX版)
  * 1. 意匠: globals.css の背景を活かすため bg-transparent を基調とし、カードは透過背景を採用。
  * 2. 整理: 統計情報、AI監督の助言、直近の試合、クイックメニューを「整理整頓」して配置。
  * 3. 連携: Gemini 2.5 API による「勝利への一手」生成機能を標準搭載。
  * 4. 規則: 影を排し、border-border/40 と rounded-[40px] で質感を統一。
+ * 5. 現場: モバイルでの片手操作、屋外での視認性を極限まで高めた TEAM HUB 仕様。
  */
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,10 +34,10 @@ import {
   Target,
   Zap,
   ShieldCheck,
-  Flame,
-  Clock,
-  CloudSun,
-  Wind
+  Clock,     // 💡 追加: 時計
+  CloudSun,  // 💡 追加: 天気
+  Wind,      // 💡 追加: 風速
+  Flame      // 💡 追加: 熱量
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -80,12 +82,14 @@ interface GeminiAnalysisResponse {
 }
 
 function DashboardContent() {
+  const router = useRouter(); // 💡 爆速ルーティングを初期化
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiTip, setAiTip] = useState<string | null>(null);
 
-  // 💡 リアルタイム時計と、Hydrationエラー防止用のステートを追加
+  // 💡 リアルタイム時計・Hydrationエラー防止用ステート
   const [mounted, setMounted] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -95,10 +99,6 @@ function DashboardContent() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // 日付と時刻のフォーマット
-  const formattedDate = currentTime.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
-  const formattedTime = currentTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   useEffect(() => {
     // 💡 データの取得 (実際には D1/Firestore から)
@@ -161,19 +161,63 @@ function DashboardContent() {
     }
   };
 
+  // 💡 秒表示つきの時刻フォーマット
+  const formattedTime = currentTime.toLocaleTimeString('ja-JP', { 
+    hour: '2-digit', minute: '2-digit', second: '2-digit' 
+  });
+
+  // 🦴 究極のスケルトンUI: ロード時の体感時間をゼロにする！
   if (isLoading || !data) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary/20" />
+      <div className="min-h-screen bg-transparent p-3 sm:p-6 md:p-10 space-y-8 md:space-y-12">
+        {/* スケルトン: ヒーローセクション */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border/40 pb-8 md:pb-10">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-6 w-24 rounded-full bg-white/5" />
+              <Skeleton className="h-4 w-32 bg-white/5" />
+            </div>
+            <Skeleton className="h-16 w-64 sm:h-20 sm:w-96 rounded-lg bg-white/5" />
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
+            <Skeleton className="h-16 w-full sm:w-80 rounded-[20px] sm:rounded-2xl bg-white/5" />
+            <Skeleton className="h-14 w-full sm:w-48 rounded-[24px] bg-primary/20" />
+          </div>
+        </div>
+
+        {/* スケルトン: コンテンツエリア（実際のレイアウトに合わせた 4:8 構造） */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+          {/* 左側: チームインテル (4) */}
+          <div className="xl:col-span-4 space-y-10">
+            <Skeleton className="h-[320px] w-full rounded-[40px] bg-white/5" />
+            <div className="space-y-3">
+              <Skeleton className="h-[88px] w-full rounded-[32px] bg-white/5" />
+              <Skeleton className="h-[88px] w-full rounded-[32px] bg-white/5" />
+              <Skeleton className="h-[88px] w-full rounded-[32px] bg-white/5" />
+            </div>
+          </div>
+          {/* 右側: 試合オペレーション (8) */}
+          <div className="xl:col-span-8 space-y-10">
+            <Skeleton className="h-[140px] w-full rounded-[32px] bg-white/5" />
+            <div className="space-y-6 pt-4">
+              <Skeleton className="h-6 w-48 bg-white/5" />
+              <div className="space-y-4">
+                <Skeleton className="h-[180px] w-full rounded-[40px] bg-white/5" />
+                <Skeleton className="h-[180px] w-full rounded-[40px] bg-white/5" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
+    // 💡 モバイル余白最適化 (p-3 sm:p-6)
     <div className="min-h-screen bg-transparent p-3 sm:p-6 md:p-10 space-y-8 md:space-y-12 animate-in fade-in duration-1000">
-      {/* ヒーローセクション: 司令塔のタイトル */}
+
+      {/* 1. ヒーローセクション: TEAM HUB ヘッダー */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border/40 pb-8 md:pb-10">
-        {/* 左側：タイトルエリア */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 rounded-full px-4 py-1 text-[10px] font-black tracking-[0.2em] uppercase">
@@ -187,48 +231,35 @@ function DashboardContent() {
             Team <span className="text-primary underline decoration-primary/20 underline-offset-8">Hub</span>
           </h1>
         </div>
-        
-        {/* 💡 右側：日時・天気・風速ウィジェット ＆ NEW MATCHボタン */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
-          
-          {/* 🌤️ 日時・天気・風速ウィジェット (グラスモーフィズム) */}
-          {/* 💡 gap-4 だとスマホで横幅がキツくなる可能性があるため、gap-3 に微調整して要素を詰め込みます */}
-          <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto gap-3 sm:gap-5 font-bold sm:font-medium text-foreground/90 sm:text-foreground/80 bg-background/40 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-2xl px-3 py-4 sm:px-5 sm:py-2.5 shadow-sm">
 
-            {/* 🕒 時間 */}
+        {/* 🌤️ 右側：日時・天気・風速ウィジェット ＆ NEW MATCHボタン */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
+          <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto gap-3 sm:gap-5 font-bold sm:font-medium text-foreground/90 sm:text-foreground/80 bg-background/40 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-2xl px-3 py-4 sm:px-5 sm:py-2.5 shadow-sm">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Clock className="w-5 h-5 sm:w-4 sm:h-4 text-primary" />
               <span className="tabular-nums tracking-wider text-base sm:text-sm">
-                {mounted ? `${formattedTime}` : "--:--"}
+                {mounted ? `${formattedTime}` : "--:--:--"}
               </span>
             </div>
-            
             <div className="w-px h-6 sm:h-4 bg-white/20"></div>
-            
-            {/* 🌤️ 天気と気温 */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               <CloudSun className="w-5 h-5 sm:w-4 sm:h-4 text-orange-400" />
               <span className="text-base sm:text-sm">22°C</span> 
             </div>
-            
             <div className="w-px h-6 sm:h-4 bg-white/20"></div>
-
-            {/* 💨 風向と風速 (NEW!) */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Wind className="w-5 h-5 sm:w-4 sm:h-4 text-sky-400" />
               <span className="text-base sm:text-sm whitespace-nowrap">南 5m/s</span> 
             </div>
-
           </div>
 
           <Button
-            onClick={() => window.location.href = '/matches/create'}
+            onClick={() => router.push('/matches/create')} // 💡 爆速遷移！
             className="rounded-[24px] h-14 sm:h-14 px-8 bg-primary text-primary-foreground font-black text-xl sm:text-lg shadow-lg shadow-primary/10 hover:bg-primary/90 transition-all flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center shrink-0"
           >
             <Plus className="h-6 w-6 sm:h-5 sm:w-5 stroke-[3px]" /> NEW MATCH
           </Button>
         </div>
-        
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
@@ -281,21 +312,21 @@ function DashboardContent() {
             {[
               { label: "選手名簿", icon: Users, path: "/players", sub: "Squad List" },
               { label: "大会マップ", icon: Trophy, path: "/tournaments/map", sub: "Champ Path" },
-              { label: "シーズン分析", icon: TrendingUp, path: "/stats", sub: "Analytics" },
+              { label: "シーズン分析", icon: TrendingUp, path: "/matches/stats", sub: "Analytics" },
             ].map((item, idx) => (
               <button
                 key={idx}
-                onClick={() => window.location.href = item.path}
-                className="flex items-center gap-5 p-6 rounded-[32px] bg-card/20 border border-border/40 hover:bg-card/40 hover:border-primary/40 transition-all group shadow-none text-left"
+                onClick={() => router.push(item.path)} // 💡 爆速遷移！
+                className="flex items-center gap-5 p-6 rounded-[32px] bg-card/20 border border-border/40 hover:bg-card/40 hover:border-primary/40 transition-all group shadow-none text-left w-full"
               >
-                <div className="p-4 rounded-2xl bg-muted/40 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                <div className="p-4 rounded-2xl bg-muted/40 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
                   <item.icon className="h-6 w-6" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-widest text-foreground">{item.label}</p>
-                  <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">{item.sub}</p>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-sm font-black uppercase tracking-widest text-foreground truncate">{item.label}</p>
+                  <p className="text-[9px] font-bold text-muted-foreground/60 uppercase truncate">{item.sub}</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground/20 group-hover:text-primary transition-all group-hover:translate-x-1" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground/20 group-hover:text-primary transition-all group-hover:translate-x-1 shrink-0" />
               </button>
             ))}
           </div>
@@ -332,7 +363,7 @@ function DashboardContent() {
                     {aiTip ? `"${aiTip}"` : "タップして、現在の戦績に基づいたAI監督からの戦術指南を受け取る。"}
                   </h3>
                 </div>
-                <Zap className="h-6 w-6 text-primary/30 group-hover:text-primary transition-colors hidden sm:block" />
+                <Zap className="h-6 w-6 text-primary/30 group-hover:text-primary transition-colors hidden sm:block shrink-0" />
               </CardContent>
             </Card>
           </section>
@@ -343,14 +374,20 @@ function DashboardContent() {
               <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" /> Live & Recent Reports
               </h2>
-              <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary">View History</Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => router.push('/matches')} // 💡 追加：履歴一覧へ爆速遷移
+                className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary"
+              >
+                View History
+              </Button>
             </div>
 
             <div className="space-y-4">
               {data.matches.map((match) => (
                 <Card
                   key={match.id}
-                  onClick={() => window.location.href = match.status === 'finished' ? `/matches/result?id=${match.id}` : `/matches/score?id=${match.id}`}
+                  onClick={() => router.push(match.status === 'finished' ? `/matches/result?id=${match.id}` : `/matches/score?id=${match.id}`)} // 💡 爆速遷移！
                   className={cn(
                     "bg-card/20 dark:bg-zinc-900/10 backdrop-blur-md border-border/40 rounded-[40px] overflow-hidden transition-all duration-300 group hover:bg-card/40 hover:border-primary/30 cursor-pointer shadow-none",
                     match.status === 'ongoing' ? "ring-1 ring-primary/40 bg-card/40" : ""
@@ -361,7 +398,7 @@ function DashboardContent() {
 
                       {/* 状態ラベル */}
                       <div className={cn(
-                        "w-full sm:w-28 flex flex-col items-center justify-center p-6 border-b sm:border-b-0 sm:border-r border-border/40 gap-2",
+                        "w-full sm:w-28 flex flex-col items-center justify-center p-6 border-b sm:border-b-0 sm:border-r border-border/40 gap-2 shrink-0",
                         match.status === 'ongoing' ? "bg-primary text-primary-foreground" : "bg-muted/30"
                       )}>
                         {match.status === 'ongoing' ? (
@@ -381,20 +418,20 @@ function DashboardContent() {
                       </div>
 
                       {/* 試合詳細 */}
-                      <div className="flex-1 p-8 flex items-center justify-between gap-6">
-                        <div className="space-y-1">
+                      <div className="flex-1 p-6 sm:p-8 flex items-center justify-between gap-4 sm:gap-6">
+                        <div className="space-y-1 overflow-hidden">
                           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">Matchup</p>
-                          <h3 className="text-3xl font-black italic text-foreground group-hover:text-primary transition-colors leading-none tracking-tighter">
+                          <h3 className="text-2xl sm:text-3xl font-black italic text-foreground group-hover:text-primary transition-colors leading-none tracking-tighter truncate">
                             vs {match.opponentName}
                           </h3>
                           <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground pt-1">
-                            <Target className="h-3 w-3 text-primary/40" />
-                            <span>{match.venue}</span>
+                            <Target className="h-3 w-3 text-primary/40 shrink-0" />
+                            <span className="truncate">{match.venue}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-10">
-                          <div className="text-center space-y-1">
+                        <div className="flex items-center gap-6 sm:gap-10 shrink-0">
+                          <div className="text-center space-y-1 hidden sm:block">
                             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">Score</p>
                             <div className="flex items-center gap-4">
                               <span className={cn(
@@ -408,11 +445,11 @@ function DashboardContent() {
                             </div>
                           </div>
 
-                          <div className="h-14 w-14 rounded-full bg-muted/40 flex items-center justify-center border border-border/40 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all shadow-inner">
+                          <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-muted/40 flex items-center justify-center border border-border/40 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all shadow-inner shrink-0">
                             {match.status === 'finished' ? (
-                              <History className="h-6 w-6" />
+                              <History className="h-5 w-5 sm:h-6 sm:w-6" />
                             ) : (
-                              <Play className="h-6 w-6 fill-current" />
+                              <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />
                             )}
                           </div>
                         </div>
@@ -437,6 +474,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
+    // 💡 念のため全体フォールバックも残しておきますが、メインの待ち時間はスケルトンで処理されます！
     <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>}>
       <DashboardContent />
     </Suspense>
