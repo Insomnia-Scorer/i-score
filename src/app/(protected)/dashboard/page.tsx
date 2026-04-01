@@ -162,8 +162,8 @@ function DashboardContent() {
   };
 
   // 💡 秒表示つきの時刻フォーマット
-  const formattedTime = currentTime.toLocaleTimeString('ja-JP', { 
-    hour: '2-digit', minute: '2-digit', second: '2-digit' 
+  const formattedTime = currentTime.toLocaleTimeString('ja-JP', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 
   // 🦴 究極のスケルトンUI: ロード時の体感時間をゼロにする！
@@ -217,7 +217,8 @@ function DashboardContent() {
     <div className="min-h-screen bg-transparent p-3 sm:p-6 md:p-10 space-y-8 md:space-y-12 animate-in fade-in duration-1000">
 
       {/* 1. ヒーローセクション: TEAM HUB ヘッダー */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border/40 pb-8 md:pb-10">
+      {/* 💡 修正ポイント1: lg:items-end を lg:items-center に変更して高さをビシッと揃える */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-border/40 pb-8 md:pb-10">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 rounded-full px-4 py-1 text-[10px] font-black tracking-[0.2em] uppercase">
@@ -244,24 +245,23 @@ function DashboardContent() {
             <div className="w-px h-6 sm:h-4 bg-white/20"></div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <CloudSun className="w-5 h-5 sm:w-4 sm:h-4 text-orange-400" />
-              <span className="text-base sm:text-sm">22°C</span> 
+              <span className="text-base sm:text-sm">22°C</span>
             </div>
             <div className="w-px h-6 sm:h-4 bg-white/20"></div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Wind className="w-5 h-5 sm:w-4 sm:h-4 text-sky-400" />
-              <span className="text-base sm:text-sm whitespace-nowrap">南 5m/s</span> 
+              <span className="text-base sm:text-sm whitespace-nowrap">南 5m/s</span>
             </div>
           </div>
 
           <Button
-            onClick={() => router.push('/matches/create')} // 💡 爆速遷移！
-            className="rounded-[24px] h-14 sm:h-14 px-8 bg-primary text-primary-foreground font-black text-xl sm:text-lg shadow-lg shadow-primary/10 hover:bg-primary/90 transition-all flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center shrink-0"
+            onClick={() => router.push('/matches/create')} // 💡 神速遷移！
+            className="rounded-[24px] h-14 sm:h-14 px-8 bg-primary text-primary-foreground font-black text-xl sm:text-lg shadow-none border border-primary/20 hover:border-primary/40 hover:bg-primary/90 transition-all flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center shrink-0"
           >
             <Plus className="h-6 w-6 sm:h-5 sm:w-5 stroke-[3px]" /> NEW MATCH
           </Button>
         </div>
       </div>
-
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -374,8 +374,8 @@ function DashboardContent() {
               <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" /> Live & Recent Reports
               </h2>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={() => router.push('/matches')} // 💡 追加：履歴一覧へ爆速遷移
                 className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary"
               >
