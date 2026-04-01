@@ -234,7 +234,7 @@ function DashboardContent() {
 
         {/* 🌤️ 右側：日時・天気・風速ウィジェット ＆ NEW MATCHボタン */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
-          <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto gap-3 sm:gap-5 font-bold sm:font-medium text-foreground/90 sm:text-foreground/80 bg-background/40 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-2xl px-3 py-4 sm:px-5 sm:py-2.5 shadow-sm">
+          <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto gap-3 sm:gap-5 font-bold sm:font-medium text-foreground/90 sm:text-foreground/80 bg-white/90 dark:bg-background/40 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-2xl px-3 py-4 sm:px-5 sm:py-2.5 shadow-sm">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Clock className="w-5 h-5 sm:w-4 sm:h-4 text-primary" />
               <span className="tabular-nums tracking-wider text-base sm:text-sm">
@@ -270,7 +270,7 @@ function DashboardContent() {
         <div className="xl:col-span-4 space-y-10">
 
           {/* シーズン勝率カード */}
-          <Card className="p-0 gap-0 bg-card/30 backdrop-blur-xl border-border/40 rounded-[40px] overflow-hidden shadow-sm hover:shadow-md dark:shadow-none transition-all hover:border-primary/30">
+          <Card className="p-0 gap-0 bg-white/90 dark:bg-card/30 backdrop-blur-xl border-border/40 rounded-[40px] overflow-hidden shadow-sm hover:shadow-md dark:shadow-none transition-all hover:border-primary/30">
             <CardContent className="p-10 flex flex-col items-center text-center space-y-8">
               <div className="relative w-40 h-40 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -317,7 +317,7 @@ function DashboardContent() {
               <button
                 key={idx}
                 onClick={() => router.push(item.path)} // 💡 爆速遷移！
-                className="flex items-center gap-5 p-6 rounded-[32px] bg-card/20 border border-border/40 hover:bg-card/40 hover:border-primary/40 transition-all group shadow-sm hover:shadow-md dark:shadow-none text-left w-full"
+                className="flex items-center gap-5 p-6 rounded-[32px] bg-white/90 dark:bg-card/20 border border-border/40 hover:bg-card/40 hover:border-primary/40 transition-all group shadow-sm hover:shadow-md dark:shadow-none text-left w-full"
               >
                 <div className="p-4 rounded-2xl bg-muted/40 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
                   <item.icon className="h-6 w-6" />
@@ -390,7 +390,7 @@ function DashboardContent() {
                   onClick={() => router.push(match.status === 'finished' ? `/matches/result?id=${match.id}` : `/matches/score?id=${match.id}`)} // 💡 爆速遷移！
                   className={cn(
                     "p-0 gap-0",
-                    "bg-card/20 dark:bg-zinc-900/10 backdrop-blur-md border-border/40 rounded-[40px] overflow-hidden transition-all duration-300 group hover:bg-card/40 hover:border-primary/30 cursor-pointer shadow-sm hover:shadow-md dark:shadow-none",
+                    "bg-white/90 dark:bg-card/20 dark:bg-zinc-900/10 backdrop-blur-md border-border/40 rounded-[40px] overflow-hidden transition-all duration-300 group hover:bg-card/40 hover:border-primary/30 cursor-pointer shadow-sm hover:shadow-md dark:shadow-none",
                     match.status === 'ongoing' ? "ring-1 ring-primary/40 bg-card/40" : ""
                   )}
                 >
