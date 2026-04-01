@@ -34,7 +34,8 @@ import {
   ShieldCheck,
   Flame,
   Clock,
-  CloudSun
+  CloudSun,
+  Wind
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -186,30 +187,43 @@ function DashboardContent() {
             Team <span className="text-primary underline decoration-primary/20 underline-offset-8">Hub</span>
           </h1>
         </div>
-        {/* 💡 右側：日時・天気ウィジェット ＆ NEW MATCHボタン */}
-        {/* モバイル時は w-full にして要素を横幅いっぱいに広げます */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">          
+        
+        {/* 💡 右側：日時・天気・風速ウィジェット ＆ NEW MATCHボタン */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
+          
+          {/* 🌤️ 日時・天気・風速ウィジェット (グラスモーフィズム) */}
+          {/* 💡 gap-4 だとスマホで横幅がキツくなる可能性があるため、gap-3 に微調整して要素を詰め込みます */}
+          <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto gap-3 sm:gap-5 font-bold sm:font-medium text-foreground/90 sm:text-foreground/80 bg-background/40 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-2xl px-3 py-4 sm:px-5 sm:py-2.5 shadow-sm">            <div className="flex items-center gap-2.5 sm:gap-2">
 
-          {/* 🌤️ 日時・天気ウィジェット (グラスモーフィズム) */}
-          {/* 💡 モバイル時は w-full, フォントサイズを text-lg にして一回り大きく、見やすく！ */}
-          <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto gap-4 sm:gap-6 font-bold sm:font-medium text-foreground/90 sm:text-foreground/80 bg-background/40 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-2xl px-4 py-4 sm:px-5 sm:py-2.5 shadow-sm">
-            <div className="flex items-center gap-2.5 sm:gap-2">
+            {/* 🕒 時間 */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Clock className="w-5 h-5 sm:w-4 sm:h-4 text-primary" />
-              <span className="tabular-nums tracking-wider text-lg sm:text-sm">
-                {mounted ? `${formattedDate} ${formattedTime}` : "--/-- --:--"}
+              <span className="tabular-nums tracking-wider text-base sm:text-sm">
+                {mounted ? `${formattedTime}` : "--:--"}
               </span>
             </div>
-            {/* 区切り線もモバイル時は少し長くします */}
+            
             <div className="w-px h-6 sm:h-4 bg-white/20"></div>
-            <div className="flex items-center gap-2.5 sm:gap-2">
+            
+            {/* 🌤️ 天気と気温 */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <CloudSun className="w-5 h-5 sm:w-4 sm:h-4 text-orange-400" />
-              <span className="text-lg sm:text-sm">川崎 22°C</span> 
+              <span className="text-base sm:text-sm">22°C</span> 
             </div>
+            
+            <div className="w-px h-6 sm:h-4 bg-white/20"></div>
+
+            {/* 💨 風向と風速 (NEW!) */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Wind className="w-5 h-5 sm:w-4 sm:h-4 text-sky-400" />
+              <span className="text-base sm:text-sm whitespace-nowrap">南 5m/s</span> 
+            </div>
+
           </div>
 
           <Button
             onClick={() => window.location.href = '/matches/create'}
-            className="rounded-[24px] h-14 sm:h-14 px-8 bg-primary text-primary-foreground font-black text-xl sm:text-lg shadow-lg shadow-primary/10 hover:bg-primary/90 transition-all flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center"
+            className="rounded-[24px] h-14 sm:h-14 px-8 bg-primary text-primary-foreground font-black text-xl sm:text-lg shadow-lg shadow-primary/10 hover:bg-primary/90 transition-all flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center shrink-0"
           >
             <Plus className="h-6 w-6 sm:h-5 sm:w-5 stroke-[3px]" /> NEW MATCH
           </Button>
