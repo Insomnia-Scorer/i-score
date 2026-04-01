@@ -193,7 +193,7 @@ function DashboardContent() {
           
           {/* 🌤️ 日時・天気・風速ウィジェット (グラスモーフィズム) */}
           {/* 💡 gap-4 だとスマホで横幅がキツくなる可能性があるため、gap-3 に微調整して要素を詰め込みます */}
-          <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto gap-3 sm:gap-5 font-bold sm:font-medium text-foreground/90 sm:text-foreground/80 bg-background/40 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-2xl px-3 py-4 sm:px-5 sm:py-2.5 shadow-sm">            <div className="flex items-center gap-2.5 sm:gap-2">
+          <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto gap-3 sm:gap-5 font-bold sm:font-medium text-foreground/90 sm:text-foreground/80 bg-background/40 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-2xl px-3 py-4 sm:px-5 sm:py-2.5 shadow-sm">
 
             {/* 🕒 時間 */}
             <div className="flex items-center gap-1.5 sm:gap-2">
