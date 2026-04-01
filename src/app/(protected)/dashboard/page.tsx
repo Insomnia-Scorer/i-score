@@ -170,31 +170,48 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-transparent p-3 sm:p-6 md:p-10 space-y-8 md:space-y-12 animate-in fade-in duration-1000">
-
-      {/* 1. ヒーローセクション: 司令塔のタイトル */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border/40 pb-10">
+      {/* ヒーローセクション: 司令塔のタイトル */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border/40 pb-8 md:pb-10">
+        {/* 左側：タイトルエリア */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 rounded-full px-4 py-1 text-[10px] font-black tracking-[0.2em] uppercase">
-              {/* 💡 Command Center から Team Base へ変更 */}
               Team Base
             </Badge>
             <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-              <ShieldCheck className="h-3 w-3" /> System Stable
+              <Flame className="h-3 w-3" /> Ready for next match
             </div>
           </div>
           <h1 className="text-5xl sm:text-7xl font-black tracking-tighter italic uppercase text-foreground leading-none">
-            {/* 💡 Manager を Team に変更 */}
             Team <span className="text-primary underline decoration-primary/20 underline-offset-8">Hub</span>
           </h1>
         </div>
+        {/* 💡 右側：日時・天気ウィジェット ＆ NEW MATCHボタン */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+          
+          {/* 🌤️ 日時・天気ウィジェット (グラスモーフィズム) */}
+          <div className="flex items-center gap-4 text-sm font-medium text-foreground/80 bg-background/40 backdrop-blur-xl border border-white/10 rounded-2xl px-5 py-2.5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
+              <span className="tabular-nums tracking-wider">
+                {mounted ? `${formattedDate} ${formattedTime}` : "--/-- --:--"}
+              </span>
+            </div>
+            <div className="w-px h-4 bg-white/20"></div>
+            <div className="flex items-center gap-2">
+              <CloudSun className="w-4 h-4 text-orange-400" />
+              {/* 💡 将来的に OpenWeather API 等から取得する想定のモック */}
+              <span>川崎 22°C</span> 
+            </div>
+          </div>
 
-        <Button
-          onClick={() => window.location.href = '/matches/create'}
-          className="rounded-[24px] h-16 px-10 bg-primary text-primary-foreground font-black text-xl shadow-lg shadow-primary/10 hover:bg-primary/90 transition-all flex items-center gap-3 active:scale-95"
-        >
-          <Plus className="h-6 w-6 stroke-[3px]" /> NEW MATCH
-        </Button>
+          <Button
+            onClick={() => window.location.href = '/matches/create'} // ※本来は useRouter 推奨ですが既存踏襲
+            className="rounded-[24px] h-12 sm:h-14 px-8 bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/10 hover:bg-primary/90 transition-all flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center"
+          >
+            <Plus className="h-5 w-5 stroke-[3px]" /> NEW MATCH
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
