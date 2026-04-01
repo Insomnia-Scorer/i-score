@@ -98,7 +98,7 @@ function DashboardContent() {
 
   // 日付と時刻のフォーマット
   const formattedDate = currentTime.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
-  const formattedTime = currentTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  const formattedTime = currentTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   useEffect(() => {
     // 💡 データの取得 (実際には D1/Firestore から)
