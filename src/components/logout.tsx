@@ -27,7 +27,7 @@ export function LogoutButton({ className, variant = "outline" }: LogoutButtonPro
     try {
       // 本物のログアウト処理を実行
       await signOut();
-      router.push("/login");
+      router.push("/");
       router.refresh();
     } catch (error) {
       toast.error("ログアウトに失敗しました。");

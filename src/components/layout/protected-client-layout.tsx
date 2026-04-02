@@ -44,7 +44,7 @@ export function ProtectedClientLayout({ children }: { children: React.ReactNode 
     });
     try {
       await signOut();
-      router.push("/login");
+      router.push("/");
     } catch (error) {
       toast.error("ログアウトに失敗しました。");
     }
