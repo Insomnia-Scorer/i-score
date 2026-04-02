@@ -19,7 +19,7 @@ export default function LandingPage() {
         {/* スタジアム画像（ナイターの熱気） */}
         {/* 💡 用意した画像を public/stadium.jpg に配置してください */}
         <div
-          className="absolute inset-0 bg-[url('/stadium.jpg')] bg-cover bg-center bg-no-repeat opacity-40 dark:opacity-30"
+          className="absolute inset-0 bg-[url('/stadium.webp')] bg-cover bg-center bg-no-repeat opacity-40 dark:opacity-30"
         />
         {/* スポットライト＆ヴィネット効果 (中央が明るく、外側が背景色に溶け込む) */}
         <div
