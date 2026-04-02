@@ -23,12 +23,18 @@ type Theme = "light" | "dark" | "system";
 
 export default function LandingPage() {
   const [theme, setTheme] = useState<Theme>("system");
-  const [isScrolled, setIsScrolled] = useState(false); // 💡 ヘッダースクロール検知用ステート
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  // 💡 テーマ設定の副作用
+  // 💡 究極のテーマ管理（localStorageによる保持機能付き）
   useEffect(() => {
     const root = document.documentElement;
     const systemThemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+
+    // 1. 保存されたテーマがあれば読み込む
+    const savedTheme = localStorage.getItem("i-score-theme") as Theme | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
 
     const applyTheme = (currentTheme: Theme) => {
       root.classList.remove("light", "dark");
@@ -39,7 +45,7 @@ export default function LandingPage() {
       }
     };
 
-    applyTheme(theme);
+    applyTheme(savedTheme || theme);
 
     const handleSystemThemeChange = () => {
       if (theme === "system") applyTheme("system");
@@ -49,7 +55,12 @@ export default function LandingPage() {
     return () => systemThemeMedia.removeEventListener("change", handleSystemThemeChange);
   }, [theme]);
 
-  // 💡 スクロール検知の副作用（ヘッダーのガラス化）
+  // 💡 テーマを切り替えて保存する関数
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+    localStorage.setItem("i-score-theme", newTheme);
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -71,9 +82,8 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/30">
 
-      {/* 🌟 究極の固定ヘッダー（スクロールでガラス化） */}
-      {/* 💡 absolute から fixed に変更し、isScrolled の状態で背景色を切り替えます */}
-      <header className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 h-20 transition-all duration-300 ${isScrolled ? "bg-background/70 backdrop-blur-md border-b border-border/50 shadow-sm" : "bg-transparent"
+      {/* 🌟 究極の固定ヘッダー */}
+      <header className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 h-20 transition-all duration-300 ${isScrolled ? "bg-background/80 backdrop-blur-md border-b border-border/50" : "bg-transparent"
         }`}>
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <img src="/logo.png" alt="i-Score Logo" className="h-10 w-10 object-contain drop-shadow-sm" />
@@ -82,31 +92,26 @@ export default function LandingPage() {
           </span>
         </Link>
 
-        {/* 3連テーマスイッチャー */}
         <div className="flex items-center gap-4">
-          <div className={`flex items-center p-1 border rounded-full transition-colors duration-300 ${isScrolled ? "border-border/60 bg-background/50" : "border-border/30 bg-background/30 backdrop-blur-md"
-            }`}>
+          <div className="flex items-center p-1 border border-border/30 rounded-full bg-background/20 backdrop-blur-md shadow-sm">
             <button
-              onClick={() => setTheme("light")}
+              onClick={() => handleThemeChange("light")}
               className={`p-2 rounded-full transition-all duration-300 ${theme === "light" ? "bg-background shadow-sm text-foreground scale-105" : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 }`}
-              title="ライトモード"
             >
               <Sun className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setTheme("system")}
+              onClick={() => handleThemeChange("system")}
               className={`p-2 rounded-full transition-all duration-300 ${theme === "system" ? "bg-background shadow-sm text-foreground scale-105" : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 }`}
-              title="システム設定に従う"
             >
               <Monitor className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setTheme("dark")}
+              onClick={() => handleThemeChange("dark")}
               className={`p-2 rounded-full transition-all duration-300 ${theme === "dark" ? "bg-background shadow-sm text-foreground scale-105" : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 }`}
-              title="ダークモード"
             >
               <Moon className="h-5 w-5" />
             </button>
@@ -114,30 +119,29 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 🌟 背景セクション（バグ撲滅・完全版パララックス！） */}
+      {/* 🌟 究極の背景（スタジアム画像をもっとクリアに！） */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        {/* 画像の存在感をしっかり出す (ライト40%, ダーク60%) */}
-        <div className="absolute inset-0 bg-[url('/stadium.webp')] bg-cover bg-center bg-no-repeat opacity-40 dark:opacity-60" />
+        {/* 💡 透過度を上げ(0.5/0.7)、画像をハッキリ見せます */}
+        <div className="absolute inset-0 bg-[url('/stadium.webp')] bg-cover bg-center bg-no-repeat bg-fixed opacity-50 dark:opacity-70" />
 
-        {/* 💡 バグの原因だったカスタムグラデーションを削除し、純粋な Tailwind のすりガラスに！
-             ライトは bg-background/20 (20%の白)、ダークは bg-background/40 で美しくぼかします */}
-        <div className="absolute inset-0 bg-background/20 dark:bg-background/40 backdrop-blur-[6px] transition-colors duration-300" />
+        {/* 💡 ライトモードの白い壁を大幅に薄くし(0.3)、画像そのままの迫力を活かします */}
+        <div className="absolute inset-0 bg-background/30 dark:bg-background/40 backdrop-blur-[2px] transition-colors duration-300" />
 
-        {/* 下部からフッターへ溶け込むグラデーション */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        {/* 💡 画面端のグラデーションも最小限に。画像に没入させます */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
       </div>
 
       {/* 🌟 ヒーローコンテンツ */}
-      {/* 💡 main 全体を relative z-10 にすることで、fixed な背景の上を美しく滑ります */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 w-full max-w-5xl mx-auto pt-32 pb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000">
 
         <div className="space-y-6 text-center w-full max-w-4xl">
           <h1 className="text-5xl md:text-[5rem] lg:text-7xl md:leading-[1.1] font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 drop-shadow-sm md:whitespace-nowrap">
-            野球の<span className="text-primary drop-shadow-md transition-colors duration-300">今</span>を、<br className="md:hidden" />
-            <span className="text-primary drop-shadow-md transition-colors duration-300">次世代</span>へ。
+            野球の<span className="text-primary drop-shadow-md">今</span>を、<br className="md:hidden" />
+            <span className="text-primary drop-shadow-md">次世代</span>へ。
           </h1>
+          {/* 🔥 魂のキャッチフレーズ変更！ */}
           <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed tracking-widest mt-6">
-            草野球・アマチュア野球のための究極のスコアブック。
+            学童野球から草野球まで使える次世代スコアブック。
             <br className="hidden md:block" />
             現場の熱気をそのままに、指先一つでプロ並みのデータ分析を。
           </p>
@@ -152,13 +156,9 @@ export default function LandingPage() {
           </Link>
         </div>
 
-        {/* 💡 余白圧縮！ mt-28 から mt-16 へ。コンテンツが間延びしません。 */}
         <div id="features" className="mt-16 w-full max-w-5xl flex flex-wrap justify-center gap-6">
           {features.map((feature, index) => (
-            <div
-              key={index}
-              className="flex-grow-0 flex-shrink-0 w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]"
-            >
+            <div key={index} className="flex-grow-0 flex-shrink-0 w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
               <FeatureCard
                 icon={feature.icon}
                 title={feature.title}
@@ -168,10 +168,8 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
-
       </main>
 
-      {/* 🌟 究極のフッター */}
       <footer className="relative z-10 w-full border-t border-border/40 bg-background/60 backdrop-blur-md py-8 mt-auto">
         <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 opacity-80">
