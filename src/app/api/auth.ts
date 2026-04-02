@@ -27,14 +27,14 @@ app.get('/me', async (c) => {
   return c.json({
     success: true,
     data: {
-      id: userWithRole.user.id,
-      name: userWithRole.user.name,
-      email: userWithRole.user.email,
+      id: userWithRole.id,
+      name: userWithRole.name,
+      email: userWithRole.email,
       // 💡 R2アバターAPI連携: ユーザーの画像URLをセット！
       // (Better Auth 標準の image フィールドにURLが入っている想定、なければ R2 のパスを組み立てる)
-      avatarUrl: userWithRole.user.image || `/api/images/avatars/${userWithRole.user.id}.png`,
-      role: userWithRole.user.role, 
-      systemRole: userWithRole.user.role,
+      avatarUrl: userWithRole.image || `/api/images/avatars/${userWithRole.id}.png`,
+      role: userWithRole.role, 
+      systemRole: userWithRole.role,
       // ※チーム情報は別途D1から引くか、一旦空配列(またはモック)でエラーを防ぎます
       memberships: [],
     }
