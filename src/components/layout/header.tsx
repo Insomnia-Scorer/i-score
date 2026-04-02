@@ -1,16 +1,16 @@
 // src/components/layout/header.tsx
-/* 💡 究極のヘッダー (R2アバターキャッシュ・API連携完全版✨)
- * 1. 取得: Cloudflare Workers APIからユーザー情報を取得。
+/* 💡 究極のヘッダー (ADMIN特別表示＆モバイル操作最適化版✨)
+ * 1. 権限: systemRole が 'SYSTEM_ADMIN' の場合、専用の王冠バッジを表示し誤操作を防止。
  * 2. 画像: Hono+R2で構築された /api/images/ 経由の avatarUrl を表示。
- * 3. 意匠: チームバッジに「チーム名 + 権限」を表示し、現場での事故を防止。
- * 4. 構造: src/components/layout へ配置し、インポートを @/ に統一。
+ * 3. 意匠: ドロップダウンメニューのタップ領域を広げ、現場でのスマホ操作性を極限まで向上。
+ * 4. 構造: src/components/layout に配置、インポートパスは @/ で統一。
  */
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Shield, Zap, LogOut, Settings, Users } from "lucide-react";
-// ✨ ガイドライン適用: 相対パスを廃止し、すべて @/ エイリアスで統一！
+// ✨ 修正: Crown (王冠) アイコンを追加
+import { Bell, Shield, Zap, LogOut, Settings, Users, Crown } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -96,19 +96,34 @@ export function Header() {
             <ThemeSwitcher variant="dropdown" />
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-primary/5 border border-primary/20 text-primary mr-1 shadow-sm dark:shadow-none">
-            <Shield className="h-3 w-3" />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black tracking-widest uppercase whitespace-nowrap leading-tight">
-                {activeTeam?.teamName || "NO TEAM"}
-              </span>
-              {activeTeam?.roleLabel && (
-                <span className="text-[7px] font-bold text-muted-foreground uppercase leading-none mt-0.5">
-                  {activeTeam.roleLabel}
+          {/* ✨ 修正: ADMINか、通常のチーム所属かでバッジの表示を分岐 */}
+          {user?.systemRole === 'SYSTEM_ADMIN' ? (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 mr-1 shadow-sm dark:shadow-none">
+              <Crown className="h-3 w-3" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black tracking-widest uppercase whitespace-nowrap leading-tight">
+                  SYSTEM ADMIN
                 </span>
-              )}
+                <span className="text-[7px] font-bold opacity-80 uppercase leading-none mt-0.5">
+                  運営管理者
+                </span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-primary/5 border border-primary/20 text-primary mr-1 shadow-sm dark:shadow-none">
+              <Shield className="h-3 w-3" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black tracking-widest uppercase whitespace-nowrap leading-tight">
+                  {activeTeam?.teamName || "NO TEAM"}
+                </span>
+                {activeTeam?.roleLabel && (
+                  <span className="text-[7px] font-bold text-muted-foreground uppercase leading-none mt-0.5">
+                    {activeTeam.roleLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           <ThemeToggle variant="icon" />
 
@@ -139,46 +154,54 @@ export function Header() {
                 </button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-64 rounded-xl border-border/50 bg-white/95 dark:bg-background/95 backdrop-blur-xl">
+              <DropdownMenuContent align="end" className="w-72 sm:w-64 rounded-xl border-border/50 bg-white/95 dark:bg-background/95 backdrop-blur-xl p-2 sm:p-1">
                 {user && (
                   <>
-                    <DropdownMenuLabel className="font-normal">
+                    <DropdownMenuLabel className="font-normal py-3 sm:py-1.5 px-3 sm:px-2">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-bold leading-none">{user.name}</p>
-                        <p className="text-xs leading-none text-muted-foreground">
+                        <p className="text-base sm:text-sm font-bold leading-none">{user.name}</p>
+                        <p className="text-sm sm:text-xs leading-none text-muted-foreground mt-1">
                           {user.email}
                         </p>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-border/50" />
 
-                    {activeTeam && (
-                      <div className="px-2 py-1.5 text-xs">
+                    {/* ✨ 修正: ADMIN用メニュー表示の分岐 */}
+                    {user.systemRole === 'SYSTEM_ADMIN' ? (
+                      <div className="px-3 sm:px-2 py-3 sm:py-1.5 text-sm sm:text-xs">
+                        <span className="font-semibold text-amber-600 dark:text-amber-400">システム管理者</span>
+                        <span className="ml-2 text-muted-foreground">(i-Score運営)</span>
+                      </div>
+                    ) : activeTeam ? (
+                      <div className="px-3 sm:px-2 py-3 sm:py-1.5 text-sm sm:text-xs">
                         <span className="font-semibold text-primary">{activeTeam.teamName}</span>
                         <span className="ml-2 text-muted-foreground">({activeTeam.roleLabel})</span>
                       </div>
-                    )}
+                    ) : null}
                     <DropdownMenuSeparator className="bg-border/50" />
                   </>
                 )}
 
-                <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg" onClick={() => router.push("/profile")}>
-                  <Settings className="h-4 w-4" />
+                <DropdownMenuItem className="cursor-pointer gap-3 sm:gap-2 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm" onClick={() => router.push("/profile")}>
+                  <Settings className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
                   <span>アカウント設定</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg" onClick={() => router.push("/teams")}>
-                  <Users className="h-4 w-4" />
+
+                {/* 管理者なら「システム管理画面」へのリンクにするなどの拡張も可能です */}
+                <DropdownMenuItem className="cursor-pointer gap-3 sm:gap-2 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm" onClick={() => router.push("/teams")}>
+                  <Users className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
                   <span>チーム切り替え・管理</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator className="bg-border/50" />
 
                 <DropdownMenuItem
-                  className="cursor-pointer gap-2 text-red-500 focus:text-red-500 rounded-lg"
+                  className="cursor-pointer gap-3 sm:gap-2 text-red-500 focus:text-red-500 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm"
                   onClick={handleLogout}
                 >
-                  <LogOut className="h-4 w-4" />
-                  <span>ログアウト</span>
+                  <LogOut className="h-5 w-5 sm:h-4 sm:w-4" />
+                  <span className="font-bold sm:font-normal">ログアウト</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
