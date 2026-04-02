@@ -1,1 +1,0 @@
-ALTER TABLE `tournaments` ADD `category` text DEFAULT 'other' NOT NULL;

@@ -1,1 +1,0 @@
-ALTER TABLE `organizations` ADD `category` text DEFAULT 'other' NOT NULL;

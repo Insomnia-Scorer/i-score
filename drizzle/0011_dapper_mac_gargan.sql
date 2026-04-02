@@ -1,1 +1,0 @@
-ALTER TABLE `matches` ADD `innings` integer DEFAULT 9 NOT NULL;
