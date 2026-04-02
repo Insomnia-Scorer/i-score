@@ -12,24 +12,23 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FeatureCard } from "@/components/feature-card"; // 🔥 究極のカードをインポート！
+import { FeatureCard } from "@/components/feature-card";
 
 /**
  * 💡 トップページ (Landing Page)
- * 1. 透明ヘッダー: 本物のロゴ画像を採用し、i-Scoreをイタリックに。導線は「無料で始める」一本に！
- * 2. 背景の調整: ブレンドモードを外し、王道の opacity 制御で白浮きを完全に防ぐ。
- * 3. 究極のラッキーセブン: FeatureCard に「スポットライトカラー」を渡し、ホバー時に輝かせる。
+ * 1. 背景のすりガラス効果: 画像の存在感を40%に保ちつつ、backdrop-blurで文字を確実に読ませる。
+ * 2. 究極のラッキーセブン: 白を排除！グローバルテーマに沿った鮮やかな7色をスポットライトに設定！
  */
 export default function LandingPage() {
-  // 🔥 各アイコンの Tailwind カラーに合わせた RGBA の光を定義
+  // 🔥 真・ラッキーセブン！白を排除し、美しく意味のある7色に完全対応！
   const features = [
-    { icon: <Smartphone className="h-6 w-6 text-foreground" />, title: "現場至上主義UI", desc: "太陽光下でも視認性抜群。片手で絶対に間違えない入力設計。", glowColor: "rgba(255, 255, 255, 0.12)" },
-    { icon: <Users className="h-6 w-6 text-blue-500" />, title: "チーム完全連携", desc: "マネージャーも監督も。リアルタイムでスタッツと戦況を共有。", glowColor: "rgba(59, 130, 246, 0.15)" },
-    { icon: <FileSpreadsheet className="h-6 w-6 text-green-500" />, title: "早稲田式スコア出力", desc: "入力されたデータを、伝統的で美しいスコアブック形式に一発変換。", glowColor: "rgba(34, 197, 94, 0.15)" },
-    { icon: <Zap className="h-6 w-6 text-amber-500" />, title: "1球速報システム", desc: "球場に来られないメンバーへ。プロ野球のような1球速報を配信。", glowColor: "rgba(245, 158, 11, 0.15)" },
-    { icon: <TrendingUp className="h-6 w-6 text-purple-500" />, title: "プロ級の成績分析", desc: "打率や防御率だけでなく、OPSやWHIPなど高度な指標を自動計算。", glowColor: "rgba(168, 85, 247, 0.15)" },
-    { icon: <BrainCircuit className="h-6 w-6 text-cyan-500" />, title: "AI戦況アシスト", desc: "次のプレイの予測や、打者の傾向分析をAIがベンチにアドバイス。", glowColor: "rgba(6, 182, 212, 0.15)" },
-    { icon: <ShieldCheck className="h-6 w-6 text-rose-500" />, title: "鉄壁のセキュリティ", desc: "ゲスト権限と承認フローにより、チームの機密データを安全に保護。", glowColor: "rgba(244, 63, 94, 0.15)" },
+    { icon: <Smartphone className="h-6 w-6 text-orange-500" />, title: "現場至上主義UI", desc: "太陽光下でも視認性抜群。片手で絶対に間違えない入力設計。", glowColor: "rgba(249, 115, 22, 0.15)" }, // Orange
+    { icon: <Users className="h-6 w-6 text-blue-500" />, title: "チーム完全連携", desc: "マネージャーも監督も。リアルタイムでスタッツと戦況を共有。", glowColor: "rgba(59, 130, 246, 0.15)" }, // Blue
+    { icon: <FileSpreadsheet className="h-6 w-6 text-green-500" />, title: "早稲田式スコア出力", desc: "入力されたデータを、伝統的で美しいスコアブック形式に一発変換。", glowColor: "rgba(34, 197, 94, 0.15)" }, // Green
+    { icon: <Zap className="h-6 w-6 text-amber-500" />, title: "1球速報システム", desc: "球場に来られないメンバーへ。プロ野球のような1球速報を配信。", glowColor: "rgba(245, 158, 11, 0.15)" }, // Amber (Yellow)
+    { icon: <TrendingUp className="h-6 w-6 text-purple-500" />, title: "プロ級の成績分析", desc: "打率や防御率だけでなく、OPSやWHIPなど高度な指標を自動計算。", glowColor: "rgba(168, 85, 247, 0.15)" }, // Purple
+    { icon: <BrainCircuit className="h-6 w-6 text-cyan-500" />, title: "AI戦況アシスト", desc: "次のプレイの予測や、打者の傾向分析をAIがベンチにアドバイス。", glowColor: "rgba(6, 182, 212, 0.15)" }, // Cyan
+    { icon: <ShieldCheck className="h-6 w-6 text-rose-500" />, title: "鉄壁のセキュリティ", desc: "ゲスト権限と承認フローにより、チームの機密データを安全に保護。", glowColor: "rgba(244, 63, 94, 0.15)" }, // Rose (Red)
   ];
 
   return (
@@ -52,20 +51,25 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 🌟 背景セクション（クリーン版） */}
+      {/* 🌟 究極の背景セクション（すりガラス・リベンジ版！） */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[url('/stadium.webp')] bg-cover bg-center bg-no-repeat opacity-60 dark:opacity-50" />
+        {/* 1. スタジアム画像（存在感を完全復活！） */}
+        <div className="absolute inset-0 bg-[url('/stadium.webp')] bg-cover bg-center bg-no-repeat opacity-75 dark:opacity-50" />
+
+        {/* 2. 新魔法：薄い「すりガラス」を全体にかける */}
+        <div className="absolute inset-0 bg-background/30 backdrop-blur-[4px] dark:bg-background/10" />
+
+        {/* 3. 周囲のエッジだけを背景色に自然に溶け込ませる */}
         <div
-          className="absolute inset-0"
-          style={{ background: "radial-gradient(circle at center, transparent 0%, transparent 20%, hsl(var(--background)) 85%, hsl(var(--background)) 100%)" }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "radial-gradient(circle at center, transparent 0%, transparent 40%, hsl(var(--background)) 100%)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
       </div>
 
       {/* 🌟 ヒーローコンテンツ */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 w-full max-w-5xl mx-auto pt-32 pb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
 
-        {/* 🔥 魂のキャッチフレーズ */}
         <div className="space-y-6 text-center w-full max-w-4xl">
           <h1 className="text-5xl md:text-[5rem] lg:text-7xl md:leading-[1.1] font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 drop-shadow-sm md:whitespace-nowrap">
             野球の<span className="text-primary drop-shadow-md">今</span>を、<br className="md:hidden" />
@@ -78,7 +82,6 @@ export default function LandingPage() {
           </p>
         </div>
 
-        {/* コールトゥアクション（CTA）ボタン */}
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
           <Link href="/login" className="w-full sm:w-auto">
             <Button size="lg" className="w-full sm:w-auto rounded-full h-14 px-8 text-base font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-transform duration-300">
