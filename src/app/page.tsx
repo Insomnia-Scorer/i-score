@@ -1,5 +1,5 @@
 // src/app/page.tsx
-"use client"; // 💡 テーマ切り替えの状態を持つために Client Component に変更します
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -13,39 +13,56 @@ import {
   Sparkles,
   ShieldCheck,
   Moon,
-  Sun
+  Sun,
+  Monitor
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeatureCard } from "@/components/feature-card";
 
 /**
  * 💡 トップページ (Landing Page)
- * 1. 白モヤ完全解消: ライトモードは blur を外し薄い白ヴェールのみに。ダークモードは blur でナイター感を演出。
- * 2. テーマスイッチャー: ヘッダー右上に Sun/Moon アイコンを配置し、ダーク/ライトを切り替え可能に。
- * 3. タイトル文字アップ＆線画アイコン: 違和感をなくしつつ、より力強いカードUIへ。
+ * 1. 究極のテーマスイッチャー: ライト / システム / ダーク の3連ボタン（トグルグループ風）。
+ * 2. 背景の固定 (bg-fixed): スクロールしてもスタジアム画像が固定され、高級感のある視差効果を演出。
+ * 3. ライトモードの白モヤ調整: bg-background/60 に調整し、スタジアムの存在感と文字の可読性を両立。
  */
+
+type Theme = "light" | "dark" | "system";
+
 export default function LandingPage() {
-  // 💡 テーマ切り替え用のステート管理
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [theme, setTheme] = useState<Theme>("system");
 
-  // 初期ロード時にシステムのテーマ設定などを読み込む（簡略化版）
+  // 💡 初期ロード時と、themeステートが変更された時の処理
   useEffect(() => {
-    // htmlタグに 'dark' クラスがついているか確認
-    setIsDarkMode(document.documentElement.classList.contains("dark"));
-  }, []);
+    const root = document.documentElement;
 
-  const toggleTheme = () => {
-    const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
-    if (newTheme) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
+    // システムのダークモード設定を監視
+    const systemThemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const applyTheme = (currentTheme: Theme) => {
+      root.classList.remove("light", "dark");
+
+      if (currentTheme === "system") {
+        const systemTheme = systemThemeMedia.matches ? "dark" : "light";
+        root.classList.add(systemTheme);
+      } else {
+        root.classList.add(currentTheme);
+      }
+    };
+
+    applyTheme(theme);
+
+    // システムテーマが変更された時にリアルタイムで追従するリスナー
+    const handleSystemThemeChange = () => {
+      if (theme === "system") {
+        applyTheme("system");
+      }
+    };
+
+    systemThemeMedia.addEventListener("change", handleSystemThemeChange);
+    return () => systemThemeMedia.removeEventListener("change", handleSystemThemeChange);
+  }, [theme]);
 
   const features = [
-    // 🔥 fill="currentColor" を外し、美しい線画に戻しました。
     { icon: <Smartphone className="h-10 w-10 text-orange-500" strokeWidth={1.5} />, title: "現場至上主義UI", desc: "太陽光下でも視認性抜群。片手で絶対に間違えない入力設計。", glowColor: "rgba(249, 115, 22, 0.15)" },
     { icon: <Users className="h-10 w-10 text-blue-500" strokeWidth={1.5} />, title: "チーム完全連携", desc: "マネージャーも監督も。リアルタイムでスタッツと戦況を共有。", glowColor: "rgba(59, 130, 246, 0.15)" },
     { icon: <FileSpreadsheet className="h-10 w-10 text-green-500" strokeWidth={1.5} />, title: "早稲田式スコア出力", desc: "入力されたデータを、伝統的で美しいスコアブック形式に一発変換。", glowColor: "rgba(34, 197, 94, 0.15)" },
@@ -58,7 +75,7 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/30 overflow-hidden transition-colors duration-300">
 
-      {/* 🌟 究極の透明ヘッダー（テーマスイッチャー搭載） */}
+      {/* 🌟 究極の透明ヘッダー */}
       <header className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 h-24 bg-transparent">
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <img src="/logo.png" alt="i-Score Logo" className="h-10 w-10 object-contain drop-shadow-sm" />
@@ -66,43 +83,61 @@ export default function LandingPage() {
             i-Score
           </span>
         </Link>
+
+        {/* 🔥 究極の3連テーマスイッチャー */}
         <div className="flex items-center gap-4">
-          {/* 🔥 冗長なボタンを消し、美しいテーマ切り替えボタンを配置！ */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="rounded-full hover:bg-background/40 transition-colors h-12 w-12"
-            title="テーマ切り替え"
-          >
-            {isDarkMode ? (
-              <Sun className="h-6 w-6 text-yellow-400 drop-shadow-sm" />
-            ) : (
-              <Moon className="h-6 w-6 text-slate-700 drop-shadow-sm" />
-            )}
-          </Button>
+          <div className="flex items-center p-1 border border-border/50 rounded-full bg-background/50 backdrop-blur-md shadow-sm">
+            <button
+              onClick={() => setTheme("light")}
+              className={`p-2 rounded-full transition-all duration-300 ${theme === "light"
+                  ? "bg-background shadow-sm text-foreground scale-105"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`}
+              title="ライトモード"
+            >
+              <Sun className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setTheme("system")}
+              className={`p-2 rounded-full transition-all duration-300 ${theme === "system"
+                  ? "bg-background shadow-sm text-foreground scale-105"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`}
+              title="システム設定に従う"
+            >
+              <Monitor className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setTheme("dark")}
+              className={`p-2 rounded-full transition-all duration-300 ${theme === "dark"
+                  ? "bg-background shadow-sm text-foreground scale-105"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`}
+              title="ダークモード"
+            >
+              <Moon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* 🌟 背景セクション（白モヤ完全撲滅版！） */}
+      {/* 🌟 究極の背景セクション（スクロール固定 ＆ 白モヤ最適化版！） */}
       <div className="absolute inset-0 z-0">
-        {/* スタジアム画像（存在感はしっかりキープ） */}
-        <div className="absolute inset-0 bg-[url('/stadium.webp')] bg-cover bg-center bg-no-repeat opacity-60 dark:opacity-50" />
+        {/* 💡 bg-fixed を追加！ スクロールしても背景が動かず、リッチな視差効果が生まれます */}
+        <div className="absolute inset-0 bg-[url('/stadium.webp')] bg-cover bg-center bg-no-repeat bg-fixed opacity-70 dark:opacity-60" />
 
-        {/* 💡 究極の白モヤ対策：
-            ライトモード (dark:以外): blurを外し、単純な白背景(bg-background)を 85% の透過度で重ねる。モヤらずクリア！
-            ダークモード (dark:): 黒背景(bg-background)を 30% に抑え、blur-[8px] で美しいナイターのぼけ味を出す！
-        */}
-        <div className="absolute inset-0 bg-background/85 dark:bg-background/30 dark:backdrop-blur-[8px] transition-colors duration-300" />
+        {/* 💡 ライトモード時の白ヴェールを bg-background/85 -> /60 に弱め、画像を見えやすく調整！ */}
+        <div className="absolute inset-0 bg-background/60 dark:bg-background/30 dark:backdrop-blur-[8px] transition-colors duration-300" />
 
         <div
           className="absolute inset-0 pointer-events-none"
           style={{ background: "radial-gradient(circle at center, transparent 0%, transparent 20%, hsl(var(--background)) 90%, hsl(var(--background)) 100%)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
+        {/* 💡 下部グラデーションを少し濃くして、スクロール時のコンテンツの視認性を高めました */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none" />
       </div>
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 w-full max-w-5xl mx-auto pt-32 pb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 w-full max-w-5xl mx-auto pt-32 pb-24 animate-in fade-in slide-in-from-bottom-8 duration-1000">
 
         <div className="space-y-6 text-center w-full max-w-4xl">
           <h1 className="text-5xl md:text-[5rem] lg:text-7xl md:leading-[1.1] font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 drop-shadow-sm md:whitespace-nowrap">
@@ -131,7 +166,6 @@ export default function LandingPage() {
               key={index}
               className="flex-grow-0 flex-shrink-0 w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]"
             >
-              {/* 💡 FeatureCard コンポーネントはそのままに、このページ側から渡す props を変更しました */}
               <FeatureCard
                 icon={feature.icon}
                 title={feature.title}
