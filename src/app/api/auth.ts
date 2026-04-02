@@ -19,18 +19,22 @@ app.get('/me', async (c) => {
     return c.json({ success: false, error: 'Unauthorized' }, 401)
   }
 
+  // 💡 session.user を any にキャストすることで、
+  // adminプラグインが追加した 'role' にアクセスできるようにします。
+  const userWithRole = session.user as any;
+
   // 2. フロントエンドの UserSession 型に合わせてデータを整形して返す
   return c.json({
     success: true,
     data: {
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
+      id: userWithRole.user.id,
+      name: userWithRole.user.name,
+      email: userWithRole.user.email,
       // 💡 R2アバターAPI連携: ユーザーの画像URLをセット！
       // (Better Auth 標準の image フィールドにURLが入っている想定、なければ R2 のパスを組み立てる)
-      avatarUrl: session.user.image || `/api/images/avatars/${session.user.id}.png`,
-      role: session.user.role, 
-      systemRole: session.user.role,
+      avatarUrl: userWithRole.user.image || `/api/images/avatars/${userWithRole.user.id}.png`,
+      role: userWithRole.user.role, 
+      systemRole: userWithRole.user.role,
       // ※チーム情報は別途D1から引くか、一旦空配列(またはモック)でエラーを防ぎます
       memberships: [],
     }
