@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 
 /**
  * 💡 トップページ (Landing Page)
- * 1. 究極の第一印象: スタジアムの熱気をより前面に出す透過度調整。
- * 2. ヴィネット効果の最適化: 中央の透明エリアを広げ、画像をより見やすく。
- * 3. キャッチフレーズの研ぎ澄まし: 「今」と「次世代」をダブルハイライト。
+ * 1. 究極の第一印象: スタジアムの熱気とグラスモーフィズム。
+ * 2. タイポグラフィの最適化: 日本語の極太フォントに合わせ、文字間（tracking）を広げて抜け感を演出。
  */
 export default function LandingPage() {
   return (
@@ -31,13 +30,14 @@ export default function LandingPage() {
       {/* 🌟 ヒーローコンテンツ */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 w-full max-w-5xl mx-auto pt-20 pb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
 
-        {/* 🔥 魂のキャッチフレーズ（短縮＆ダブルハイライト版） */}
+        {/* 🔥 魂のキャッチフレーズ（文字間チューニング版） */}
         <div className="space-y-6 text-center max-w-3xl">
-          <h1 className="text-5xl md:text-7xl md:leading-[1.1] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 drop-shadow-sm">
+          {/* 💡 tracking-tighter -> tracking-wider に変更し、堂々とした佇まいに！ */}
+          <h1 className="text-5xl md:text-7xl md:leading-[1.1] font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 drop-shadow-sm">
             野球の<span className="text-primary drop-shadow-md">今</span>を、<br className="md:hidden" />
             <span className="text-primary drop-shadow-md">次世代</span>へ。
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed tracking-wide">
+          <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed tracking-widest mt-4">
             草野球・アマチュア野球のための究極のスコアブック。
             <br className="hidden md:block" />
             現場の熱気をそのままに、指先一つでプロ並みのデータ分析を。

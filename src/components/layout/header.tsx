@@ -83,7 +83,7 @@ export function Header() {
             <div className="flex items-center gap-1 mt-0.5 opacity-60 md:hidden">
               <Zap className="h-2.5 w-2.5 text-primary fill-primary" />
               <span className="text-[9px] font-bold tracking-widest text-muted-foreground whitespace-nowrap">
-                野球の「今」を次世代の形へ
+                野球の今を、次世代へ。
               </span>
             </div>
           </div>
