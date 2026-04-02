@@ -3,15 +3,16 @@
  * 1. 取得: Cloudflare Workers APIからユーザー情報を取得。
  * 2. 画像: Hono+R2で構築された /api/images/ 経由の avatarUrl を表示。
  * 3. 意匠: チームバッジに「チーム名 + 権限」を表示し、現場での事故を防止。
- * ※ 後日 src/components/layout/ へ移動予定
+ * 4. 構造: src/components/layout へ配置し、インポートを @/ に統一。
  */
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Shield, Zap, LogOut, Settings, Users } from "lucide-react";
-import { ThemeToggle } from "./theme-toggle";
-import { ThemeSwitcher } from "./theme-switcher";
+// ✨ ガイドライン適用: 相対パスを廃止し、すべて @/ エイリアスで統一！
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -33,7 +34,6 @@ export function Header() {
   const [user, setUser] = useState<UserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ユーザー情報の取得
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -58,11 +58,9 @@ export function Header() {
 
   const handleLogout = async () => {
     console.log("Logging out...");
-    // 現場至上主義: window.locationを使わずルーターで安全に遷移
     router.push("/login");
   };
 
-  // 現在のアクティブチームを特定
   const activeTeam = user?.memberships.find(m => m.teamId === user.currentTeamId)
     || user?.memberships.find(m => m.isMainTeam)
     || user?.memberships[0];
@@ -98,7 +96,6 @@ export function Header() {
             <ThemeSwitcher variant="dropdown" />
           </div>
 
-          {/* PC版：所属チームバッジ＆役割表示 */}
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-primary/5 border border-primary/20 text-primary mr-1 shadow-sm dark:shadow-none">
             <Shield className="h-3 w-3" />
             <div className="flex flex-col">
@@ -115,13 +112,12 @@ export function Header() {
 
           <ThemeToggle variant="icon" />
 
-          {/* 通知ベル */}
           <button className="relative p-2 sm:p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-muted/50 text-muted-foreground transition-all group active:scale-90">
             <Bell className="h-5 w-5 group-hover:scale-110 transition-transform" />
             <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border-2 border-white dark:border-background animate-pulse" />
           </button>
 
-          {/* アバタードロップダウンメニュー (R2完全対応) */}
+          {/* アバタードロップダウンメニュー */}
           <div className="ml-1 sm:ml-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
