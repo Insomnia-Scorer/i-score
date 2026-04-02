@@ -177,11 +177,11 @@ export default function LandingPage() {
             <span className="text-lg font-black italic tracking-tighter text-foreground">i-Score</span>
           </div>
           <p className="text-sm text-muted-foreground font-medium">
-            © {new Date().getFullYear()} i-Score. All rights reserved.
+            © {new Date().getFullYear()} iS Baseball Lab. All rights reserved.
           </p>
           <div className="flex gap-4 text-sm text-muted-foreground font-medium">
-            <Link href="#" className="hover:text-primary transition-colors">利用規約</Link>
-            <Link href="#" className="hover:text-primary transition-colors">プライバシー</Link>
+            <Link href="/terms" className="hover:text-primary transition-colors">利用規約</Link>
+            <Link href="/privacy" className="hover:text-primary transition-colors">プライバシー</Link>
           </div>
         </div>
       </footer>
