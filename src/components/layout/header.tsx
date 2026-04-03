@@ -30,7 +30,15 @@ export function Header() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("/api/auth/me");
+        // 🔥 究極の正攻法: タイムスタンプのハックを排除し、純粋なHTTPヘッダーでキャッシュを完全制御！
+        const response = await fetch("/api/auth/me", {
+          cache: "no-store", // Next.jsのサーバー側キャッシュを無効化
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate", // ブラウザとCDNのキャッシュを無効化
+            "Pragma": "no-cache" // 古いプロキシサーバー等への後方互換性
+          }
+        });
+        
         if (!response.ok) throw new Error("Failed to fetch user");
 
         const json = await response.json();
@@ -90,10 +98,9 @@ export function Header() {
             <ThemeSwitcher variant="dropdown" />
           </div>
 
-          {/* 🔥 究極UI: チーム（または管理者）もアバター風のバッジに進化！ */}
-          {isAdmin ? (
+          {/* システム管理者バッジ */}
+          {isAdmin && (
             <div className="hidden sm:flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 mr-1 shadow-sm select-none">
-              {/* 管理者用アバターアイコン */}
               <Avatar className="h-7 w-7 border border-amber-500/30 bg-amber-500/20 flex items-center justify-center">
                 <Crown className="h-4 w-4" />
               </Avatar>
@@ -106,13 +113,15 @@ export function Header() {
                 </span>
               </div>
             </div>
-          ) : activeTeam ? (
+          )}
+
+          {/* チームバッジ */}
+          {activeTeam && (
             <div 
               onClick={() => router.push("/teams")}
               className="hidden sm:flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-background/50 backdrop-blur-md border border-border/50 text-foreground mr-1 shadow-sm hover:bg-background/80 hover:border-primary/30 transition-all cursor-pointer group"
               title="チームを切り替える"
             >
-              {/* チーム用アバターアイコン */}
               <Avatar className="h-7 w-7 border border-border/50 bg-primary/5 group-hover:border-primary/30 transition-colors">
                 <AvatarFallback className="bg-primary/10 text-primary font-black text-[10px]">
                   {activeTeam.teamName.slice(0, 2).toUpperCase()}
@@ -127,7 +136,7 @@ export function Header() {
                 </span>
               </div>
             </div>
-          ) : null}
+          )}
 
           <ThemeToggle variant="icon" />
 
@@ -141,7 +150,6 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center justify-center rounded-full outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background transition-transform active:scale-95">
-                  {/* 🔥 修正: 枠線を極細にし、画像を限界まで拡大！ */}
                   <Avatar className="h-9 w-9 border border-border/30 shadow-sm hover:scale-105 bg-background transition-transform">
                     {!isLoading && user ? (
                       <>
@@ -172,21 +180,23 @@ export function Header() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-border/50" />
 
-                    {isAdmin ? (
+                    {isAdmin && (
                       <div className="flex items-center gap-2 px-3 sm:px-2 py-3 sm:py-2 text-sm sm:text-xs bg-amber-500/10 dark:bg-amber-500/10 rounded-md mx-1 mb-1">
                         <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <span className="font-semibold text-amber-600 dark:text-amber-400">システム管理者</span>
                         <span className="text-muted-foreground text-[10px] ml-auto">(i-Score運営)</span>
                       </div>
-                    ) : activeTeam ? (
+                    )}
+                    
+                    {activeTeam && (
                       <div className="flex items-center gap-2 px-3 sm:px-2 py-3 sm:py-2 text-sm sm:text-xs bg-primary/10 dark:bg-primary/10 rounded-md mx-1 mb-1">
                         <Shield className="h-4 w-4 text-primary shrink-0" />
                         <span className="font-semibold text-primary">{activeTeam.teamName}</span>
                         <span className="text-muted-foreground text-[10px] ml-auto">({activeTeam.roleLabel})</span>
                       </div>
-                    ) : null}
+                    )}
                     
-                    {isAdmin || activeTeam ? <DropdownMenuSeparator className="bg-border/50" /> : null}
+                    {(isAdmin || activeTeam) && <DropdownMenuSeparator className="bg-border/50" />}
                   </>
                 )}
 
