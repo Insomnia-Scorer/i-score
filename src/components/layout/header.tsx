@@ -22,7 +22,6 @@ interface AuthResponse {
   data: UserSession;
 }
 
-// 💡 本物の7色テーマ定義（ThemeSwitcherから移植）
 const THEMES = [
   { id: "blue", color: "#0284c7", label: "Blue" },
   { id: "red", color: "#e11d48", label: "Red" },
@@ -39,8 +38,6 @@ export function Header() {
   const [user, setUser] = useState<UserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [localActiveTeamId, setLocalActiveTeamId] = useState<string | null>(null);
-
-  // 💡 本物のテーマカラー管理ステート
   const [activeThemeColor, setActiveThemeColor] = useState<string>("blue");
 
   const unreadNotificationsCount = 3; 
@@ -48,7 +45,6 @@ export function Header() {
   useEffect(() => {
     setLocalActiveTeamId(localStorage.getItem("iScore_selectedTeamId"));
 
-    // 💡 初期ロード時に保存されたカラーテーマを適用
     const savedTheme = localStorage.getItem("i-score-color-theme") || "blue";
     setActiveThemeColor(savedTheme);
     applyColorTheme(savedTheme);
@@ -64,7 +60,7 @@ export function Header() {
         });
         
         if (!response.ok) throw new Error("Failed to fetch user");
-        const json = await response.json() as AuthResponse; // 💡 型エラー解消！
+        const json = await response.json() as AuthResponse;
         if (json.success) setUser(json.data);
       } catch (error) {
         console.error("User fetch error:", error);
@@ -75,7 +71,6 @@ export function Header() {
     fetchUser();
   }, []);
 
-  // 💡 リアルタイムにアプリ全体の色を書き換える関数
   const applyColorTheme = (themeId: string) => {
     const root = document.documentElement;
     THEMES.forEach((t) => root.classList.remove(`theme-${t.id}`));
@@ -104,7 +99,7 @@ export function Header() {
     <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-background/60 backdrop-blur-xl border-b border-border/40 transition-colors duration-200">
       <div className="flex h-16 sm:h-20 items-center justify-between px-3 sm:px-8">
 
-        {/* 左側: モバイルロゴ & アプリタイトル (大型化) */}
+        {/* 左側: モバイルロゴ & アプリタイトル */}
         <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
           <img src="/logo.png" alt="i-Score Logo" className="md:hidden h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-sm cursor-pointer hover:scale-105 transition-transform" onClick={() => router.push('/dashboard')} />
           <div className="flex flex-col justify-center cursor-pointer" onClick={() => router.push('/dashboard')}>
@@ -116,7 +111,7 @@ export function Header() {
           </div>
         </div>
 
-        {/* 右側: ツールエリア（スッキリ化！） */}
+        {/* 右側: ツールエリア */}
         <div className="flex items-center gap-2 sm:gap-3 pl-2 w-full justify-end">
 
           {/* SYS ADMIN */}
@@ -132,15 +127,15 @@ export function Header() {
             </div>
           )}
 
-          {/* チームバッジ */}
+          {/* 🔥 チームバッジ (Tinted Glass ＆ 強めのボーダー) */}
           {activeTeam && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div 
-                  className="flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2 py-1.5 rounded-full bg-background/50 backdrop-blur-md border border-primary/40 text-foreground shadow-[0_2px_10px_-2px_rgba(var(--primary),0.1)] hover:bg-primary/5 hover:border-primary/60 transition-all cursor-pointer group flex-1 max-w-[180px] min-[400px]:max-w-[200px] sm:max-w-[280px] outline-none"
+                  className="flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2 py-1.5 rounded-full bg-primary/10 backdrop-blur-md border border-primary/50 text-foreground shadow-[0_4px_15px_-3px_rgba(var(--primary),0.2)] hover:bg-primary/20 hover:border-primary/70 transition-all cursor-pointer group flex-1 max-w-[180px] min-[400px]:max-w-[200px] sm:max-w-[280px] outline-none"
                   title="チームを切り替える"
                 >
-                  <Avatar className="h-7 w-7 sm:h-9 sm:w-9 border border-primary/20 bg-primary/10 group-hover:bg-primary/20 transition-colors shrink-0">
+                  <Avatar className="h-7 w-7 sm:h-9 sm:w-9 border border-primary/30 bg-background group-hover:bg-primary/10 transition-colors shrink-0">
                     <AvatarFallback className="text-primary font-black text-[10px] sm:text-[12px]">
                       {((activeTeam as any).organizationName || activeTeam.teamName || "T").slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -155,7 +150,7 @@ export function Header() {
                       ) : activeTeam.roleLabel}
                     </span>
                   </div>
-                  <ChevronDown className="h-3 w-3 sm:h-5 sm:w-5 text-primary/60 group-hover:text-primary ml-0.5 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
+                  <ChevronDown className="h-3 w-3 sm:h-5 sm:w-5 text-primary/80 group-hover:text-primary ml-0.5 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
                 </div>
               </DropdownMenuTrigger>
               
@@ -165,7 +160,7 @@ export function Header() {
                   const isCurrent = m.teamId === activeTeam.teamId;
                   return (
                     <DropdownMenuItem key={m.teamId} onClick={() => handleTeamSwitch(m.teamId, (m as any).organizationId)} className={`flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${isCurrent ? 'bg-primary/10 text-primary focus:bg-primary/15' : 'hover:bg-muted focus:bg-muted'}`}>
-                      <Avatar className={`h-8 w-8 border shrink-0 ${isCurrent ? 'border-primary/30 bg-primary/20' : 'border-border/50 bg-background'}`}>
+                      <Avatar className={`h-8 w-8 border shrink-0 ${isCurrent ? 'border-primary/40 bg-primary/20' : 'border-border/50 bg-background'}`}>
                         <AvatarFallback className={`font-black text-[10px] ${isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>{((m as any).organizationName || m.teamName || "T").slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col flex-1 overflow-hidden">
@@ -185,12 +180,11 @@ export function Header() {
             </DropdownMenu>
           )}
 
-          {/* 🔥 ユーザーアバター（大型化 ＆ メニュー統合） */}
+          {/* ユーザーアバター */}
           <div className="flex items-center shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="relative flex items-center justify-center rounded-full outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background transition-transform active:scale-95 group">
-                  {/* アバター大型化 */}
                   <Avatar className="h-10 w-10 sm:h-11 sm:w-11 border-2 border-border/50 shadow-sm group-hover:border-primary/50 transition-colors bg-background">
                     {!isLoading && user ? (
                       <><AvatarImage src={user.avatarUrl || ""} alt={user.name || "User"} className="object-cover" /><AvatarFallback className="bg-primary/10 text-primary font-black text-xs sm:text-sm">{(user.name || "U").slice(0, 2).toUpperCase()}</AvatarFallback></>
@@ -235,17 +229,15 @@ export function Header() {
                 
                 <DropdownMenuSeparator className="bg-border/50 my-1" />
 
-                {/* 🔥 究極の環境設定（本物のカラー＆モード） */}
                 <div className="px-3 py-2 bg-muted/20 rounded-xl border border-border/30 mx-1 my-2 shadow-inner">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">テーマ環境設定</p>
                   
-                  {/* 本物の7色カラースイッチャー */}
                   <div className="flex items-center justify-between mb-4 px-1">
                     {THEMES.map((t) => (
                       <button
                         key={t.id}
                         onClick={(e) => {
-                          e.preventDefault(); // メニューが閉じないようにする
+                          e.preventDefault();
                           applyColorTheme(t.id);
                         }}
                         className={cn(
@@ -264,7 +256,6 @@ export function Header() {
                     ))}
                   </div>
 
-                  {/* 3連モード切替 */}
                   <div className="flex items-center gap-1 bg-background/50 p-1 rounded-lg border border-border/50 shadow-sm">
                     <button onClick={(e) => { e.preventDefault(); setTheme("light"); }} className={`flex-1 flex justify-center items-center py-2 rounded-md transition-all ${theme === 'light' ? 'bg-background shadow text-foreground font-black' : 'text-muted-foreground hover:text-foreground'}`}>
                       <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -290,7 +281,8 @@ export function Header() {
 
         </div>
       </div>
-      <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
+      {/* 🔥 ヘッダー最下部の光のラインも、少しだけ存在感をアップ！ */}
+      <div className="h-[1px] sm:h-[2px] w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
     </header>
   );
 }
