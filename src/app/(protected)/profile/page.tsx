@@ -46,7 +46,6 @@ export default function ProfilePage() {
     toast.success("プロフィールを更新しました", {
       description: "ベンチに変更サインを伝達しました！"
     });
-    // 本来はここでAPI経由で更新し、再取得または state 更新を行います
     if (user) setUser({ ...user, name });
     setIsSaving(false);
   };
@@ -64,28 +63,21 @@ export default function ProfilePage() {
   const isAdmin = (user as any)?.role === 'SYSTEM_ADMIN' || (user as any)?.systemRole === 'SYSTEM_ADMIN';
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] pb-20 w-full animate-in fade-in duration-500">
+    // 🔥 修正: pb-32（約128px）に変更し、ボトムナビの裏にコンテンツが隠れないようにたっぷり余白を取ります！
+    <div className="min-h-[calc(100vh-4rem)] pb-32 w-full animate-in fade-in duration-500 relative">
 
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          1. ヒーローセクション（ロッカーカバー画像）
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* ヒーローセクション */}
       <div className="relative w-full h-40 sm:h-56 lg:h-72 bg-muted overflow-hidden rounded-b-[2rem] sm:rounded-b-none sm:rounded-3xl shadow-sm">
-        {/* ベースのグラデーション */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/60 via-primary/20 to-background opacity-90" />
-        {/* カバー画像（抽象的なスタジアムの光やロッカーの雰囲気） */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay opacity-20" />
-        {/* 装飾用の光 */}
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            2. プロフィールヘッダー（オーバーラップ）
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        {/* プロフィールヘッダー */}
         <div className="relative -mt-16 sm:-mt-20 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 mb-8 sm:mb-12">
 
-          {/* アバター（チームロゴと同じサイズ感ではみ出させる） */}
           <div className="relative group shrink-0 self-start sm:self-auto">
             <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background shadow-xl bg-background">
               <AvatarImage src={user.avatarUrl || ""} className="object-cover" />
@@ -93,13 +85,11 @@ export default function ProfilePage() {
                 {(user.name || "U").slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {/* カメラアイコン */}
             <button className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 p-2.5 sm:p-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform border-2 border-background cursor-pointer">
               <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
 
-          {/* 名前＆基本情報 */}
           <div className="flex flex-col flex-1 pb-1 sm:pb-3">
             <div className="flex flex-wrap items-center gap-2 mb-1.5 sm:mb-2">
               {isAdmin && (
@@ -122,7 +112,6 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          {/* 保存ボタン（PC時は右端に配置） */}
           <div className="hidden sm:flex pb-3">
             <Button
               size="lg"
@@ -136,20 +125,14 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            3. 設定パネル（2カラム構成）
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        {/* 設定パネル */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-
-          {/* 左側: フォーム入力エリア (2カラム分) */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-
             <div className="p-5 sm:p-8 rounded-3xl bg-background border border-border/50 shadow-sm">
               <h2 className="text-lg font-black flex items-center gap-2 mb-6">
                 <User className="h-5 w-5 text-primary" />
                 基本情報
               </h2>
-
               <div className="space-y-6">
                 <div className="space-y-2.5">
                   <Label htmlFor="name" className="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-widest">
@@ -163,7 +146,6 @@ export default function ProfilePage() {
                     placeholder="グラウンドでの名前を入力"
                   />
                 </div>
-
                 <div className="space-y-2.5">
                   <Label htmlFor="email" className="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-widest">
                     メールアドレス (Email Address)
@@ -174,19 +156,12 @@ export default function ProfilePage() {
                     disabled
                     className="h-14 rounded-2xl border-border/50 bg-muted/50 text-lg font-bold text-muted-foreground cursor-not-allowed opacity-70 px-4"
                   />
-                  <p className="text-[10px] sm:text-xs text-muted-foreground font-bold mt-1.5 ml-1">
-                    ※ログインプロバイダーと紐づいているため変更できません。
-                  </p>
                 </div>
               </div>
             </div>
-
           </div>
 
-          {/* 右側: ステータス＆権限エリア (1カラム分) */}
           <div className="space-y-4 sm:space-y-6">
-
-            {/* アクティビティサマリー（Tinted Glass） */}
             <div className="p-5 sm:p-6 rounded-3xl bg-primary/5 border border-primary/20 shadow-sm relative overflow-hidden group">
               <Activity className="absolute -right-2 -bottom-2 h-20 w-20 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
               <span className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 relative z-10">Teams</span>
@@ -198,10 +173,8 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* 権限情報パネル */}
             <div className="p-5 sm:p-6 rounded-3xl bg-background border border-border/50 shadow-sm">
               <span className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4 block">Account Role</span>
-
               <div className="flex items-start gap-3 sm:gap-4">
                 {isAdmin ? (
                   <>
@@ -223,31 +196,31 @@ export default function ProfilePage() {
                     <div>
                       <p className="font-black text-foreground text-sm sm:text-base">一般ユーザー</p>
                       <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-bold leading-relaxed">
-                        所属チームの権限（監督・選手・マネージャー）に基づき機能を利用できます。
+                        所属チームの権限に基づき機能を利用できます。
                       </p>
                     </div>
                   </>
                 )}
               </div>
             </div>
-
           </div>
         </div>
 
-        {/* 🌟 モバイル用保存ボタン（画面下部に固定または最下部配置） */}
-        <div className="mt-8 sm:hidden flex justify-end">
-          <Button
-            size="lg"
-            onClick={handleSave}
-            disabled={isSaving || name === user.name}
-            className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20 active:scale-95 transition-all"
-          >
-            {isSaving ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Save className="h-5 w-5 mr-2" />}
-            {isSaving ? "更新中..." : "変更を保存"}
-          </Button>
-        </div>
-
       </div>
+
+      {/* 🔥 スマホ用 追従（フローティング）保存ボタン */}
+      <div className="sm:hidden fixed bottom-[88px] left-0 right-0 px-4 z-40 pointer-events-none">
+        <Button
+          size="lg"
+          onClick={handleSave}
+          disabled={isSaving || name === user.name}
+          className="w-full h-14 rounded-2xl font-black text-base shadow-[0_8px_30px_rgb(0,0,0,0.2)] shadow-primary/30 active:scale-95 transition-all pointer-events-auto backdrop-blur-md"
+        >
+          {isSaving ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Save className="h-5 w-5 mr-2" />}
+          {isSaving ? "更新中..." : "変更を保存"}
+        </Button>
+      </div>
+
     </div>
   );
 }
