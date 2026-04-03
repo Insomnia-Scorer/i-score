@@ -68,22 +68,22 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-background/60 backdrop-blur-xl border-b border-border/40 transition-colors duration-200">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-8">
+      <div className="flex h-16 items-center justify-between px-3 sm:px-8">
 
         {/* 左側: モバイルロゴ & アプリタイトル */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <img
             src="/logo.png"
             alt="i-Score Logo"
-            className="md:hidden h-9 w-9 object-contain shrink-0 drop-shadow-sm"
+            className="md:hidden h-8 w-8 sm:h-9 sm:w-9 object-contain drop-shadow-sm"
           />
           <div className="flex flex-col justify-center">
-            <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter text-foreground leading-none">
+            <h1 className="text-lg sm:text-2xl font-black italic tracking-tighter text-foreground leading-none">
               i-Score
             </h1>
             <div className="flex items-center gap-1 mt-0.5 opacity-60 md:hidden">
-              <Zap className="h-2.5 w-2.5 text-primary fill-primary" />
-              <span className="text-[9px] font-bold tracking-widest text-muted-foreground whitespace-nowrap">
+              <Zap className="h-2.5 w-2.5 text-primary fill-primary hidden sm:block" />
+              <span className="text-[8px] sm:text-[9px] font-bold tracking-widest text-muted-foreground whitespace-nowrap hidden min-[380px]:block">
                 野球の今を、次世代へ。
               </span>
             </div>
@@ -91,47 +91,48 @@ export function Header() {
         </div>
 
         {/* 右側: ツールエリア */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-hidden pl-2">
 
-          <div className="hidden lg:block mr-2">
+          <div className="hidden lg:block mr-2 shrink-0">
             <ThemeSwitcher variant="dropdown" />
           </div>
 
+          {/* システム管理者バッジ (モバイル対応) */}
           {isAdmin && (
-            <div className="hidden sm:flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 mr-1 shadow-sm select-none">
-              <Avatar className="h-7 w-7 border border-amber-500/30 bg-amber-500/20 flex items-center justify-center">
-                <Crown className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 sm:gap-2 pl-1 pr-2 sm:pr-3 py-1 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 mr-0.5 sm:mr-1 shadow-sm select-none max-w-[110px] sm:max-w-[200px]">
+              <Avatar className="h-6 w-6 sm:h-7 sm:w-7 border border-amber-500/30 bg-amber-500/20 flex items-center justify-center shrink-0">
+                <Crown className="h-3 w-3 sm:h-4 sm:w-4" />
               </Avatar>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black tracking-widest uppercase whitespace-nowrap leading-tight">
-                  SYSTEM ADMIN
+              <div className="flex flex-col justify-center overflow-hidden">
+                <span className="text-[8px] sm:text-[10px] font-black tracking-widest uppercase truncate leading-tight">
+                  SYS ADMIN
                 </span>
-                <span className="text-[7px] font-bold opacity-80 uppercase leading-none mt-0.5">
+                <span className="text-[6px] sm:text-[7px] font-bold opacity-80 uppercase truncate leading-none mt-0.5">
                   運営管理者
                 </span>
               </div>
             </div>
           )}
 
-          {/* 🔥 チームバッジ (パターンC: ハイブリッド) */}
+          {/* 🔥 チームバッジ C案 (モバイル対応のレスポンシブデザイン) */}
           {activeTeam && (
             <div
               onClick={() => router.push("/teams")}
-              className="hidden sm:flex items-center gap-2 pl-1 pr-3 py-1.5 rounded-full bg-background/50 backdrop-blur-md border border-border/50 text-foreground mr-1 shadow-sm hover:bg-background/80 hover:border-primary/30 transition-all cursor-pointer group"
+              className="flex items-center gap-1.5 sm:gap-2 pl-1 pr-2 sm:pr-3 py-1 sm:py-1.5 rounded-full bg-background/50 backdrop-blur-md border border-border/50 text-foreground mr-0.5 sm:mr-1 shadow-sm hover:bg-background/80 hover:border-primary/30 transition-all cursor-pointer group max-w-[120px] min-[400px]:max-w-[150px] sm:max-w-[240px]"
               title="チームを切り替える"
             >
-              <Avatar className="h-7 w-7 border border-border/50 bg-primary/5 group-hover:border-primary/30 transition-colors">
-                <AvatarFallback className="bg-primary/10 text-primary font-black text-[10px]">
-                  {/* 💡 APIに organizationName があればそれを使用。なければ既存の teamName を使用 */}
+              <Avatar className="h-6 w-6 sm:h-7 sm:w-7 border border-border/50 bg-primary/5 group-hover:border-primary/30 transition-colors shrink-0">
+                <AvatarFallback className="bg-primary/10 text-primary font-black text-[9px] sm:text-[10px]">
                   {((activeTeam as any).organizationName || activeTeam.teamName || "T").slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col justify-center">
-                <span className="text-[10px] font-black tracking-widest uppercase whitespace-nowrap leading-tight group-hover:text-primary transition-colors">
+              <div className="flex flex-col justify-center overflow-hidden">
+                {/* チーム名 (長ければ自動で...になる) */}
+                <span className="text-[9px] sm:text-[10px] font-black tracking-widest uppercase truncate leading-tight group-hover:text-primary transition-colors">
                   {(activeTeam as any).organizationName || activeTeam.teamName}
                 </span>
-                <span className="text-[7px] font-bold text-muted-foreground uppercase leading-none mt-0.5 flex items-center gap-1">
-                  {/* 💡 親チーム名が存在する場合は「編成名 (役割)」の形にする */}
+                {/* 編成名 + 役割 */}
+                <span className="text-[7px] font-bold text-muted-foreground uppercase truncate leading-none mt-0.5">
                   {(activeTeam as any).organizationName ? (
                     <>{activeTeam.teamName} <span className="opacity-60">({activeTeam.roleLabel})</span></>
                   ) : (
@@ -144,17 +145,17 @@ export function Header() {
 
           <ThemeToggle variant="icon" />
 
-          <button className="relative p-2 sm:p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-muted/50 text-muted-foreground transition-all group active:scale-90">
-            <Bell className="h-5 w-5 group-hover:scale-110 transition-transform" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border border-white dark:border-background animate-pulse" />
+          <button className="relative p-1.5 sm:p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-muted/50 text-muted-foreground transition-all group active:scale-90 shrink-0">
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
+            <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-red-500 border border-white dark:border-background animate-pulse" />
           </button>
 
-          {/* アバタードロップダウンメニュー */}
-          <div className="ml-1 sm:ml-2 flex items-center">
+          {/* アバター */}
+          <div className="ml-0.5 sm:ml-2 flex items-center shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center justify-center rounded-full outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background transition-transform active:scale-95">
-                  <Avatar className="h-9 w-9 border border-border/30 shadow-sm hover:scale-105 bg-background transition-transform">
+                  <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border border-border/30 shadow-sm hover:scale-105 bg-background transition-transform">
                     {!isLoading && user ? (
                       <>
                         <AvatarImage src={user.avatarUrl || ""} alt={user.name || "User"} className="object-cover" />
@@ -192,7 +193,6 @@ export function Header() {
                       </div>
                     )}
 
-                    {/* 🔥 ドロップダウン内もパターンCに最適化 */}
                     {activeTeam && (
                       <div className="flex items-start gap-2 px-3 sm:px-2 py-3 sm:py-2 text-sm sm:text-xs bg-primary/10 dark:bg-primary/10 rounded-md mx-1 mb-1">
                         <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
