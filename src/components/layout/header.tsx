@@ -63,8 +63,12 @@ export function Header() {
   const activeTeam = user?.memberships?.find(m => m.teamId === user.currentTeamId)
     || user?.memberships?.find(m => m.isMainTeam)
     || user?.memberships?.[0];
+  const activeTeam = user?.memberships?.find(m => m.teamId === user.currentTeamId)
+    || user?.memberships?.find(m => m.isMainTeam)
+    || user?.memberships?.[0];
 
   const isAdmin = (user as any)?.role === 'SYSTEM_ADMIN' || (user as any)?.systemRole === 'SYSTEM_ADMIN';
+
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-background/60 backdrop-blur-xl border-b border-border/40 transition-colors duration-200">
@@ -147,100 +151,109 @@ export function Header() {
           <button className="relative p-2 sm:p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-muted/50 text-muted-foreground transition-all group active:scale-90">
             <Bell className="h-5 w-5 group-hover:scale-110 transition-transform" />
             <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border border-white dark:border-background animate-pulse" />
+            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border border-white dark:border-background animate-pulse" />
           </button>
 
           {/* アバタードロップダウンメニュー */}
           <div className="ml-1 sm:ml-2 flex items-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center rounded-full outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background transition-transform active:scale-95">
-                  <Avatar className="h-9 w-9 border border-border/30 shadow-sm hover:scale-105 bg-background transition-transform">
-                    {!isLoading && user ? (
-                      <>
-                        <AvatarImage src={user.avatarUrl || ""} alt={user.name || "User"} className="object-cover" />
-                        <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
-                          {(user.name || "U").slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </>
-                    ) : (
-                      <AvatarFallback className="bg-muted text-muted-foreground font-bold">
-                        {isLoading ? "..." : "?"}
-                      </AvatarFallback>
+            <div className="ml-1 sm:ml-2 flex items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center justify-center rounded-full outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background transition-transform active:scale-95">
+                    <Avatar className="h-9 w-9 border border-border/30 shadow-sm hover:scale-105 bg-background transition-transform">
+                      <button className="flex items-center justify-center rounded-full outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background transition-transform active:scale-95">
+                        <Avatar className="h-9 w-9 border border-border/30 shadow-sm hover:scale-105 bg-background transition-transform">
+                          {!isLoading && user ? (
+                            <>
+                              <AvatarImage src={user.avatarUrl || ""} alt={user.name || "User"} className="object-cover" />
+                              <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
+                                {(user.name || "U").slice(0, 2).toUpperCase()}
+                                <AvatarImage src={user.avatarUrl || ""} alt={user.name || "User"} className="object-cover" />
+                                <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
+                                  {(user.name || "U").slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </>
+                              ) : (
+                              <AvatarFallback className="bg-muted text-muted-foreground font-bold">
+                                {isLoading ? "..." : "?"}
+                              </AvatarFallback>
                     )}
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
+                            </Avatar>
+                      </button>
+                    </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-72 sm:w-64 rounded-xl border-border/50 bg-white/95 dark:bg-background/95 backdrop-blur-xl p-2 sm:p-1">
-                {user && (
-                  <>
-                    <DropdownMenuLabel className="font-normal py-3 sm:py-1.5 px-3 sm:px-2">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-base sm:text-sm font-bold leading-none">{user.name}</p>
-                        <p className="text-sm sm:text-xs leading-none text-muted-foreground mt-1">
-                          {user.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-border/50" />
+                    <DropdownMenuContent align="end" className="w-72 sm:w-64 rounded-xl border-border/50 bg-white/95 dark:bg-background/95 backdrop-blur-xl p-2 sm:p-1">
+                      {user && (
+                        <>
+                          <DropdownMenuLabel className="font-normal py-3 sm:py-1.5 px-3 sm:px-2">
+                            <div className="flex flex-col space-y-1">
+                              <p className="text-base sm:text-sm font-bold leading-none">{user.name}</p>
+                              <p className="text-sm sm:text-xs leading-none text-muted-foreground mt-1">
+                                {user.email}
+                              </p>
+                            </div>
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator className="bg-border/50" />
 
-                    {isAdmin && (
-                      <div className="flex items-center gap-2 px-3 sm:px-2 py-3 sm:py-2 text-sm sm:text-xs bg-amber-500/10 dark:bg-amber-500/10 rounded-md mx-1 mb-1">
-                        <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                        <span className="font-semibold text-amber-600 dark:text-amber-400">システム管理者</span>
-                        <span className="text-muted-foreground text-[10px] ml-auto">(i-Score運営)</span>
-                      </div>
-                    )}
-
-                    {/* 🔥 ドロップダウン内もパターンCに最適化 */}
-                    {activeTeam && (
-                      <div className="flex items-start gap-2 px-3 sm:px-2 py-3 sm:py-2 text-sm sm:text-xs bg-primary/10 dark:bg-primary/10 rounded-md mx-1 mb-1">
-                        <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-primary leading-tight">
-                            {(activeTeam as any).organizationName || activeTeam.teamName}
-                          </span>
-                          <span className="text-muted-foreground text-[10px] font-bold">
-                            {(activeTeam as any).organizationName ? (
-                              <>{activeTeam.teamName} <span className="opacity-80">({activeTeam.roleLabel})</span></>
-                            ) : (
-                              activeTeam.roleLabel
+                          {isAdmin && (
+                            { isAdmin && (
+                              <div className="flex items-center gap-2 px-3 sm:px-2 py-3 sm:py-2 text-sm sm:text-xs bg-amber-500/10 dark:bg-amber-500/10 rounded-md mx-1 mb-1">
+                                <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                                <span className="font-semibold text-amber-600 dark:text-amber-400">システム管理者</span>
+                                <span className="text-muted-foreground text-[10px] ml-auto">(i-Score運営)</span>
+                                <span className="text-muted-foreground text-[10px] ml-auto">(i-Score運営)</span>
+                              </div>
                             )}
-                          </span>
-                        </div>
-                      </div>
-                    )}
 
-                    {(isAdmin || activeTeam) && <DropdownMenuSeparator className="bg-border/50" />}
-                  </>
-                )}
+                          {/* 🔥 ドロップダウン内もパターンCに最適化 */}
+                          {activeTeam && (
+                            <div className="flex items-start gap-2 px-3 sm:px-2 py-3 sm:py-2 text-sm sm:text-xs bg-primary/10 dark:bg-primary/10 rounded-md mx-1 mb-1">
+                              <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-semibold text-primary leading-tight">
+                                  {(activeTeam as any).organizationName || activeTeam.teamName}
+                                </span>
+                                <span className="text-muted-foreground text-[10px] font-bold">
+                                  {(activeTeam as any).organizationName ? (
+                                    <>{activeTeam.teamName} <span className="opacity-80">({activeTeam.roleLabel})</span></>
+                                  ) : (
+                                    activeTeam.roleLabel
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          )}
 
-                <DropdownMenuItem className="cursor-pointer gap-3 sm:gap-2 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm" onClick={() => router.push("/profile")}>
-                  <Settings className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
-                  <span>アカウント設定</span>
-                </DropdownMenuItem>
+                          {(isAdmin || activeTeam) && <DropdownMenuSeparator className="bg-border/50" />}
+                        </>
+                      )}
 
-                <DropdownMenuItem className="cursor-pointer gap-3 sm:gap-2 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm" onClick={() => router.push("/teams")}>
-                  <Users className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
-                  <span>チーム・編成の管理</span>
-                </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer gap-3 sm:gap-2 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm" onClick={() => router.push("/profile")}>
+                        <Settings className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
+                        <span>アカウント設定</span>
+                      </DropdownMenuItem>
 
-                <DropdownMenuSeparator className="bg-border/50" />
+                      <DropdownMenuItem className="cursor-pointer gap-3 sm:gap-2 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm" onClick={() => router.push("/teams")}>
+                        <Users className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
+                        <span>チーム・編成の管理</span>
+                      </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  className="cursor-pointer gap-3 sm:gap-2 text-red-500 focus:text-red-500 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-5 w-5 sm:h-4 sm:w-4" />
-                  <span className="font-bold sm:font-normal">ログアウト</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      <DropdownMenuSeparator className="bg-border/50" />
+
+                      <DropdownMenuItem
+                        className="cursor-pointer gap-3 sm:gap-2 text-red-500 focus:text-red-500 rounded-lg py-3 sm:py-1.5 px-3 sm:px-2 text-base sm:text-sm"
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="h-5 w-5 sm:h-4 sm:w-4" />
+                        <span className="font-bold sm:font-normal">ログアウト</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+            </div>
           </div>
-
-        </div>
-      </div>
-      <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
-    </header>
-  );
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
+        </header>
+        );
 }

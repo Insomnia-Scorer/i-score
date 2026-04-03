@@ -73,7 +73,7 @@ export default function ProfilePage() {
   const isAdmin = (user as any)?.role === 'SYSTEM_ADMIN' || (user as any)?.systemRole === 'SYSTEM_ADMIN';
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-3xl mx-auto py-8 sm:py-6 px-4 sm:px-4 lg:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* 🌟 ページタイトル */}
       <div className="mb-8">
@@ -82,12 +82,12 @@ export default function ProfilePage() {
           アカウント設定
         </h1>
         <p className="text-muted-foreground mt-2 font-medium tracking-wide">
-          選手登録情報（プロフィール）の確認と更新を行います。
+          登録情報（プロフィール）の確認と更新を行います。
         </p>
       </div>
 
       {/* 🌟 究極のプロフィールカード */}
-      <div className="bg-card/40 backdrop-blur-xl border border-border/50 shadow-xl rounded-[32px] overflow-hidden">
+      <div className="bg-card/40 backdrop-blur-xl border border-border/50 shadow-md rounded-[32px] overflow-hidden">
         
         {/* カバー画像風のグラデーションヘッダー */}
         <div className="h-32 bg-gradient-to-r from-primary/30 via-primary/10 to-transparent w-full" />
