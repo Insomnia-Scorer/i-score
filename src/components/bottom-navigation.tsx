@@ -2,13 +2,7 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation"; // 🔥 追加：現在のパスを取得するため
-/**
- * 💡 モバイル用ボトムナビゲーション
- * 1. 中央にアプリロゴのFAB（浮遊ボタン）を配置。
- * 2. 左右に主要な2項目ずつを配置（合計4項目＋中央1項目）。
- * 3. 透過背景と強力なブラーで、コンテンツを邪魔しない設計。
- */
+import { usePathname } from "next/navigation";
 import { Trophy, Users2, Users, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,9 +13,9 @@ interface BottomNavigationProps {
 }
 
 export function BottomNavigation({ activeTab, onNavigate, onOpenDrawer }: BottomNavigationProps) {
-  const pathname = usePathname(); // 🔥 追加
+  const pathname = usePathname();
 
-  // 🔥 追加：認証系の画面（/login, /registerなど）ではボトムナビを非表示にする
+  // 認証系の画面ではボトムナビを非表示にする
   if (pathname?.startsWith('/login') || pathname?.startsWith('/register')) {
     return null;
   }
@@ -32,13 +26,15 @@ export function BottomNavigation({ activeTab, onNavigate, onOpenDrawer }: Bottom
 
         {/* 左側：チーム, 選手名簿 */}
         <div className="flex w-[40%] justify-around h-full">
+          {/* 🔥 遷移先を先ほど作った '/team' に修正！ */}
           <button
-            onClick={() => onNavigate('/teams/profile', 'team')}
+            onClick={() => onNavigate('/team', 'team')}
             className={cn("flex flex-col items-center justify-center w-full h-full gap-1 transition-all", activeTab === 'team' ? "text-primary scale-105" : "text-muted-foreground opacity-50")}
           >
             <Users className={cn("h-5 w-5", activeTab === 'team' ? "stroke-[2.5px]" : "stroke-[2px]")} />
             <span className="text-[9px] font-black tracking-tighter">チーム</span>
           </button>
+
           <button
             onClick={() => onNavigate('/players', 'players')}
             className={cn("flex flex-col items-center justify-center w-full h-full gap-1 transition-all", activeTab === 'players' ? "text-primary scale-105" : "text-muted-foreground opacity-50")}
@@ -80,6 +76,7 @@ export function BottomNavigation({ activeTab, onNavigate, onOpenDrawer }: Bottom
             <Trophy className={cn("h-5 w-5", activeTab === 'map' ? "stroke-[2.5px]" : "stroke-[2px]")} />
             <span className="text-[9px] font-black tracking-tighter">大会マップ</span>
           </button>
+
           <button
             onClick={onOpenDrawer}
             className="flex flex-col items-center justify-center w-full h-full gap-1 text-muted-foreground opacity-50"
