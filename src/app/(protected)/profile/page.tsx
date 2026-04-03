@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { User, Mail, Shield, Save, Crown, Loader2, Camera } from "lucide-react";
+import { User, Mail, Shield, Save, Crown, Loader2, Camera, Calendar, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,19 +15,12 @@ interface AuthResponse {
   data: UserSession;
 }
 
-/**
- * 💡 アカウント設定 (Profile) ページ
- * 1. UI/UX: カバー画像とはみ出すアバターでSaaSライクな美しいプロフカードを演出。
- * 2. 権限連動: SYSTEM_ADMINの場合は、王冠バッジと専用の権限説明パネルを表示。
- * 3. 状態管理: /api/auth/me からユーザー情報を取得し、表示名を編集可能に。
- */
 export default function ProfilePage() {
   const [user, setUser] = useState<UserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState("");
 
-  // 💡 ユーザー情報の取得
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -47,21 +40,20 @@ export default function ProfilePage() {
     fetchUser();
   }, []);
 
-  // 💡 保存処理（※今回はUIのモックアップとして1秒待機し、トーストを出します）
-  // 実際は Better Auth の update API や、独自のバックエンドへPUTする処理を入れます。
   const handleSave = async () => {
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     toast.success("プロフィールを更新しました", {
       description: "ベンチに変更サインを伝達しました！"
     });
-    // setUser({ ...user, name }); のように状態を更新すると完璧です
+    // 本来はここでAPI経由で更新し、再取得または state 更新を行います
+    if (user) setUser({ ...user, name });
     setIsSaving(false);
   };
 
   if (isLoading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
+      <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -69,138 +61,192 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
-  // Headerと同じく権限を判定
   const isAdmin = (user as any)?.role === 'SYSTEM_ADMIN' || (user as any)?.systemRole === 'SYSTEM_ADMIN';
 
   return (
-    <div className="max-w-3xl mx-auto py-8 sm:py-6 px-4 sm:px-4 lg:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      {/* 🌟 ページタイトル */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
-          <User className="h-8 w-8 text-primary" />
-          アカウント設定
-        </h1>
-        <p className="text-muted-foreground mt-2 font-medium tracking-wide">
-          登録情報（プロフィール）の確認と更新を行います。
-        </p>
+    <div className="min-h-[calc(100vh-4rem)] pb-20 w-full animate-in fade-in duration-500">
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          1. ヒーローセクション（ロッカーカバー画像）
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="relative w-full h-40 sm:h-56 lg:h-72 bg-muted overflow-hidden rounded-b-[2rem] sm:rounded-b-none sm:rounded-3xl shadow-sm">
+        {/* ベースのグラデーション */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/60 via-primary/20 to-background opacity-90" />
+        {/* カバー画像（抽象的なスタジアムの光やロッカーの雰囲気） */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay opacity-20" />
+        {/* 装飾用の光 */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      {/* 🌟 究極のプロフィールカード */}
-      <div className="bg-card/40 backdrop-blur-xl border border-border/50 shadow-md rounded-[32px] overflow-hidden">
-        
-        {/* カバー画像風のグラデーションヘッダー */}
-        <div className="h-32 bg-gradient-to-r from-primary/30 via-primary/10 to-transparent w-full" />
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div className="px-6 sm:px-10 pb-10">
-          
-          {/* アバター部分（上に少しはみ出させる高度なCSSトリック） */}
-          <div className="relative flex justify-between items-end -mt-12 mb-8">
-            <div className="relative group">
-              <Avatar className="h-24 w-24 border-4 border-background shadow-xl bg-white">
-                <AvatarImage src={user.avatarUrl || ""} className="object-cover" />
-                <AvatarFallback className="bg-primary/10 text-primary text-2xl font-black">
-                  {(user.name || "U").slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {/* アバター変更ボタン（UIのみ） */}
-              <button className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform cursor-pointer">
-                <Camera className="h-4 w-4" />
-              </button>
-            </div>
-            
-            {/* VIP感のある管理者バッジ */}
-            {isAdmin && (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 shadow-sm mb-2">
-                <Crown className="h-4 w-4" />
-                <span className="text-xs font-black tracking-widest uppercase">
-                  SYSTEM ADMIN
-                </span>
-              </div>
-            )}
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            2. プロフィールヘッダー（オーバーラップ）
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <div className="relative -mt-16 sm:-mt-20 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 mb-8 sm:mb-12">
+
+          {/* アバター（チームロゴと同じサイズ感ではみ出させる） */}
+          <div className="relative group shrink-0 self-start sm:self-auto">
+            <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background shadow-xl bg-background">
+              <AvatarImage src={user.avatarUrl || ""} className="object-cover" />
+              <AvatarFallback className="text-4xl sm:text-5xl font-black text-primary bg-primary/10">
+                {(user.name || "U").slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {/* カメラアイコン */}
+            <button className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 p-2.5 sm:p-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform border-2 border-background cursor-pointer">
+              <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
           </div>
 
-          {/* 🌟 フォーム部分 */}
-          <div className="space-y-6">
-            
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" /> 表示名 (登録名)
-              </Label>
-              <Input 
-                id="name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
-                className="h-12 rounded-xl border-border/50 bg-background/50 text-lg font-medium focus-visible:ring-primary/50 transition-colors"
-                placeholder="グラウンドでの名前を入力"
-              />
+          {/* 名前＆基本情報 */}
+          <div className="flex flex-col flex-1 pb-1 sm:pb-3">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5 sm:mb-2">
+              {isAdmin && (
+                <span className="flex items-center px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] sm:text-xs font-black tracking-widest uppercase border border-amber-500/20">
+                  <Crown className="h-3 w-3 mr-1" />
+                  System Admin
+                </span>
+              )}
+              <span className="flex items-center text-muted-foreground text-[10px] sm:text-xs font-bold bg-muted px-2.5 py-0.5 rounded-full">
+                <Calendar className="h-3 w-3 mr-1" />
+                Joined 2024
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground leading-tight">
+              {user.name}
+            </h1>
+            <p className="text-sm font-bold text-muted-foreground mt-1 flex items-center gap-1.5">
+              <Mail className="h-4 w-4" />
+              {user.email}
+            </p>
+          </div>
+
+          {/* 保存ボタン（PC時は右端に配置） */}
+          <div className="hidden sm:flex pb-3">
+            <Button
+              size="lg"
+              onClick={handleSave}
+              disabled={isSaving || name === user.name}
+              className="h-12 px-8 rounded-full font-bold shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+            >
+              {isSaving ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Save className="h-5 w-5 mr-2" />}
+              {isSaving ? "更新中..." : "変更を保存"}
+            </Button>
+          </div>
+        </div>
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            3. 設定パネル（2カラム構成）
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
+          {/* 左側: フォーム入力エリア (2カラム分) */}
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+
+            <div className="p-5 sm:p-8 rounded-3xl bg-background border border-border/50 shadow-sm">
+              <h2 className="text-lg font-black flex items-center gap-2 mb-6">
+                <User className="h-5 w-5 text-primary" />
+                基本情報
+              </h2>
+
+              <div className="space-y-6">
+                <div className="space-y-2.5">
+                  <Label htmlFor="name" className="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                    表示名 (Display Name)
+                  </Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-14 rounded-2xl border-border/50 bg-muted/30 text-lg font-bold focus-visible:ring-primary/50 transition-colors px-4"
+                    placeholder="グラウンドでの名前を入力"
+                  />
+                </div>
+
+                <div className="space-y-2.5">
+                  <Label htmlFor="email" className="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                    メールアドレス (Email Address)
+                  </Label>
+                  <Input
+                    id="email"
+                    value={user.email}
+                    disabled
+                    className="h-14 rounded-2xl border-border/50 bg-muted/50 text-lg font-bold text-muted-foreground cursor-not-allowed opacity-70 px-4"
+                  />
+                  <p className="text-[10px] sm:text-xs text-muted-foreground font-bold mt-1.5 ml-1">
+                    ※ログインプロバイダーと紐づいているため変更できません。
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                <Mail className="h-4 w-4" /> メールアドレス
-              </Label>
-              <Input 
-                id="email" 
-                value={user.email} 
-                disabled
-                className="h-12 rounded-xl border-border/50 bg-muted/50 text-lg font-medium text-muted-foreground cursor-not-allowed opacity-70"
-              />
-              <p className="text-xs text-muted-foreground mt-1 ml-1 font-medium">
-                ※メールアドレスはSNSプロバイダーと連携しているため変更できません。
-              </p>
+          </div>
+
+          {/* 右側: ステータス＆権限エリア (1カラム分) */}
+          <div className="space-y-4 sm:space-y-6">
+
+            {/* アクティビティサマリー（Tinted Glass） */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-primary/5 border border-primary/20 shadow-sm relative overflow-hidden group">
+              <Activity className="absolute -right-2 -bottom-2 h-20 w-20 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
+              <span className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 relative z-10">Teams</span>
+              <div className="flex items-baseline gap-1.5 relative z-10 mt-1">
+                <span className="text-4xl font-black text-primary tracking-tighter">
+                  {user.memberships?.length || 0}
+                </span>
+                <span className="text-xs font-bold text-primary/80">所属</span>
+              </div>
             </div>
 
-            {/* 権限情報（リードオンリーの美しいパネル） */}
-            <div className="space-y-2 pt-2">
-              <Label className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                <Shield className="h-4 w-4" /> アカウント権限
-              </Label>
-              <div className="p-4 rounded-xl border border-border/50 bg-background/30 flex items-center gap-4">
+            {/* 権限情報パネル */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-background border border-border/50 shadow-sm">
+              <span className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4 block">Account Role</span>
+
+              <div className="flex items-start gap-3 sm:gap-4">
                 {isAdmin ? (
                   <>
-                    <div className="p-3 bg-amber-500/20 rounded-lg shrink-0">
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl shrink-0">
                       <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                     </div>
                     <div>
-                      <p className="font-bold text-amber-600 dark:text-amber-400">システム管理者</p>
-                      <p className="text-xs text-muted-foreground mt-1 font-medium">i-Scoreの全ての機能と設定にアクセスできる最高権限です。</p>
+                      <p className="font-black text-amber-600 dark:text-amber-400 text-sm sm:text-base">システム管理者</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-bold leading-relaxed">
+                        i-Scoreの全ての機能と設定にアクセスできる最高権限です。
+                      </p>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="p-3 bg-primary/20 rounded-lg shrink-0">
+                    <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl shrink-0">
                       <Shield className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-bold text-foreground">一般ユーザー</p>
-                      <p className="text-xs text-muted-foreground mt-1 font-medium">所属チームの権限（監督・選手・マネージャー）に基づき機能を利用できます。</p>
+                      <p className="font-black text-foreground text-sm sm:text-base">一般ユーザー</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-bold leading-relaxed">
+                        所属チームの権限（監督・選手・マネージャー）に基づき機能を利用できます。
+                      </p>
                     </div>
                   </>
                 )}
               </div>
-            </div>
-
-            {/* 保存ボタン */}
-            <div className="pt-6">
-              <Button 
-                size="lg" 
-                onClick={handleSave} 
-                // 名前に変更がない場合、または保存中はボタンを非活性にする
-                disabled={isSaving || name === user.name}
-                className="w-full sm:w-auto h-14 px-8 rounded-full font-bold text-base shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                ) : (
-                  <Save className="h-5 w-5 mr-2" />
-                )}
-                {isSaving ? "更新中..." : "変更を保存"}
-              </Button>
             </div>
 
           </div>
         </div>
+
+        {/* 🌟 モバイル用保存ボタン（画面下部に固定または最下部配置） */}
+        <div className="mt-8 sm:hidden flex justify-end">
+          <Button
+            size="lg"
+            onClick={handleSave}
+            disabled={isSaving || name === user.name}
+            className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20 active:scale-95 transition-all"
+          >
+            {isSaving ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Save className="h-5 w-5 mr-2" />}
+            {isSaving ? "更新中..." : "変更を保存"}
+          </Button>
+        </div>
+
       </div>
     </div>
   );
