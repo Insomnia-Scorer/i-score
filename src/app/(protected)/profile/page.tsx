@@ -73,7 +73,7 @@ export default function ProfilePage() {
   const isAdmin = (user as any)?.role === 'SYSTEM_ADMIN' || (user as any)?.systemRole === 'SYSTEM_ADMIN';
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-3xl mx-auto py-8 sm:py-6 px-4 sm:px-4 lg:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* 🌟 ページタイトル */}
       <div className="mb-8">
