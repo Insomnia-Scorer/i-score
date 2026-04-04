@@ -75,8 +75,9 @@ export function ProtectedClientLayout({ children }: { children: React.ReactNode 
         isCollapsed ? "md:pl-16" : "md:pl-56"
       )}>
         <main className="flex-1 w-full relative z-0">
-          {/* 🔥 修正ポイント: ここにあった p-4 md:p-8 を削除！各ページにパディングを委ねます */}
-          <div className={cn("w-full max-w-7xl mx-auto pb-24 md:pb-12")}>
+          {/* 🔥 修正: `max-w-7xl mx-auto` のストッパーを完全に削除しました！ */}
+          {/* これにより、子要素（カバー画像など）が画面の端から端まで無限に広がれるようになります */}
+          <div className={cn("w-full pb-24 md:pb-12")}>
             {children}
           </div>
         </main>
