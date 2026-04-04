@@ -36,12 +36,12 @@ export default function TeamProfilePage() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           1. ヒーローセクション（カバー画像＆ロゴ）
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="relative w-full h-48 sm:h-64 lg:h-80 bg-muted overflow-hidden">
+      <div className="relative w-full aspect-[21/9] lg:aspect-[4/1] bg-muted overflow-hidden">
         {/* カバー画像（仮のグラデーションまたはスタジアム画像） */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/80 via-primary/40 to-background opacity-80" />
         
         {/* 🔥 ここを変更！ publicフォルダに入れたファイル名（例: /team-cover.jpg）を指定します */}
-        <div className="absolute inset-0 bg-[url('/team-cover.webp')] bg-contain bg-no-repeat bg-center mix-blend-overlay opacity-30" />
+        <div className="absolute inset-0 bg-[url('/team-cover.webp')] bg-cover bg-center mix-blend-overlay opacity-30" />
         
         {/* 装飾用の光 */}
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
