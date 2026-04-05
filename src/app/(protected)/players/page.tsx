@@ -1,4 +1,4 @@
-// src/app/(protected)/teams/roster/page.tsx
+// src/app/(protected)/players/page.tsx
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
@@ -8,20 +8,20 @@ import React, { useState, useEffect, Suspense } from "react";
  * 2. チームページと整合性のある、角丸40pxのカードとフラットなバッジデザイン。
  * 3. Gemini API を使用した日本語による AI スカウティング機能を搭載。
  */
-import { 
-  Card, 
-  CardContent 
+import {
+  Card,
+  CardContent
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  UserPlus, 
-  ChevronRight, 
+import {
+  Search,
+  UserPlus,
+  ChevronRight,
   MoreHorizontal,
-  Target, 
-  Zap, 
+  Target,
+  Zap,
   Shield,
   Loader2,
   TrendingUp,
@@ -135,7 +135,7 @@ function PlayerRosterContent() {
 
   const getPositionBadge = (player: Player) => {
     let styles = "";
-    switch(player.mainPosition) {
+    switch (player.mainPosition) {
       case 'P': styles = "bg-blue-500/10 text-blue-500 border-blue-500/20"; break;
       case 'C': styles = "bg-orange-500/10 text-orange-500 border-orange-500/20"; break;
       case 'IF': styles = "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"; break;
@@ -149,7 +149,7 @@ function PlayerRosterContent() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'active': return <Badge className="bg-emerald-500 text-white border-none text-[9px] font-black rounded-md px-2">現役</Badge>;
       case 'injured': return <Badge className="bg-red-500 text-white border-none text-[9px] font-black rounded-md px-2">故障中</Badge>;
       case 'bench': return <Badge className="bg-zinc-500 text-white border-none text-[9px] font-black rounded-md px-2">控え</Badge>;
@@ -166,12 +166,12 @@ function PlayerRosterContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-500 relative pb-20 overflow-x-hidden">
-      
+
       {/* 💡 統一背景グラデーション */}
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(var(--primary),0.05),transparent)] pointer-events-none -z-10" />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-10 animate-in fade-in duration-1000">
-        
+
         {/* ヘッダーエリア */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
@@ -187,12 +187,12 @@ function PlayerRosterContent() {
               選手<span className="text-primary">名簿</span>
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <Button variant="outline" className="rounded-2xl h-14 px-6 border-border bg-card/40 backdrop-blur-sm font-black text-xs tracking-widest uppercase hover:bg-muted shadow-sm transition-all active:scale-95">
               入部申請を確認
             </Button>
-            <Button 
+            <Button
               className="rounded-2xl h-14 px-8 bg-primary text-primary-foreground font-black text-lg shadow-md shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3"
             >
               <UserPlus className="h-6 w-6 stroke-[3px]" /> 選手を追加
@@ -204,8 +204,8 @@ function PlayerRosterContent() {
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input 
-              placeholder="名前、背番号、フリガナで検索..." 
+            <Input
+              placeholder="名前、背番号、フリガナで検索..."
               className="h-14 pl-12 rounded-2xl bg-card/40 backdrop-blur-sm border-border focus:ring-primary/20 transition-all shadow-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -213,7 +213,7 @@ function PlayerRosterContent() {
           </div>
           <div className="flex overflow-x-auto pb-2 lg:pb-0 gap-2 scrollbar-hide">
             {['すべて', '投手', '捕手', '内野手', '外野手'].map((pos) => (
-              <Button 
+              <Button
                 key={pos}
                 variant={filter === pos ? "default" : "outline"}
                 onClick={() => setFilter(pos)}
@@ -231,8 +231,8 @@ function PlayerRosterContent() {
         {/* 選手グリッド */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPlayers.map((player) => (
-            <Card 
-              key={player.id} 
+            <Card
+              key={player.id}
               className="bg-card/40 dark:bg-zinc-900/20 backdrop-blur-md border-border rounded-[40px] overflow-hidden group hover:border-primary/40 transition-all duration-300 shadow-sm border-t-primary/5"
             >
               <CardContent className="p-0">
@@ -301,13 +301,13 @@ function PlayerRosterContent() {
                       </span>
                     </div>
                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className={cn(
                           "h-full transition-all duration-1000 ease-out",
-                          player.condition > 80 ? "bg-primary" : 
-                          player.condition < 50 ? "bg-red-500" : "bg-zinc-400"
+                          player.condition > 80 ? "bg-primary" :
+                            player.condition < 50 ? "bg-red-500" : "bg-zinc-400"
                         )}
-                        style={{ width: `${player.condition}%` }} 
+                        style={{ width: `${player.condition}%` }}
                       />
                     </div>
                   </div>
@@ -328,7 +328,7 @@ function PlayerRosterContent() {
 
                 {/* アクションボタンエリア */}
                 <div className="flex border-t border-border/60">
-                  <button 
+                  <button
                     onClick={() => generateScoutingReport(player)}
                     disabled={analyzingPlayerId === player.id}
                     className="flex-1 py-5 hover:bg-primary/5 text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 transition-all border-r border-border/60 text-primary disabled:opacity-50"

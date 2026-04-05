@@ -41,7 +41,12 @@ export function UserProfileMenu({ user, isLoading, onLogout }: UserProfileMenuPr
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("i-score-color-theme") || "blue";
-    setActiveThemeColor(savedTheme);
+    setActiveThemeColor(savedTheme); // UIの選択状態を復元
+
+    // リロード時にも実際の画面にテーマクラスを適用する！
+    const root = document.documentElement;
+    THEMES.forEach((t) => root.classList.remove(`theme-${t.id}`));
+    root.classList.add(`theme-${savedTheme}`);
   }, []);
 
   const applyColorTheme = (themeId: string) => {
