@@ -1,3 +1,4 @@
+// src/app/(protected)/matches/create/page.tsx
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
@@ -14,20 +15,17 @@ function MatchCreateContent() {
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
 
-  // --- 基本情報 ---
   const [opponent, setOpponent] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [time, setTime] = useState("10:00"); // 💡 時刻を追加
+  const [time, setTime] = useState("10:00");
   const [matchType, setMatchType] = useState<'official' | 'practice'>("practice");
   const [battingOrder, setBattingOrder] = useState<'first' | 'second'>("first");
   const [venue, setVenue] = useState("");
 
-  // --- スコアボード ---
   const [inningCount, setInningCount] = useState(7);
   const [myInnings, setMyInnings] = useState<string[]>(Array(7).fill(""));
   const [opponentInnings, setOpponentInnings] = useState<string[]>(Array(7).fill(""));
 
-  // --- 選択肢用データ（マスタ） ---
   const [opponentList, setOpponentList] = useState<string[]>([]);
   const [venueList, setVenueList] = useState<string[]>([]);
 
@@ -37,7 +35,6 @@ function MatchCreateContent() {
   useEffect(() => {
     const activeTeamId = localStorage.getItem("iScore_selectedTeamId");
     if (activeTeamId) {
-      // 1. 自チーム名の取得
       fetch("/api/teams")
         .then(res => res.json())
         .then(data => {
@@ -46,12 +43,10 @@ function MatchCreateContent() {
           if (current) setTeamName(current.name);
         }).catch(() => { });
 
-      // 2. 過去の試合から「対戦相手」と「球場」のリストを抽出（サジェスト用）
       fetch(`/api/teams/${activeTeamId}/recent-matches`)
         .then(res => res.json())
         .then(data => {
           const matches = data as any[];
-          // 重複を排除してリスト化
           const opponents = Array.from(new Set(matches.map(m => m.opponent).filter(Boolean))) as string[];
           const venues = Array.from(new Set(matches.map(m => m.venue || m.surfaceDetails).filter(Boolean))) as string[];
           setOpponentList(opponents);
@@ -102,7 +97,6 @@ function MatchCreateContent() {
         body: JSON.stringify({
           teamId: activeTeamId,
           opponent,
-          // 💡 日付と時刻を組み合わせて保存（DBの型に合わせて調整可能）
           date: `${date} ${time}`,
           matchType,
           battingOrder,
@@ -139,131 +133,122 @@ function MatchCreateContent() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-transparent p-2 sm:p-4 space-y-2 flex flex-col animate-in fade-in duration-300 max-w-lg mx-auto">
+    // 🌟 全体のパディングと間隔（space-y）を美しく調整
+    <div className="min-h-screen bg-transparent p-4 sm:p-6 space-y-6 flex flex-col animate-in fade-in duration-300 max-w-lg mx-auto pb-32">
 
-      {/* 1. ヘッダー */}
-      <div className="flex items-center justify-between pb-1 shrink-0">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-8 w-8 rounded-full">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-black tracking-tight">Quick Score</h1>
-        </div>
-        <Button onClick={handleSave} disabled={isSubmitting} size="sm" className="rounded-full px-4 h-8 font-bold text-xs">
-          {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Save className="h-3 w-3 mr-1.5" />}
-          保存
+      {/* 1. ヘッダー（保存ボタンを撤去し、スッキリと） */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 rounded-full bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm border border-border/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 shadow-sm transition-all">
+          <ChevronLeft className="h-5 w-5" />
         </Button>
+        <h1 className="text-xl font-black tracking-tight">Quick Score</h1>
       </div>
 
-      {/* 2. 基本情報入力 (高密度) */}
-      <Card className="rounded-[24px] border-border/40 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shadow-sm shrink-0">
-        <CardContent className="p-3 space-y-3">
+      {/* 2. 基本情報入力（要素のサイズを標準に戻し、Densityに追従させる） */}
+      <Card className="rounded-3xl border-border/40 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shadow-sm">
+        <CardContent className="p-5 space-y-5">
 
-          {/* 対戦相手 (選択 ＋ 入力) */}
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-              <Users className="h-3 w-3" /> Opponent Team
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5" /> Opponent Team
             </label>
             <Input
               list="opponent-options"
               value={opponent}
               onChange={(e) => setOpponent(e.target.value)}
               placeholder="チーム名を入力または選択"
-              className="h-9 rounded-xl text-sm font-bold bg-background border-border/50"
+              className="h-11 rounded-2xl text-sm font-bold bg-background border-border/50"
             />
             <datalist id="opponent-options">
               {opponentList.map(opt => <option key={opt} value={opt} />)}
             </datalist>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {/* 日付 */}
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                <Calendar className="h-3 w-3" /> Date
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" /> Date
               </label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 rounded-xl text-xs font-bold bg-background border-border/50 px-2" />
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11 rounded-2xl text-sm font-bold bg-background border-border/50 px-3" />
             </div>
 
-            {/* 時刻 (追加！) */}
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" /> Time
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" /> Time
               </label>
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-9 rounded-xl text-xs font-bold bg-background border-border/50 px-2" />
+              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-11 rounded-2xl text-sm font-bold bg-background border-border/50 px-3" />
             </div>
 
-            {/* 開催地 (選択 ＋ 入力) */}
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                <MapPin className="h-3 w-3" /> Venue
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" /> Venue
               </label>
               <Input
                 list="venue-options"
                 value={venue}
                 onChange={(e) => setVenue(e.target.value)}
-                placeholder="球場名を入力または選択"
-                className="h-9 rounded-xl text-xs font-bold bg-background border-border/50"
+                placeholder="球場名を選択"
+                className="h-11 rounded-2xl text-sm font-bold bg-background border-border/50"
               />
               <datalist id="venue-options">
                 {venueList.map(opt => <option key={opt} value={opt} />)}
               </datalist>
             </div>
 
-            {/* 試合タイプ */}
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                <Trophy className="h-3 w-3" /> Match Type
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <Trophy className="h-3.5 w-3.5" /> Match Type
               </label>
-              <div className="flex gap-1">
-                <Button variant={matchType === 'official' ? 'default' : 'outline'} onClick={() => setMatchType('official')} className={cn("flex-1 h-9 px-0 rounded-xl text-[10px] font-bold", matchType === 'official' && "bg-blue-600")}>公式</Button>
-                <Button variant={matchType === 'practice' ? 'default' : 'outline'} onClick={() => setMatchType('practice')} className={cn("flex-1 h-9 px-0 rounded-xl text-[10px] font-bold", matchType === 'practice' && "bg-emerald-600")}>練習</Button>
+              <div className="flex gap-1.5">
+                <Button variant={matchType === 'official' ? 'default' : 'outline'} onClick={() => setMatchType('official')} className={cn("flex-1 h-11 px-0 rounded-2xl text-[10px] sm:text-xs font-bold transition-colors", matchType === 'official' && "bg-blue-600 hover:bg-blue-700")}>公式</Button>
+                <Button variant={matchType === 'practice' ? 'default' : 'outline'} onClick={() => setMatchType('practice')} className={cn("flex-1 h-11 px-0 rounded-2xl text-[10px] sm:text-xs font-bold transition-colors", matchType === 'practice' && "bg-emerald-600 hover:bg-emerald-700")}>練習</Button>
               </div>
             </div>
           </div>
 
-          {/* 先攻/後攻 */}
-          <div className="flex items-center p-0.5 bg-muted/50 rounded-xl border border-border/50 mt-1">
-            <button onClick={() => setBattingOrder('first')} className={cn("flex-1 h-7 text-[10px] font-black rounded-lg transition-all", battingOrder === 'first' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>先攻 (Top)</button>
-            <button onClick={() => setBattingOrder('second')} className={cn("flex-1 h-7 text-[10px] font-black rounded-lg transition-all", battingOrder === 'second' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>後攻 (Bottom)</button>
+          <div className="pt-2">
+            <div className="flex items-center p-1 bg-muted/50 rounded-2xl border border-border/50">
+              <button onClick={() => setBattingOrder('first')} className={cn("flex-1 h-9 text-[10px] sm:text-xs font-black rounded-xl transition-all", battingOrder === 'first' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>先攻 (Top)</button>
+              <button onClick={() => setBattingOrder('second')} className={cn("flex-1 h-9 text-[10px] sm:text-xs font-black rounded-xl transition-all", battingOrder === 'second' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>後攻 (Bottom)</button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 3. 爆速スコアボード */}
-      <Card className="rounded-[24px] border-border/40 bg-background shadow-xl overflow-hidden flex-1 flex flex-col">
-        <div className="bg-zinc-900 text-zinc-100 p-2 px-4 flex items-center justify-between shrink-0">
+      {/* 3. スコアボード（下部の無駄なスペースを削除し、スッキリと配置） */}
+      <Card className="rounded-3xl border-border/40 bg-background shadow-xl overflow-hidden">
+        <div className="bg-zinc-900 text-zinc-100 p-3 flex items-center justify-between">
           <h2 className="text-xs font-black italic tracking-wider">SCOREBOARD</h2>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={removeInning} disabled={inningCount <= 1} className="h-6 w-6 p-0 rounded-full bg-zinc-800 border-zinc-700 text-zinc-300">
+            <Button variant="outline" size="icon" onClick={removeInning} disabled={inningCount <= 1} className="h-7 w-7 rounded-full bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white">
               <X className="h-3 w-3" />
             </Button>
-            <span className="text-[10px] font-bold text-zinc-400 tabular-nums w-10 text-center">{inningCount} INN</span>
-            <Button variant="outline" size="sm" onClick={addInning} className="h-6 w-6 p-0 rounded-full bg-zinc-800 border-zinc-700 text-zinc-300">
+            <span className="text-[10px] font-bold text-zinc-400 tabular-nums w-12 text-center">{inningCount} INN</span>
+            <Button variant="outline" size="icon" onClick={addInning} className="h-7 w-7 rounded-full bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white">
               <Plus className="h-3 w-3" />
             </Button>
           </div>
         </div>
 
-        <div className="p-2 overflow-x-auto flex-1">
+        <div className="p-3 overflow-x-auto">
           <div className="min-w-max">
             {/* ヘッダー行 */}
-            <div className="flex items-center mb-1">
-              <div className="w-16 shrink-0" />
-              <div className="flex gap-1">
+            <div className="flex items-center mb-1.5">
+              <div className="w-16 sm:w-20 shrink-0" />
+              <div className="flex gap-1.5">
                 {Array.from({ length: inningCount }).map((_, i) => (
-                  <div key={i} className="w-8 text-center text-[9px] font-black text-muted-foreground uppercase">{i + 1}</div>
+                  <div key={i} className="w-9 sm:w-10 text-center text-[10px] font-black text-muted-foreground uppercase">{i + 1}</div>
                 ))}
               </div>
-              <div className="w-8 shrink-0 text-center text-[9px] font-black text-primary">R</div>
+              <div className="w-10 shrink-0 text-center text-[10px] font-black text-primary">R</div>
             </div>
 
             {/* 先攻チーム行 */}
-            <div className="flex items-center mb-1">
-              <div className="w-16 shrink-0 text-[10px] font-black truncate pr-2 text-foreground/80">
+            <div className="flex items-center mb-2">
+              <div className="w-16 sm:w-20 shrink-0 text-xs font-black truncate pr-2 text-foreground/80">
                 {battingOrder === 'first' ? teamName : (opponent || 'Opp')}
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1.5">
                 {Array.from({ length: inningCount }).map((_, i) => (
                   <Input key={i} type="text" inputMode="numeric" pattern="[0-9]*" value={battingOrder === 'first' ? myInnings[i] : opponentInnings[i]}
                     onChange={(e) => {
@@ -271,19 +256,19 @@ function MatchCreateContent() {
                       if (battingOrder === 'first') { const n = [...myInnings]; n[i] = val; setMyInnings(n); }
                       else { const n = [...opponentInnings]; n[i] = val; setOpponentInnings(n); }
                     }}
-                    className="w-8 h-9 text-center text-sm font-black bg-muted/30 border-border/50 rounded-lg px-0" placeholder="-"
+                    className="w-9 sm:w-10 h-10 sm:h-11 text-center text-sm font-black bg-muted/30 border-border/50 rounded-xl px-0 focus:bg-background" placeholder="-"
                   />
                 ))}
               </div>
-              <div className="w-8 shrink-0 text-center text-lg font-black tabular-nums">{battingOrder === 'first' ? myTotalScore : opponentTotalScore}</div>
+              <div className="w-10 shrink-0 text-center text-xl font-black tabular-nums">{battingOrder === 'first' ? myTotalScore : opponentTotalScore}</div>
             </div>
 
             {/* 後攻チーム行 */}
             <div className="flex items-center">
-              <div className="w-16 shrink-0 text-[10px] font-black truncate pr-2 text-foreground/80">
+              <div className="w-16 sm:w-20 shrink-0 text-xs font-black truncate pr-2 text-foreground/80">
                 {battingOrder === 'second' ? teamName : (opponent || 'Opp')}
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1.5">
                 {Array.from({ length: inningCount }).map((_, i) => (
                   <Input key={i} type="text" inputMode="numeric" pattern="[0-9]*" value={battingOrder === 'second' ? myInnings[i] : opponentInnings[i]}
                     onChange={(e) => {
@@ -291,15 +276,32 @@ function MatchCreateContent() {
                       if (battingOrder === 'second') { const n = [...myInnings]; n[i] = val; setMyInnings(n); }
                       else { const n = [...opponentInnings]; n[i] = val; setOpponentInnings(n); }
                     }}
-                    className="w-8 h-9 text-center text-sm font-black bg-muted/30 border-border/50 rounded-lg px-0" placeholder="-"
+                    className="w-9 sm:w-10 h-10 sm:h-11 text-center text-sm font-black bg-muted/30 border-border/50 rounded-xl px-0 focus:bg-background" placeholder="-"
                   />
                 ))}
               </div>
-              <div className="w-8 shrink-0 text-center text-lg font-black tabular-nums">{battingOrder === 'second' ? myTotalScore : opponentTotalScore}</div>
+              <div className="w-10 shrink-0 text-center text-xl font-black tabular-nums">{battingOrder === 'second' ? myTotalScore : opponentTotalScore}</div>
             </div>
           </div>
         </div>
       </Card>
+
+      {/* 🌟 4. フローの終着点：超巨大な「保存」ボタンを一番下に配置 */}
+      <div className="pt-4">
+        <Button
+          onClick={handleSave}
+          disabled={isSubmitting}
+          className="w-full h-14 sm:h-16 rounded-2xl sm:rounded-3xl font-black text-base sm:text-lg shadow-lg hover:shadow-xl active:scale-[0.98] transition-all bg-primary text-primary-foreground"
+        >
+          {isSubmitting ? (
+            <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin mr-2" />
+          ) : (
+            <Save className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+          )}
+          試合結果を保存する
+        </Button>
+      </div>
+
     </div>
   );
 }
