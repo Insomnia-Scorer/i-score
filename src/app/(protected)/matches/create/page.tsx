@@ -10,35 +10,30 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// 💡 Suspenseで囲むためのメインコンテンツコンポーネント
 function MatchCreateContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const mode = searchParams.get("mode"); // 'live' or 'quick'
+  const mode = searchParams.get("mode");
 
-  // --- State: 試合基本情報 ---
   const [opponent, setOpponent] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [matchType, setMatchType] = useState<'official' | 'practice'>("practice");
   const [battingOrder, setBattingOrder] = useState<'first' | 'second'>("first");
   const [venue, setVenue] = useState("");
 
-  // --- State: スコアボード（爆速入力用） ---
-  const [inningCount, setInningCount] = useState(7); // 初期は草野球標準の7回
+  const [inningCount, setInningCount] = useState(7);
   const [myInnings, setMyInnings] = useState<string[]>(Array(7).fill(""));
   const [opponentInnings, setOpponentInnings] = useState<string[]>(Array(7).fill(""));
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [teamName, setTeamName] = useState("自チーム");
 
-  // 自チーム名の取得
   useEffect(() => {
     const activeTeamId = localStorage.getItem("iScore_selectedTeamId");
     if (activeTeamId) {
       fetch("/api/teams")
         .then(res => res.json())
         .then(data => {
-          // 🔥 ここで as any[] を使って型を変換（キャスト）します
           const teamsData = data as any[];
           const current = teamsData.find((t: any) => t.id === activeTeamId);
           if (current) setTeamName(current.name);
@@ -46,7 +41,6 @@ function MatchCreateContent() {
     }
   }, []);
 
-  // リアルタイム入力（Live）モードの場合は、まだ作っていないので一旦戻すかアラート
   if (mode === 'live') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -57,11 +51,9 @@ function MatchCreateContent() {
     );
   }
 
-  // --- スコア計算ロジック ---
   const myTotalScore = myInnings.reduce((sum, val) => sum + (parseInt(val) || 0), 0);
   const opponentTotalScore = opponentInnings.reduce((sum, val) => sum + (parseInt(val) || 0), 0);
 
-  // --- イニング追加・削除 ---
   const addInning = () => {
     setInningCount(prev => prev + 1);
     setMyInnings(prev => [...prev, ""]);
@@ -75,7 +67,6 @@ function MatchCreateContent() {
     setOpponentInnings(prev => prev.slice(0, -1));
   };
 
-  // --- 保存処理（爆速連携） ---
   const handleSave = async () => {
     if (!opponent) {
       toast.error("対戦相手を入力してください");
@@ -86,7 +77,6 @@ function MatchCreateContent() {
     const activeTeamId = localStorage.getItem("iScore_selectedTeamId");
 
     try {
-      // 1. 試合の「枠（基本情報）」を作成するAPI（POST /api/matches）
       const createRes = await fetch("/api/matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -96,16 +86,15 @@ function MatchCreateContent() {
           date,
           matchType,
           battingOrder,
-          location: venue, // UI側のvenueをAPIのlocation（surfaceDetails）に合わせる
+          location: venue,
           innings: inningCount
         }),
       });
 
-      const createData = await createRes.json() as { success: boolean; matchId: string; error?: string };
+      const createData = (await createRes.json()) as { success: boolean; matchId: string; error?: string };
       if (!createData.success) throw new Error(createData.error);
       const matchId = createData.matchId;
 
-      // 2. 作成した試合を即座に「終了（スコア入力完了）」状態にするAPI（PATCH /api/matches/:id/finish）
       const finishRes = await fetch(`/api/matches/${matchId}/finish`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -120,7 +109,7 @@ function MatchCreateContent() {
       if (!finishRes.ok) throw new Error("スコアの保存に失敗しました");
 
       toast.success("試合結果を保存しました！🔥");
-      router.push("/dashboard"); // 保存後はダッシュボードへ神速帰還
+      router.push("/dashboard");
 
     } catch (error: any) {
       toast.error(error.message || "エラーが発生しました");
@@ -130,239 +119,247 @@ function MatchCreateContent() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent p-3 sm:p-6 md:p-10 space-y-6 animate-in fade-in duration-500">
+    // 🌟 修正1: 全体の高さを 100dvh (スマホのアドレスバーを考慮した全画面) にし、余白を極限まで削る
+    <div className="min-h-[100dvh] bg-transparent p-2 sm:p-4 space-y-3 flex flex-col animate-in fade-in duration-300 max-w-lg mx-auto">
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          1. ヘッダー
+          1. ヘッダー (コンパクト化)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="flex items-center justify-between border-b border-border/40 pb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-muted">
-            <ChevronLeft className="h-6 w-6" />
+      <div className="flex items-center justify-between pb-1">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-8 w-8 rounded-full hover:bg-muted">
+            <ChevronLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-3">
-              Quick Score Entry
-              <span className="text-[10px] sm:text-xs font-bold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                爆速入力モード
-              </span>
-            </h1>
-          </div>
+          <h1 className="text-lg font-black tracking-tight flex items-center gap-2">
+            Quick Score
+            <span className="text-[9px] font-bold bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded uppercase tracking-widest hidden sm:inline-block">
+              爆速入力
+            </span>
+          </h1>
         </div>
         <Button
           onClick={handleSave}
           disabled={isSubmitting}
-          className="rounded-full px-6 font-bold shadow-lg hover:scale-105 transition-transform"
+          size="sm"
+          className="rounded-full px-4 h-8 font-bold shadow-md hover:scale-105 transition-transform text-xs"
         >
-          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          結果を保存
+          {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Save className="h-3 w-3 mr-1.5" />}
+          保存
         </Button>
       </div>
 
-      <div className="max-w-4xl mx-auto space-y-8 pt-4">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          2. 基本情報入力 (2カラム高密度配置)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <Card className="rounded-[24px] border-border/40 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shadow-sm shrink-0">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4">
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            2. 基本情報入力（カード）
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <Card className="rounded-[32px] border-border/40 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shadow-sm">
-          <CardContent className="p-6 sm:p-8 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
-              {/* 対戦相手 */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5" /> Opponent Team
-                </label>
-                <Input
-                  value={opponent}
-                  onChange={(e) => setOpponent(e.target.value)}
-                  placeholder="例: 東京ライオンズ"
-                  className="h-14 rounded-2xl text-lg font-bold bg-background border-border/50"
-                />
-              </div>
-
-              {/* 日付 */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5" /> Date
-                </label>
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="h-14 rounded-2xl text-lg font-bold bg-background border-border/50"
-                />
-              </div>
-
-              {/* 試合タイプ・先攻後攻トグル */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                  <Trophy className="h-3.5 w-3.5" /> Match Settings
-                </label>
-                <div className="flex gap-2">
-                  <Button
-                    variant={matchType === 'official' ? 'default' : 'outline'}
-                    onClick={() => setMatchType('official')}
-                    className={cn("flex-1 h-14 rounded-2xl font-bold", matchType === 'official' && "bg-blue-600 hover:bg-blue-700")}
-                  >
-                    公式戦
-                  </Button>
-                  <Button
-                    variant={matchType === 'practice' ? 'default' : 'outline'}
-                    onClick={() => setMatchType('practice')}
-                    className={cn("flex-1 h-14 rounded-2xl font-bold", matchType === 'practice' && "bg-emerald-600 hover:bg-emerald-700")}
-                  >
-                    練習試合
-                  </Button>
-                </div>
-              </div>
-
-              {/* 開催地（グラウンド） */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5" /> Venue
-                </label>
-                <Input
-                  value={venue}
-                  onChange={(e) => setVenue(e.target.value)}
-                  placeholder="例: 第一球場 A面"
-                  className="h-14 rounded-2xl text-lg font-bold bg-background border-border/50"
-                />
-              </div>
-
+            {/* 対戦相手 (全幅) */}
+            <div className="col-span-2 space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" /> Opponent
+              </label>
+              <Input
+                value={opponent}
+                onChange={(e) => setOpponent(e.target.value)}
+                placeholder="対戦相手名"
+                className="h-10 rounded-xl text-sm font-bold bg-background border-border/50"
+              />
             </div>
 
-            {/* 先攻・後攻の切り替え */}
-            <div className="pt-4 border-t border-border/40">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-3 text-center">
-                Batting Order (先攻・後攻)
+            {/* 日付 (半幅) */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                <Calendar className="h-3 w-3" /> Date
               </label>
-              <div className="flex items-center justify-center p-1 bg-muted/50 rounded-2xl max-w-sm mx-auto">
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="h-10 rounded-xl text-sm font-bold bg-background border-border/50 px-2.5"
+              />
+            </div>
+
+            {/* 試合タイプ (半幅) */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                <Trophy className="h-3 w-3" /> Type
+              </label>
+              <div className="flex gap-1">
+                <Button
+                  variant={matchType === 'official' ? 'default' : 'outline'}
+                  onClick={() => setMatchType('official')}
+                  className={cn("flex-1 h-10 px-0 rounded-xl text-xs font-bold", matchType === 'official' && "bg-blue-600 hover:bg-blue-700")}
+                >
+                  公式
+                </Button>
+                <Button
+                  variant={matchType === 'practice' ? 'default' : 'outline'}
+                  onClick={() => setMatchType('practice')}
+                  className={cn("flex-1 h-10 px-0 rounded-xl text-xs font-bold", matchType === 'practice' && "bg-emerald-600 hover:bg-emerald-700")}
+                >
+                  練習
+                </Button>
+              </div>
+            </div>
+
+            {/* 開催地 (半幅) */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                <MapPin className="h-3 w-3" /> Venue
+              </label>
+              <Input
+                value={venue}
+                onChange={(e) => setVenue(e.target.value)}
+                placeholder="球場・グラウンド"
+                className="h-10 rounded-xl text-xs font-bold bg-background border-border/50"
+              />
+            </div>
+
+            {/* 先攻/後攻トグル (半幅) */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                Batting
+              </label>
+              <div className="flex items-center p-0.5 bg-muted/50 rounded-xl border border-border/50">
                 <button
                   onClick={() => setBattingOrder('first')}
-                  className={cn("flex-1 py-3 text-sm font-black rounded-xl transition-all", battingOrder === 'first' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+                  className={cn("flex-1 h-8 text-[11px] font-black rounded-lg transition-all", battingOrder === 'first' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
                 >
-                  先攻 (Top)
+                  先攻
                 </button>
                 <button
                   onClick={() => setBattingOrder('second')}
-                  className={cn("flex-1 py-3 text-sm font-black rounded-xl transition-all", battingOrder === 'second' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+                  className={cn("flex-1 h-8 text-[11px] font-black rounded-lg transition-all", battingOrder === 'second' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
                 >
-                  後攻 (Bottom)
+                  後攻
                 </button>
               </div>
             </div>
 
-          </CardContent>
-        </Card>
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            3. 爆速スコアボードUI
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <Card className="rounded-[32px] border-border/40 bg-background shadow-xl overflow-hidden">
-          <div className="bg-zinc-900 text-zinc-100 p-4 sm:p-6 flex items-center justify-between">
-            <h2 className="text-xl font-black italic tracking-wider flex items-center gap-2">
-              SCOREBOARD
-            </h2>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={removeInning} disabled={inningCount <= 1} className="h-8 w-8 p-0 rounded-full bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white">
-                <X className="h-4 w-4" />
-              </Button>
-              <span className="text-xs font-bold text-zinc-400 tabular-nums">{inningCount} INNINGS</span>
-              <Button variant="outline" size="sm" onClick={addInning} className="h-8 w-8 p-0 rounded-full bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="p-4 sm:p-6 overflow-x-auto">
-            <div className="min-w-[600px]">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          3. 爆速スコアボード (極限まで要素を削ぎ落とした表)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <Card className="rounded-[24px] border-border/40 bg-background shadow-xl overflow-hidden flex-1 flex flex-col">
 
-              {/* ヘッダー行（イニング数） */}
-              <div className="flex items-center mb-4">
-                <div className="w-32 sm:w-40 shrink-0" /> {/* チーム名が入る空白 */}
-                <div className="flex-1 flex gap-2">
-                  {Array.from({ length: inningCount }).map((_, i) => (
-                    <div key={i} className="flex-1 text-center text-[10px] font-black text-muted-foreground uppercase">
-                      {i + 1}
-                    </div>
-                  ))}
-                </div>
-                <div className="w-16 sm:w-20 shrink-0 text-center text-xs font-black text-primary">R</div>
-              </div>
-
-              {/* --- 表: 1行目（先攻チーム） --- */}
-              <div className="flex items-center mb-3">
-                <div className="w-32 sm:w-40 shrink-0 font-black text-sm sm:text-base truncate pr-4">
-                  {battingOrder === 'first' ? teamName : (opponent || 'Opponent')}
-                </div>
-                <div className="flex-1 flex gap-2">
-                  {Array.from({ length: inningCount }).map((_, i) => {
-                    const isMyTeam = battingOrder === 'first';
-                    const value = isMyTeam ? myInnings[i] : opponentInnings[i];
-                    const onChange = (e: any) => {
-                      const val = e.target.value;
-                      if (isMyTeam) {
-                        const newScores = [...myInnings]; newScores[i] = val; setMyInnings(newScores);
-                      } else {
-                        const newScores = [...opponentInnings]; newScores[i] = val; setOpponentInnings(newScores);
-                      }
-                    };
-                    return (
-                      <Input
-                        key={i} type="number" min="0" value={value} onChange={onChange}
-                        className="flex-1 h-12 text-center text-lg font-black bg-muted/30 border-border/50 rounded-xl focus:bg-primary/10 focus:border-primary/50 transition-colors px-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        placeholder="-"
-                      />
-                    );
-                  })}
-                </div>
-                <div className="w-16 sm:w-20 shrink-0 text-center text-3xl font-black text-foreground tabular-nums tracking-tighter">
-                  {battingOrder === 'first' ? myTotalScore : opponentTotalScore}
-                </div>
-              </div>
-
-              {/* --- 表: 2行目（後攻チーム） --- */}
-              <div className="flex items-center">
-                <div className="w-32 sm:w-40 shrink-0 font-black text-sm sm:text-base truncate pr-4">
-                  {battingOrder === 'second' ? teamName : (opponent || 'Opponent')}
-                </div>
-                <div className="flex-1 flex gap-2">
-                  {Array.from({ length: inningCount }).map((_, i) => {
-                    const isMyTeam = battingOrder === 'second';
-                    const value = isMyTeam ? myInnings[i] : opponentInnings[i];
-                    const onChange = (e: any) => {
-                      const val = e.target.value;
-                      if (isMyTeam) {
-                        const newScores = [...myInnings]; newScores[i] = val; setMyInnings(newScores);
-                      } else {
-                        const newScores = [...opponentInnings]; newScores[i] = val; setOpponentInnings(newScores);
-                      }
-                    };
-                    return (
-                      <Input
-                        key={i} type="number" min="0" value={value} onChange={onChange}
-                        className="flex-1 h-12 text-center text-lg font-black bg-muted/30 border-border/50 rounded-xl focus:bg-primary/10 focus:border-primary/50 transition-colors px-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        placeholder="-"
-                      />
-                    );
-                  })}
-                </div>
-                <div className="w-16 sm:w-20 shrink-0 text-center text-3xl font-black text-foreground tabular-nums tracking-tighter">
-                  {battingOrder === 'second' ? myTotalScore : opponentTotalScore}
-                </div>
-              </div>
-
-            </div>
+        {/* 電光掲示板ヘッダー */}
+        <div className="bg-zinc-900 text-zinc-100 p-2 sm:p-3 px-4 flex items-center justify-between shrink-0">
+          <h2 className="text-sm font-black italic tracking-wider flex items-center gap-2">
+            SCOREBOARD
+          </h2>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={removeInning} disabled={inningCount <= 1} className="h-7 w-7 p-0 rounded-full bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white">
+              <X className="h-3 w-3" />
+            </Button>
+            <span className="text-[10px] font-bold text-zinc-400 tabular-nums w-12 text-center">{inningCount} INN</span>
+            <Button variant="outline" size="sm" onClick={addInning} className="h-7 w-7 p-0 rounded-full bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white">
+              <Plus className="h-3 w-3" />
+            </Button>
           </div>
-        </Card>
+        </div>
 
-      </div>
+        {/* スコア入力エリア (横スクロール対応だが7回までは1画面に収まる設計) */}
+        <div className="p-3 overflow-x-auto flex-1">
+          <div className="min-w-max">
+
+            {/* ヘッダー行（イニング数） */}
+            <div className="flex items-center mb-2">
+              <div className="w-16 sm:w-24 shrink-0" /> {/* チーム名が入る空白 */}
+              <div className="flex gap-1.5">
+                {Array.from({ length: inningCount }).map((_, i) => (
+                  <div key={i} className="w-9 text-center text-[10px] font-black text-muted-foreground uppercase">
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+              <div className="w-10 shrink-0 text-center text-[10px] font-black text-primary">R</div>
+            </div>
+
+            {/* --- 表: 1行目（先攻チーム） --- */}
+            <div className="flex items-center mb-2">
+              <div className="w-16 sm:w-24 shrink-0 text-xs font-black truncate pr-2 text-foreground/80">
+                {battingOrder === 'first' ? teamName : (opponent || 'Opp')}
+              </div>
+              <div className="flex gap-1.5">
+                {Array.from({ length: inningCount }).map((_, i) => {
+                  const isMyTeam = battingOrder === 'first';
+                  const value = isMyTeam ? myInnings[i] : opponentInnings[i];
+                  const onChange = (e: any) => {
+                    const val = e.target.value;
+                    if (isMyTeam) {
+                      const newScores = [...myInnings]; newScores[i] = val; setMyInnings(newScores);
+                    } else {
+                      const newScores = [...opponentInnings]; newScores[i] = val; setOpponentInnings(newScores);
+                    }
+                  };
+                  return (
+                    <Input
+                      key={i}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={value}
+                      onChange={onChange}
+                      className="w-9 h-10 text-center text-sm font-black bg-muted/30 border-border/50 rounded-xl focus:bg-primary/10 focus:border-primary/50 transition-colors px-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                      placeholder="-"
+                    />
+                  );
+                })}
+              </div>
+              <div className="w-10 shrink-0 text-center text-xl font-black text-foreground tabular-nums tracking-tighter">
+                {battingOrder === 'first' ? myTotalScore : opponentTotalScore}
+              </div>
+            </div>
+
+            {/* --- 表: 2行目（後攻チーム） --- */}
+            <div className="flex items-center">
+              <div className="w-16 sm:w-24 shrink-0 text-xs font-black truncate pr-2 text-foreground/80">
+                {battingOrder === 'second' ? teamName : (opponent || 'Opp')}
+              </div>
+              <div className="flex gap-1.5">
+                {Array.from({ length: inningCount }).map((_, i) => {
+                  const isMyTeam = battingOrder === 'second';
+                  const value = isMyTeam ? myInnings[i] : opponentInnings[i];
+                  const onChange = (e: any) => {
+                    const val = e.target.value;
+                    if (isMyTeam) {
+                      const newScores = [...myInnings]; newScores[i] = val; setMyInnings(newScores);
+                    } else {
+                      const newScores = [...opponentInnings]; newScores[i] = val; setOpponentInnings(newScores);
+                    }
+                  };
+                  return (
+                    <Input
+                      key={i}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={value}
+                      onChange={onChange}
+                      className="w-9 h-10 text-center text-sm font-black bg-muted/30 border-border/50 rounded-xl focus:bg-primary/10 focus:border-primary/50 transition-colors px-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                      placeholder="-"
+                    />
+                  );
+                })}
+              </div>
+              <div className="w-10 shrink-0 text-center text-xl font-black text-foreground tabular-nums tracking-tighter">
+                {battingOrder === 'second' ? myTotalScore : opponentTotalScore}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </Card>
+
     </div>
   );
 }
 
-// Next.js の仕様（useSearchParams を使う場合は Suspense が必須）に対応
 export default function MatchCreatePage() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
