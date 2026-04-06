@@ -38,7 +38,9 @@ function MatchCreateContent() {
       fetch("/api/teams")
         .then(res => res.json())
         .then(data => {
-          const current = data.find((t: any) => t.id === activeTeamId);
+          // 🔥 ここで as any[] を使って型を変換（キャスト）します
+          const teamsData = data as any[];
+          const current = teamsData.find((t: any) => t.id === activeTeamId);
           if (current) setTeamName(current.name);
         }).catch(() => { });
     }
@@ -99,7 +101,7 @@ function MatchCreateContent() {
         }),
       });
 
-      const createData = await createRes.json();
+      const createData = await createRes.json() as { success: boolean; matchId: string; error?: string };
       if (!createData.success) throw new Error(createData.error);
       const matchId = createData.matchId;
 
