@@ -29,6 +29,7 @@ app.get('/', async (c) => {
   const myTeams = await db.select({
     id: teams.id,
     name: teams.name,
+    orgName: organizations.name,
     year: teams.year,
     tier: teams.tier,
     teamType: teams.teamType,
@@ -37,6 +38,7 @@ app.get('/', async (c) => {
   })
     .from(teamMembers)
     .innerJoin(teams, eq(teamMembers.teamId, teams.id))
+    .leftJoin(organizations, eq(teams.organizationId, organizations.id))
     .where(eq(teamMembers.userId, session.user.id))
     .orderBy(desc(teams.createdAt))
 

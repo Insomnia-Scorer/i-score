@@ -1,3 +1,4 @@
+// src/app/(protected)/team/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 interface Team {
   id: string;
   name: string;
+  orgName?: string; // 🔥 追加: バックエンドから送られてくる組織名（チーム名）
   year: number | null;
   tier: string | null;
   teamType: string | null;
@@ -25,8 +27,6 @@ export default function TeamProfilePage() {
   useEffect(() => {
     const fetchTeamData = async () => {
       try {
-        // 1. ローカルストレージから「現在選択中のチームID」を取得
-        // ※ 以前のモックのIDが残っている場合は、一度TeamSwitcherで選択し直す必要があります。
         const activeTeamId = localStorage.getItem("iScore_selectedTeamId");
 
         if (!activeTeamId) {
@@ -34,7 +34,6 @@ export default function TeamProfilePage() {
           return;
         }
 
-        // 2. 所属チーム一覧を取得し、現在のチーム情報を特定する
         const teamsResponse = await fetch("/api/teams");
         if (!teamsResponse.ok) throw new Error("チーム情報の取得に失敗しました");
 
@@ -44,18 +43,12 @@ export default function TeamProfilePage() {
         if (currentTeam) {
           setTeam(currentTeam);
 
-          // 3. チームの所属選手を取得して人数（メンバーカウント）を計算
           const playersResponse = await fetch(`/api/teams/${activeTeamId}/players`);
           if (playersResponse.ok) {
-            // TypeScriptのエラー回避のため、as any[] で配列であることを明示
             const playersData = (await playersResponse.json()) as any[];
             setMemberCount(playersData.length || 0);
           }
-        } else {
-          // 選択中のチームIDが所属一覧にない場合（削除された、または古いダミーID等）
-          // localStorage.removeItem("iScore_selectedTeamId");
         }
-
       } catch (error) {
         console.error("Team fetch error:", error);
         toast.error("チームデータの読み込みに失敗しました");
@@ -75,20 +68,18 @@ export default function TeamProfilePage() {
     );
   }
 
-  // チームが存在しない場合のエンプティステート
   if (!team) {
     return (
       <div className="flex flex-col h-[60vh] items-center justify-center space-y-4 px-4 text-center">
         <Shield className="h-16 w-16 text-muted-foreground opacity-20" />
         <h2 className="text-2xl font-black text-foreground">チームが選択されていません</h2>
         <p className="text-muted-foreground font-medium max-w-md">
-          現在選択されているチームがありません。<br></br>右上のメニューからチームを選択するか、<br></br>新しいチームを作成・検索してください。
+          現在選択されているチームがありません。右上のメニューからチームを選択するか、新しいチームを作成・検索してください。
         </p>
       </div>
     );
   }
 
-  // 権限チェック（監督・管理者か）
   const canManage = team.myRole === 'ADMIN' || team.myRole === 'MANAGER' || team.isFounder;
 
   return (
@@ -97,17 +88,12 @@ export default function TeamProfilePage() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           1. ヒーローセクション（カバー画像）
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {/* 親のdivはアスペクト比固定と角丸、影のために残します */}
-      <div className="relative w-full aspect-[21/9] lg:aspect-[4/1] bg-muted overflow-hidden sm:rounded-b-3xl shadow-sm">
-
-        {/* 🌟 修正: 装飾（オーバーレイ、ブレンド、不透明度、フェード）をすべて削除し、画像をそのまま表示 */}
+      {/* 🌟 修正: sm:rounded-b-3xl と shadow-sm を削除し、完全な長方形（エッジ・ツー・エッジ）にしました */}
+      <div className="relative w-full aspect-[21/9] lg:aspect-[4/1] bg-muted overflow-hidden border-b border-border/50">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          // 🌟 修正: ファイル名を .webp に変更
           style={{ backgroundImage: `url('/team-cover.webp')` }}
         />
-
-        {/* 以前あったグラデーションとフェードのdivは削除しました */}
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
@@ -121,7 +107,7 @@ export default function TeamProfilePage() {
             <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background shadow-xl bg-white dark:bg-zinc-900">
               <AvatarImage src="" className="object-contain p-2" />
               <AvatarFallback className="text-4xl sm:text-5xl font-black text-primary bg-primary/5">
-                {team.name.slice(0, 2).toUpperCase()}
+                {(team.orgName || team.name).slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             {canManage && (
@@ -132,7 +118,21 @@ export default function TeamProfilePage() {
           </div>
 
           <div className="flex flex-col flex-1 pb-1 sm:pb-3">
-            <div className="flex flex-wrap items-center gap-2 mb-1.5 sm:mb-2">
+
+            {/* 🌟 追加: 大元の「チーム名（組織名）」をプライマリーカラーで表示 */}
+            {team.orgName && (
+              <h2 className="text-sm sm:text-base font-black text-primary mb-1 tracking-tight">
+                {team.orgName}
+              </h2>
+            )}
+
+            {/* 🌟 修正: 編成名（1軍、Aチームなど）を大きく表示 */}
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground leading-tight mb-3">
+              {team.name}
+            </h1>
+
+            {/* バッジ群 */}
+            <div className="flex flex-wrap items-center gap-2">
               <span className="flex items-center text-muted-foreground text-[10px] sm:text-xs font-bold bg-muted px-2.5 py-0.5 rounded-full uppercase">
                 <Trophy className="h-3 w-3 mr-1" />
                 {team.teamType === 'regular' ? '一般チーム' : team.teamType || 'Team'}
@@ -143,6 +143,12 @@ export default function TeamProfilePage() {
                   Est. {team.year}
                 </span>
               )}
+              {team.tier && (
+                <span className="flex items-center text-muted-foreground text-[10px] sm:text-xs font-bold bg-muted px-2.5 py-0.5 rounded-full">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Tier: {team.tier}
+                </span>
+              )}
               {team.isFounder && (
                 <span className="flex items-center text-amber-600 dark:text-amber-400 text-[10px] sm:text-xs font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
                   <Crown className="h-3 w-3 mr-1" />
@@ -151,25 +157,13 @@ export default function TeamProfilePage() {
               )}
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground leading-tight">
-              {team.name}
-            </h1>
-
-            {team.tier && (
-              <p className="text-sm font-bold text-muted-foreground mt-1 flex items-center gap-1.5">
-                <Shield className="h-4 w-4" />
-                Tier: {team.tier}
-              </p>
-            )}
           </div>
         </div>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            3. データパネル（2カラム構成）
+            3. データパネル
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-
-          {/* 左側: メイン情報エリア (2カラム分) */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             <div className="p-5 sm:p-8 rounded-3xl bg-background border border-border/50 shadow-sm">
               <h2 className="text-lg font-black flex items-center gap-2 mb-6">
@@ -185,9 +179,7 @@ export default function TeamProfilePage() {
             </div>
           </div>
 
-          {/* 右側: ステータスエリア (1カラム分) */}
           <div className="space-y-4 sm:space-y-6">
-
             <div className="p-5 sm:p-6 rounded-3xl bg-primary/5 border border-primary/20 shadow-sm relative overflow-hidden group">
               <Users className="absolute -right-2 -bottom-2 h-20 w-20 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
               <span className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 relative z-10">Roster</span>
@@ -214,7 +206,6 @@ export default function TeamProfilePage() {
                 </div>
               </div>
             )}
-
           </div>
         </div>
 
