@@ -2,15 +2,20 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Users, MapPin, Calendar, Shield, Trophy, Loader2, Camera, Activity, Info, Crown, Settings, BarChart3, History, Target } from "lucide-react";
+import { Users, MapPin, Calendar, Shield, Trophy, Loader2, Camera, History, Target, BarChart3, Settings, Crown, UserCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
+// 💡 バックエンドのレスポンスに合わせた型定義（追加項目を反映！）
 interface Team {
   id: string;
   name: string;
   orgName?: string; 
+  description?: string; // スローガン・紹介文
+  category?: string;    // カテゴリ（学童、中学硬式など）
+  homeGround?: string;  // ホームグラウンド
+  managerName?: string; // 監督名
   year: number | null;
   tier: string | null;
   teamType: string | null;
@@ -44,7 +49,7 @@ export default function TeamProfilePage() {
           }
         }
       } catch (error) {
-        console.error(error);
+        console.error("Team fetch error:", error);
         toast.error("データの読み込みに失敗しました");
       } finally {
         setIsLoading(false);
@@ -60,19 +65,30 @@ export default function TeamProfilePage() {
 
   return (
     <div className="w-full animate-in fade-in duration-500">
-      {/* 1. ヒーローセクション */}
+      
+      {/* 1. ヒーローセクション（完全な長方形エッジツーエッジ） */}
       <div className="relative w-full aspect-[21/9] lg:aspect-[4/1] bg-muted overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('/team-cover.webp')` }} />
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        
         {/* 2. プロフィールヘッダー */}
         <div className="relative -mt-16 sm:-mt-20 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 mb-8 sm:mb-12">
-          <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background shadow-xl bg-white dark:bg-zinc-900">
-            <AvatarFallback className="text-4xl sm:text-5xl font-black text-primary">
-              {(team.orgName || team.name || "T").slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          
+          {/* アイコン */}
+          <div className="relative group shrink-0 self-start sm:self-auto">
+            <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background shadow-xl bg-white dark:bg-zinc-900">
+              <AvatarFallback className="text-4xl sm:text-5xl font-black text-primary bg-primary/5">
+                {(team.orgName || team.name || "T").slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {canManage && (
+              <button className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 p-2.5 sm:p-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform border-2 border-background cursor-pointer">
+                <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+            )}
+          </div>
 
           <div className="flex flex-col flex-1 pb-1">
             <h2 className="text-sm sm:text-base font-black text-primary mb-1">
@@ -81,52 +97,75 @@ export default function TeamProfilePage() {
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground leading-tight mb-3">
               {team.name || "チーム名未設定"}
             </h1>
+
             {/* 🌟 究極に美しいプレミアム・バッジ群 */}
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              
-              {/* 1. チームタイプ（Primary: 爽やかな青系） */}
               <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
                 <Trophy className="h-3.5 w-3.5" />
                 {team.teamType === 'regular' ? '一般チーム' : team.teamType || "TEAM"}
               </span>
-
-              {/* 2. 設立年（Emerald: 歴史と安定） */}
               {team.year && (
                 <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full shadow-sm">
-                  <Calendar className="h-3.5 w-3.5" />
-                  Est. {team.year}
+                  <Calendar className="h-3.5 w-3.5" /> Est. {team.year}
                 </span>
               )}
-
-              {/* 3. ティア（Purple: 競技レベルの高さ） */}
               {team.tier && (
                 <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                  <Shield className="h-3.5 w-3.5" />
-                  Tier: {team.tier}
+                  <Shield className="h-3.5 w-3.5" /> Tier: {team.tier}
                 </span>
               )}
-
-              {/* 4. 創設者（Amber: 特別な権威とリーダーシップ） */}
               {team.isFounder && (
                 <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-black bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full shadow-sm">
-                  <Crown className="h-3.5 w-3.5" />
-                  FOUNDER
+                  <Crown className="h-3.5 w-3.5" /> FOUNDER
                 </span>
               )}
-              
             </div>
-
           </div>
         </div>
 
-        {/* 3. ダッシュボード（スケルトン表示） */}
+        {/* 🌟 3. チーム詳細情報（スローガン・拠点・監督名） */}
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          {/* 左側: スローガン（Description） */}
+          <div className="md:col-span-2 p-6 rounded-3xl bg-muted/30 border border-border/50 shadow-sm flex flex-col justify-center">
+            <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">Team Concept</h3>
+            {team.description ? (
+              <p className="text-lg font-bold text-foreground leading-relaxed italic border-l-4 border-primary pl-4 py-1">
+                「{team.description}」
+              </p>
+            ) : (
+              <p className="text-sm font-medium text-muted-foreground italic border-l-4 border-muted pl-4 py-1">
+                チームのスローガンや紹介文が未設定です。
+              </p>
+            )}
+          </div>
+
+          {/* 右側: 基本データ（活動拠点・監督） */}
+          <div className="p-6 rounded-3xl bg-background border border-border/50 shadow-sm space-y-4">
+            <div>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1">Home Ground</span>
+              <p className="flex items-center text-sm font-bold text-foreground">
+                <MapPin className="h-4 w-4 mr-2 text-primary" />
+                {team.homeGround || "未設定"}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1">Manager</span>
+              <p className="flex items-center text-sm font-bold text-foreground">
+                <UserCircle className="h-4 w-4 mr-2 text-primary" />
+                {team.managerName || "未設定"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. ダッシュボード（スケルトン表示） */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="p-6 rounded-3xl bg-background border border-border/50 shadow-sm">
               <h3 className="text-sm font-black flex items-center gap-2 mb-6 text-muted-foreground uppercase tracking-wider">
                 <History className="h-4 w-4" /> 最近の試合結果
               </h3>
-              {/* データがない時の「枠」表示 */}
               <div className="space-y-3 opacity-40">
                 {[1, 2].map(i => (
                   <div key={i} className="h-16 w-full border border-dashed border-border rounded-xl flex items-center px-4 justify-between bg-muted/10">
@@ -135,20 +174,6 @@ export default function TeamProfilePage() {
                   </div>
                 ))}
                 <p className="text-center text-[10px] font-bold text-muted-foreground pt-2">試合を記録するとここに自動表示されます</p>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-3xl bg-background border border-border/50 shadow-sm">
-              <h3 className="text-sm font-black flex items-center gap-2 mb-6 text-muted-foreground uppercase tracking-wider">
-                <BarChart3 className="h-4 w-4" /> チーム打撃成績
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 opacity-40">
-                {['打率', '本塁打', '打点', '盗塁'].map(stat => (
-                  <div key={stat} className="p-4 border border-dashed border-border rounded-2xl text-center">
-                    <div className="text-[10px] font-bold text-muted-foreground">{stat}</div>
-                    <div className="text-xl font-black mt-1">---</div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
@@ -165,8 +190,12 @@ export default function TeamProfilePage() {
             {canManage && (
               <div className="p-6 rounded-3xl bg-background border border-border/50 shadow-sm space-y-4">
                 <span className="text-xs font-black text-muted-foreground uppercase tracking-widest block mb-2">Management</span>
-                <Button variant="outline" className="w-full justify-start rounded-xl font-bold h-12"><Users className="h-4 w-4 mr-2" />選手管理</Button>
-                <Button variant="outline" className="w-full justify-start rounded-xl font-bold h-12"><Settings className="h-4 w-4 mr-2" />チーム設定</Button>
+                <Button variant="outline" className="w-full justify-start rounded-xl font-bold h-12">
+                  <Users className="h-4 w-4 mr-2" />選手管理
+                </Button>
+                <Button variant="outline" className="w-full justify-start rounded-xl font-bold h-12">
+                  <Settings className="h-4 w-4 mr-2" />チーム設定
+                </Button>
               </div>
             )}
           </div>
