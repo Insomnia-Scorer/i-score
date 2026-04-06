@@ -1,3 +1,4 @@
+// src/components/layout/user-profile-menu.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -32,7 +33,6 @@ const DESIGNS = [
   { id: "rounded", icon: Circle, label: "Rounded" },
 ];
 
-// 🌟 デザイナーの魔法: 明暗モードも配列化してUIを統一！
 const APPEARANCES = [
   { id: "light", icon: Sun, label: "Light" },
   { id: "dark", icon: Moon, label: "Dark" },
@@ -114,109 +114,121 @@ export function UserProfileMenu({ user, isLoading, onLogout }: UserProfileMenuPr
           </>
         )}
 
-        <DropdownMenuItem className="cursor-pointer flex items-center justify-between rounded-xl p-3 text-sm hover:bg-muted/50 transition-colors" onClick={() => console.log('通知画面へ')}>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <BellRing className="h-5 w-5 text-muted-foreground" />
-              {unreadNotificationsCount > 0 && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-background" />}
+        <div className="p-1 space-y-1">
+          <DropdownMenuItem className="cursor-pointer flex items-center justify-between rounded-xl p-3 text-sm hover:bg-muted/80 transition-colors" onClick={() => console.log('通知画面へ')}>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <BellRing className="h-5 w-5 text-muted-foreground" />
+                {unreadNotificationsCount > 0 && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-background" />}
+              </div>
+              <span className="font-bold text-base sm:text-sm">お知らせ</span>
             </div>
-            <span className="font-bold text-base sm:text-sm">お知らせ</span>
-          </div>
-          {unreadNotificationsCount > 0 && (
-            <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">{unreadNotificationsCount}件</span>
-          )}
-        </DropdownMenuItem>
+            {unreadNotificationsCount > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">{unreadNotificationsCount}件</span>
+            )}
+          </DropdownMenuItem>
 
-        <DropdownMenuItem className="cursor-pointer gap-3 rounded-xl p-3 text-sm hover:bg-muted/50 transition-colors" onClick={() => router.push("/profile")}>
-          <Settings className="h-5 w-5 text-muted-foreground" />
-          <span className="font-bold text-base sm:text-sm">アカウント設定</span>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator className="bg-border/50 my-1" />
-
-        <div className="px-3 py-2 bg-muted/20 rounded-xl border border-border/30 mx-1 my-2 shadow-inner">
-
-          {/* 🎨 カラーテーマ */}
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Color Theme</p>
-          <div className="flex items-center justify-between mb-4 px-1">
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  applyColorTheme(t.id);
-                }}
-                className={cn(
-                  "h-6 w-6 rounded-full transition-all hover:scale-125 active:scale-90 relative",
-                  activeThemeColor === t.id && "ring-2 ring-offset-2 ring-offset-background ring-primary scale-110"
-                )}
-                style={{ backgroundColor: t.color }}
-                title={t.label}
-              >
-                {activeThemeColor === t.id && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="h-2 w-2 rounded-full bg-white shadow-sm" />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* 📐 デザイン(角丸)テーマ */}
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 mt-4">Design Style</p>
-          <div className="flex gap-1.5 mb-4">
-            {DESIGNS.map((d) => {
-              const Icon = d.icon;
-              const isActive = activeDesign === d.id;
-              return (
-                <button
-                  key={d.id}
-                  onClick={(e) => { e.preventDefault(); applyDesignTheme(d.id); }}
-                  className={cn(
-                    "flex-1 flex flex-col items-center justify-center py-2 gap-1 rounded-lg border transition-all active:scale-95",
-                    isActive
-                      ? "bg-primary/10 border-primary/50 text-primary shadow-sm"
-                      : "bg-background/50 border-border/50 text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-[10px] font-bold">{d.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 🌓 明暗（Light/Dark）モード */}
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 mt-4">Appearance</p>
-          <div className="flex gap-1.5 mb-2">
-            {APPEARANCES.map((a) => {
-              const Icon = a.icon;
-              const isActive = theme === a.id;
-              return (
-                <button
-                  key={a.id}
-                  onClick={(e) => { e.preventDefault(); setTheme(a.id); }}
-                  className={cn(
-                    "flex-1 flex flex-col items-center justify-center py-2 gap-1 rounded-lg border transition-all active:scale-95",
-                    isActive
-                      ? "bg-primary/10 border-primary/50 text-primary shadow-sm"
-                      : "bg-background/50 border-border/50 text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-[10px] font-bold">{a.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          <DropdownMenuItem className="cursor-pointer gap-3 rounded-xl p-3 text-sm hover:bg-muted/80 transition-colors" onClick={() => router.push("/profile")}>
+            <Settings className="h-5 w-5 text-muted-foreground" />
+            <span className="font-bold text-base sm:text-sm">アカウント設定</span>
+          </DropdownMenuItem>
         </div>
 
         <DropdownMenuSeparator className="bg-border/50 my-1" />
 
-        <DropdownMenuItem className="cursor-pointer gap-3 text-red-500 focus:text-red-500 rounded-xl p-3 text-sm hover:bg-red-500/10 transition-colors" onClick={onLogout}>
-          <LogOut className="h-5 w-5" />
-          <span className="font-bold text-base sm:text-sm">ログアウト</span>
-        </DropdownMenuItem>
+        {/* 🌟 究極にすっきりしたテーマ設定エリア */}
+        <div className="px-2 py-3 space-y-6">
+
+          {/* 🎨 カラーテーマ */}
+          <div>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 pl-1">Color</p>
+            <div className="flex items-center justify-between px-1">
+              {THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    applyColorTheme(t.id);
+                  }}
+                  className={cn(
+                    "h-6 w-6 rounded-full transition-all hover:scale-125 active:scale-90 relative",
+                    activeThemeColor === t.id && "ring-2 ring-offset-2 ring-offset-background ring-primary scale-110"
+                  )}
+                  style={{ backgroundColor: t.color }}
+                  title={t.label}
+                >
+                  {activeThemeColor === t.id && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-2 w-2 rounded-full bg-white shadow-sm" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 📐 デザイン(角丸)テーマ */}
+          <div>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 pl-1">Style</p>
+            <div className="flex gap-2 px-1">
+              {DESIGNS.map((d) => {
+                const Icon = d.icon;
+                const isActive = activeDesign === d.id;
+                return (
+                  <button
+                    key={d.id}
+                    onClick={(e) => { e.preventDefault(); applyDesignTheme(d.id); }}
+                    className={cn(
+                      "flex-1 flex flex-col items-center justify-center py-2.5 gap-1.5 rounded-xl border transition-all active:scale-95",
+                      isActive
+                        ? "bg-primary/10 border-primary/30 text-primary shadow-sm"
+                        : "bg-muted/40 border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[10px] font-bold">{d.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 🌓 明暗（Light/Dark）モード */}
+          <div>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 pl-1">Appearance</p>
+            <div className="flex gap-2 px-1">
+              {APPEARANCES.map((a) => {
+                const Icon = a.icon;
+                const isActive = theme === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={(e) => { e.preventDefault(); setTheme(a.id); }}
+                    className={cn(
+                      "flex-1 flex flex-col items-center justify-center py-2.5 gap-1.5 rounded-xl border transition-all active:scale-95",
+                      isActive
+                        ? "bg-primary/10 border-primary/30 text-primary shadow-sm"
+                        : "bg-muted/40 border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[10px] font-bold">{a.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+
+        <DropdownMenuSeparator className="bg-border/50 my-1" />
+
+        <div className="p-1">
+          <DropdownMenuItem className="cursor-pointer gap-3 text-red-500 focus:text-red-500 rounded-xl p-3 text-sm hover:bg-red-500/10 transition-colors" onClick={onLogout}>
+            <LogOut className="h-5 w-5" />
+            <span className="font-bold text-base sm:text-sm">ログアウト</span>
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
