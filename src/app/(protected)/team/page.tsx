@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Users, MapPin, Calendar, Shield, Trophy, Loader2, Camera, Settings, Crown, UserCircle, Info, ChevronRight, BarChart3 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface Team {
   id: string;
@@ -23,22 +24,75 @@ interface Team {
   isFounder: boolean;
 }
 
-interface TeamStats {
+// 💡 勝率データの型を3種類に分割
+interface MatchStats {
   totalGames: number;
   wins: number;
   draws: number;
   losses: number;
   winRate: number;
+}
+
+interface TeamStats {
+  overall: MatchStats;
+  official: MatchStats;
+  practice: MatchStats;
   avgRuns: number;
   teamAvg: string;
   teamHR: string;
 }
 
+const initialMatchStats = { totalGames: 0, wins: 0, draws: 0, losses: 0, winRate: 0 };
+
+// 🎨 再利用可能なドーナツチャート・コンポーネント（テーマ完全対応）
+const WinRateDonut = ({ stats, label, subLabel, size = "sm" }: { stats: MatchStats, label: string, subLabel: string, size?: "sm" | "lg" }) => {
+  const radius = size === "lg" ? 54 : 36;
+  const strokeWidth = size === "lg" ? 10 : 7;
+  const viewBox = size === "lg" ? "0 0 120 120" : "0 0 88 88";
+  const center = size === "lg" ? 60 : 44;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (circumference * stats.winRate) / 100;
+
+  return (
+    <div className="flex flex-col items-center group">
+      <div className={cn("relative flex items-center justify-center", size === 'lg' ? 'w-36 h-36 sm:w-40 sm:h-40' : 'w-24 h-24 sm:w-28 sm:h-28')}>
+        <svg className="w-full h-full -rotate-90 drop-shadow-sm" viewBox={viewBox}>
+          {/* 背景の円（テーマの枠線色を使用） */}
+          <circle cx={center} cy={center} r={radius} className="stroke-border/50 fill-none" strokeWidth={strokeWidth} />
+          {/* プログレスの円（テーマのプライマリ色を使用） */}
+          <circle
+            cx={center} cy={center} r={radius}
+            className="stroke-primary fill-none transition-all duration-1000 ease-out"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={cn("font-black tabular-nums tracking-tighter text-foreground", size === 'lg' ? 'text-4xl sm:text-5xl' : 'text-2xl sm:text-3xl')}>
+            {stats.winRate}<span className={cn("text-muted-foreground", size === 'lg' ? 'text-xl' : 'text-sm')}>%</span>
+          </span>
+          {size === 'lg' && <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-60 -mt-1">Win Rate</span>}
+        </div>
+      </div>
+      <div className="mt-3 text-center">
+        <p className={cn("font-black text-foreground", size === 'lg' ? 'text-base' : 'text-sm')}>{label}</p>
+        <p className="text-[10px] font-bold text-muted-foreground">{stats.wins}勝 {stats.losses}敗 {stats.draws > 0 ? `${stats.draws}分` : ''}</p>
+      </div>
+    </div>
+  );
+};
+
+
 export default function TeamProfilePage() {
   const router = useRouter();
   const [team, setTeam] = useState<Team | null>(null);
   const [memberCount, setMemberCount] = useState<number>(0);
-  const [stats, setStats] = useState<TeamStats>({ totalGames: 0, wins: 0, draws: 0, losses: 0, winRate: 0, avgRuns: 0, teamAvg: ".000", teamHR: "0" });
+  const [stats, setStats] = useState<TeamStats>({
+    overall: initialMatchStats, official: initialMatchStats, practice: initialMatchStats,
+    avgRuns: 0, teamAvg: ".000", teamHR: "0"
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -47,7 +101,6 @@ export default function TeamProfilePage() {
         const activeTeamId = localStorage.getItem("iScore_selectedTeamId");
         if (!activeTeamId) { setIsLoading(false); return; }
 
-        // 1. チーム基本情報
         const teamsResponse = await fetch("/api/teams", { cache: "no-store" });
         if (!teamsResponse.ok) throw new Error("取得失敗");
         const teamsData: Team[] = await teamsResponse.json();
@@ -56,28 +109,38 @@ export default function TeamProfilePage() {
         if (currentTeam) {
           setTeam(currentTeam);
 
-          // 2. メンバー数
           const playersResponse = await fetch(`/api/teams/${activeTeamId}/players`, { cache: "no-store" });
           if (playersResponse.ok) {
             const playersData = (await playersResponse.json()) as any[];
             setMemberCount(playersData.length || 0);
           }
 
-          // 3. 試合結果（勝敗・得点）の集計
-          const matchesRes = await fetch(`/api/teams/${activeTeamId}/recent-matches`, { cache: "no-store" });
-          let wins = 0, losses = 0, draws = 0, totalRuns = 0, totalGames = 0;
+          // 🔥 修正: 3件ではなく「全試合（all-matches）」を取得して集計
+          const matchesRes = await fetch(`/api/teams/${activeTeamId}/all-matches`, { cache: "no-store" });
+          let overall = { ...initialMatchStats }, official = { ...initialMatchStats }, practice = { ...initialMatchStats };
+          let totalRuns = 0;
+
           if (matchesRes.ok) {
             const matchesData = await matchesRes.json() as any[];
-            totalGames = matchesData.length;
-            matchesData.forEach(m => {
-              if (m.myScore > m.opponentScore) wins++;
-              else if (m.myScore < m.opponentScore) losses++;
-              else draws++;
-              totalRuns += m.myScore;
-            });
+
+            // 勝敗を計算するヘルパー関数
+            const calc = (matches: any[]) => {
+              let w = 0, l = 0, d = 0;
+              matches.forEach(m => {
+                if (m.myScore > m.opponentScore) w++;
+                else if (m.myScore < m.opponentScore) l++;
+                else d++;
+              });
+              const t = matches.length;
+              return { totalGames: t, wins: w, losses: l, draws: d, winRate: (w + l) > 0 ? Math.round((w / (w + l)) * 100) : 0 };
+            };
+
+            overall = calc(matchesData);
+            official = calc(matchesData.filter(m => m.matchType === 'official'));
+            practice = calc(matchesData.filter(m => m.matchType === 'practice'));
+            totalRuns = matchesData.reduce((sum, m) => sum + m.myScore, 0);
           }
 
-          // 4. 打撃成績の集計
           const statsRes = await fetch(`/api/teams/${activeTeamId}/stats`, { cache: "no-store" });
           let teamAvg = ".000", teamHR = "0";
           if (statsRes.ok) {
@@ -93,9 +156,8 @@ export default function TeamProfilePage() {
           }
 
           setStats({
-            totalGames, wins, draws, losses,
-            winRate: (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0,
-            avgRuns: totalGames > 0 ? Number((totalRuns / totalGames).toFixed(1)) : 0,
+            overall, official, practice,
+            avgRuns: overall.totalGames > 0 ? Number((totalRuns / overall.totalGames).toFixed(1)) : 0,
             teamAvg, teamHR
           });
         }
@@ -114,11 +176,12 @@ export default function TeamProfilePage() {
   const canManage = team.myRole === 'ADMIN' || team.myRole === 'MANAGER' || team.isFounder;
 
   return (
+    // 🎨 修正: bg-transparent とし、全体をルートテーマに委ねる
     <div className="w-full animate-in fade-in duration-500 bg-transparent">
 
       {/* 1. ヒーローセクション */}
       <div className="relative w-full aspect-[21/9] lg:aspect-[4/1] bg-muted overflow-hidden border-b border-border/40">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('/team-cover.webp')` }} />
+        <div className="absolute inset-0 bg-cover bg-center opacity-80" style={{ backgroundImage: `url('/team-cover.webp')` }} />
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
@@ -126,7 +189,8 @@ export default function TeamProfilePage() {
         {/* 2. プロフィールヘッダー */}
         <div className="relative -mt-16 sm:-mt-20 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 mb-8 sm:mb-12">
           <div className="relative group shrink-0 self-start sm:self-auto">
-            <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background shadow-xl bg-white dark:bg-zinc-900">
+            {/* 🎨 修正: bg-card を使用し、テーマ切り替え時に自動で色が変わるように */}
+            <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background shadow-xl bg-card">
               <AvatarFallback className="text-4xl sm:text-5xl font-black text-primary bg-primary/5">
                 {(team.orgName || team.name || "T").slice(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -152,18 +216,13 @@ export default function TeamProfilePage() {
                 {team.teamType === 'regular' ? '一般チーム' : team.teamType || "TEAM"}
               </span>
               {team.year && (
-                <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full shadow-sm">
+                <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold bg-muted text-muted-foreground border border-border px-3 py-1 rounded-full shadow-sm">
                   <Calendar className="h-3.5 w-3.5" /> Est. {team.year}
                 </span>
               )}
               {team.tier && (
-                <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold bg-muted text-muted-foreground border border-border px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
                   <Shield className="h-3.5 w-3.5" /> Tier: {team.tier}
-                </span>
-              )}
-              {team.isFounder && (
-                <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-black bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full shadow-sm">
-                  <Crown className="h-3.5 w-3.5" /> FOUNDER
                 </span>
               )}
             </div>
@@ -176,46 +235,39 @@ export default function TeamProfilePage() {
           {/* 左側（7カラム分）: チームインテル（勝率＆理念） */}
           <div className="lg:col-span-7 space-y-8">
 
-            {/* 移植！シーズン勝率＆打撃成績カード */}
-            <Card className="p-0 gap-0 bg-white/90 dark:bg-card/30 backdrop-blur-xl border-border/40 rounded-[40px] overflow-hidden shadow-sm hover:shadow-md dark:shadow-none transition-all hover:border-primary/30">
-              <CardContent className="p-8 sm:p-10 flex flex-col items-center text-center space-y-8">
+            {/* 🎨 新デザイン: 3連勝率ドーナツチャート（テーマ完全対応 bg-card） */}
+            <Card className="p-0 gap-0 bg-card text-card-foreground border-border/60 rounded-[40px] overflow-hidden shadow-sm hover:border-primary/30 transition-all">
+              <CardContent className="p-6 sm:p-10 flex flex-col items-center space-y-8">
 
-                {/* 勝率サークル */}
-                <div className="relative w-40 h-40 flex items-center justify-center">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="45" className="stroke-muted/20 fill-none" strokeWidth="8" />
-                    <circle cx="50" cy="50" r="45" className="stroke-primary fill-none transition-all duration-1000 ease-out" strokeWidth="8" strokeDasharray={283} strokeDashoffset={283 - (283 * stats.winRate) / 100} strokeLinecap="round" />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-black tabular-nums tracking-tighter text-foreground">{stats.winRate}%</span>
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Win Rate</span>
+                {/* 中央大・左右小のレイアウト */}
+                <div className="flex items-end justify-center gap-4 sm:gap-8 w-full">
+                  <WinRateDonut stats={stats.official} label="公式戦" subLabel="Official" size="sm" />
+                  <div className="-mb-4"> {/* 中央を少し上に押し上げて王者の風格を出す */}
+                    <WinRateDonut stats={stats.overall} label="総合勝率" subLabel="Overall" size="lg" />
                   </div>
+                  <WinRateDonut stats={stats.practice} label="練習試合" subLabel="Practice" size="sm" />
                 </div>
 
                 {/* 統計スタッツ */}
-                <div className="grid grid-cols-4 w-full pt-4 border-t border-border/40">
-                  <div className="text-center pt-4">
-                    <p className="text-lg font-black text-foreground">{stats.wins} <span className="text-xs text-muted-foreground">-</span> {stats.losses}</p>
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">W-L</p>
+                <div className="grid grid-cols-3 w-full pt-6 border-t border-border/40">
+                  <div className="text-center pt-2">
+                    <p className="text-xl font-black text-foreground">{stats.avgRuns}</p>
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-0.5">Avg Runs</p>
                   </div>
-                  <div className="text-center border-l border-border/40 pt-4">
-                    <p className="text-lg font-black text-foreground">{stats.avgRuns}</p>
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Avg Runs</p>
+                  <div className="text-center border-l border-border/40 pt-2">
+                    <p className="text-xl font-black text-primary">{stats.teamAvg}</p>
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-0.5">Team AVG</p>
                   </div>
-                  <div className="text-center border-l border-border/40 pt-4">
-                    <p className="text-lg font-black text-primary">{stats.teamAvg}</p>
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Team AVG</p>
-                  </div>
-                  <div className="text-center border-l border-border/40 pt-4">
-                    <p className="text-lg font-black text-foreground">{stats.teamHR}</p>
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Team HR</p>
+                  <div className="text-center border-l border-border/40 pt-2">
+                    <p className="text-xl font-black text-foreground">{stats.teamHR}</p>
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-0.5">Team HR</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* チーム理念（スローガン＆拠点） */}
-            <div className="p-8 rounded-[40px] bg-muted/30 border border-border/40 shadow-sm space-y-6">
+            <div className="p-8 rounded-[40px] bg-muted/50 border border-border/40 shadow-sm space-y-6">
               <h3 className="text-xs font-black flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
                 <Info className="h-4 w-4" /> Club Identity
               </h3>
@@ -233,13 +285,13 @@ export default function TeamProfilePage() {
               <div className="flex flex-col sm:flex-row gap-6 pt-4">
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Home Ground</span>
-                  <p className="text-sm font-semibold flex items-center">
+                  <p className="text-sm font-semibold flex items-center text-foreground">
                     <MapPin className="h-4 w-4 mr-1.5 text-primary" /> {team.homeGround || "未設定"}
                   </p>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Manager</span>
-                  <p className="text-sm font-semibold flex items-center">
+                  <p className="text-sm font-semibold flex items-center text-foreground">
                     <UserCircle className="h-4 w-4 mr-1.5 text-primary" /> {team.managerName || "未設定"}
                   </p>
                 </div>
@@ -262,38 +314,38 @@ export default function TeamProfilePage() {
 
             {/* クイックメニュー（ナビゲーション） */}
             <div className="space-y-3">
-              <button onClick={() => router.push('/team/players')} className="flex items-center gap-5 p-6 rounded-[32px] bg-white/90 dark:bg-card/20 border border-border/40 hover:bg-card/40 hover:border-primary/40 transition-all group shadow-sm text-left w-full">
-                <div className="p-4 rounded-2xl bg-muted/40 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
+              <button onClick={() => router.push('/team/players')} className="flex items-center gap-5 p-6 rounded-[32px] bg-card text-card-foreground border border-border/60 hover:bg-muted/50 hover:border-primary/40 transition-all group shadow-sm text-left w-full">
+                <div className="p-4 rounded-2xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
                   <Users className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-black uppercase tracking-widest text-foreground">選手名簿</p>
-                  <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">Squad List</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase">Squad List</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground/20 group-hover:text-primary transition-all group-hover:translate-x-1" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-all group-hover:translate-x-1" />
               </button>
 
-              <button onClick={() => router.push('/team/stats')} className="flex items-center gap-5 p-6 rounded-[32px] bg-white/90 dark:bg-card/20 border border-border/40 hover:bg-card/40 hover:border-primary/40 transition-all group shadow-sm text-left w-full">
-                <div className="p-4 rounded-2xl bg-muted/40 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
+              <button onClick={() => router.push('/team/stats')} className="flex items-center gap-5 p-6 rounded-[32px] bg-card text-card-foreground border border-border/60 hover:bg-muted/50 hover:border-primary/40 transition-all group shadow-sm text-left w-full">
+                <div className="p-4 rounded-2xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
                   <BarChart3 className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-black uppercase tracking-widest text-foreground">通算成績</p>
-                  <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">Team Analytics</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase">Team Analytics</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground/20 group-hover:text-primary transition-all group-hover:translate-x-1" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-all group-hover:translate-x-1" />
               </button>
 
               {canManage && (
-                <button onClick={() => router.push('/team/settings')} className="flex items-center gap-5 p-6 rounded-[32px] bg-white/90 dark:bg-card/20 border border-border/40 hover:bg-card/40 hover:border-primary/40 transition-all group shadow-sm text-left w-full">
-                  <div className="p-4 rounded-2xl bg-muted/40 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
+                <button onClick={() => router.push('/team/settings')} className="flex items-center gap-5 p-6 rounded-[32px] bg-card text-card-foreground border border-border/60 hover:bg-muted/50 hover:border-primary/40 transition-all group shadow-sm text-left w-full">
+                  <div className="p-4 rounded-2xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
                     <Settings className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-black uppercase tracking-widest text-foreground">チーム設定</p>
-                    <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">Management</p>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase">Management</p>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground/20 group-hover:text-primary transition-all group-hover:translate-x-1" />
+                  <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-all group-hover:translate-x-1" />
                 </button>
               )}
             </div>
