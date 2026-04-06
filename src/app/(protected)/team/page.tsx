@@ -1,3 +1,4 @@
+// src/app/(protected)/team/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -24,7 +25,6 @@ interface Team {
   isFounder: boolean;
 }
 
-// 💡 勝率データの型を3種類に分割
 interface MatchStats {
   totalGames: number;
   wins: number;
@@ -44,7 +44,6 @@ interface TeamStats {
 
 const initialMatchStats = { totalGames: 0, wins: 0, draws: 0, losses: 0, winRate: 0 };
 
-// 🎨 再利用可能なドーナツチャート・コンポーネント（テーマ完全対応）
 const WinRateDonut = ({ stats, label, subLabel, size = "sm" }: { stats: MatchStats, label: string, subLabel: string, size?: "sm" | "lg" }) => {
   const radius = size === "lg" ? 54 : 36;
   const strokeWidth = size === "lg" ? 10 : 7;
@@ -57,9 +56,7 @@ const WinRateDonut = ({ stats, label, subLabel, size = "sm" }: { stats: MatchSta
     <div className="flex flex-col items-center group">
       <div className={cn("relative flex items-center justify-center", size === 'lg' ? 'w-36 h-36 sm:w-40 sm:h-40' : 'w-24 h-24 sm:w-28 sm:h-28')}>
         <svg className="w-full h-full -rotate-90 drop-shadow-sm" viewBox={viewBox}>
-          {/* 背景の円（テーマの枠線色を使用） */}
           <circle cx={center} cy={center} r={radius} className="stroke-border/50 fill-none" strokeWidth={strokeWidth} />
-          {/* プログレスの円（テーマのプライマリ色を使用） */}
           <circle
             cx={center} cy={center} r={radius}
             className="stroke-primary fill-none transition-all duration-1000 ease-out"
@@ -83,7 +80,6 @@ const WinRateDonut = ({ stats, label, subLabel, size = "sm" }: { stats: MatchSta
     </div>
   );
 };
-
 
 export default function TeamProfilePage() {
   const router = useRouter();
@@ -115,15 +111,12 @@ export default function TeamProfilePage() {
             setMemberCount(playersData.length || 0);
           }
 
-          // 🔥 修正: 3件ではなく「全試合（all-matches）」を取得して集計
           const matchesRes = await fetch(`/api/teams/${activeTeamId}/all-matches`, { cache: "no-store" });
           let overall = { ...initialMatchStats }, official = { ...initialMatchStats }, practice = { ...initialMatchStats };
           let totalRuns = 0;
 
           if (matchesRes.ok) {
             const matchesData = await matchesRes.json() as any[];
-
-            // 勝敗を計算するヘルパー関数
             const calc = (matches: any[]) => {
               let w = 0, l = 0, d = 0;
               matches.forEach(m => {
@@ -176,13 +169,12 @@ export default function TeamProfilePage() {
   const canManage = team.myRole === 'ADMIN' || team.myRole === 'MANAGER' || team.isFounder;
 
   return (
-    // 🌟 全体の背景を透明からテーマ背景色に変更
-    <div className="w-full animate-in fade-in duration-500 bg-background min-h-screen">
+    // 🌟 修正1: bg-background を撤去し、bg-transparent に変更！これで魔法のグラデーション背景が復活します！
+    <div className="w-full animate-in fade-in duration-500 bg-transparent min-h-screen">
 
       {/* 1. ヒーローセクション */}
       <div className="relative w-full aspect-[21/9] lg:aspect-[4/1] bg-muted overflow-hidden border-b border-border/40">
         <div className="absolute inset-0 bg-cover bg-center opacity-80" style={{ backgroundImage: `url('/team-cover.webp')` }} />
-        {/* ダークモード時に画像が明るすぎないようオーバーレイを追加 */}
         <div className="absolute inset-0 bg-black/20 dark:bg-black/50" />
       </div>
 
@@ -191,7 +183,6 @@ export default function TeamProfilePage() {
         {/* 2. プロフィールヘッダー */}
         <div className="relative -mt-16 sm:-mt-20 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 mb-8 sm:mb-12">
           <div className="relative group shrink-0 self-start sm:self-auto">
-            {/* 🌟 アバターもテーマ対応の背景に */}
             <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background shadow-xl bg-white dark:bg-zinc-800">
               <AvatarFallback className="text-4xl sm:text-5xl font-black text-primary bg-primary/10">
                 {(team.orgName || team.name || "T").slice(0, 2).toUpperCase()}
@@ -234,14 +225,12 @@ export default function TeamProfilePage() {
         {/* 3. メインコンテンツ（2カラム構成） */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-          {/* 左側（7カラム分） */}
           <div className="lg:col-span-7 space-y-8">
 
-            {/* 🌟 3連勝率ドーナツチャート（すりガラススタイル完全復活！） */}
-            <Card className="p-0 gap-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl border-border/40 rounded-[40px] overflow-hidden shadow-sm hover:shadow-md transition-all">
+            {/* 🌟 修正2: rounded-[40px] を撤廃し、テーマに追従する `rounded-3xl` に変更！ */}
+            <Card className="p-0 gap-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl border-border/40 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all">
               <CardContent className="p-6 sm:p-10 flex flex-col items-center space-y-8">
 
-                {/* 中央大・左右小のレイアウト */}
                 <div className="flex items-end justify-center gap-4 sm:gap-8 w-full">
                   <WinRateDonut stats={stats.official} label="公式戦" subLabel="Official" size="sm" />
                   <div className="-mb-4">
@@ -267,8 +256,8 @@ export default function TeamProfilePage() {
               </CardContent>
             </Card>
 
-            {/* 🌟 チーム理念カード */}
-            <div className="p-8 rounded-[40px] bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 shadow-sm space-y-6">
+            {/* 🌟 修正3: こちらも `rounded-3xl` に変更 */}
+            <div className="p-8 rounded-3xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 shadow-sm space-y-6">
               <h3 className="text-xs font-black flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
                 <Info className="h-4 w-4" /> Club Identity
               </h3>
@@ -301,11 +290,10 @@ export default function TeamProfilePage() {
 
           </div>
 
-          {/* 右側（5カラム分）: 管理・名簿メニュー */}
           <div className="lg:col-span-5 space-y-6">
 
-            {/* 🌟 ロースター（人数） */}
-            <div className="p-8 rounded-[40px] bg-primary/5 dark:bg-primary/10 border border-primary/20 shadow-sm group backdrop-blur-md">
+            {/* 🌟 修正4: こちらも `rounded-3xl` に変更 */}
+            <div className="p-8 rounded-3xl bg-primary/5 dark:bg-primary/10 border border-primary/20 shadow-sm group backdrop-blur-md">
               <span className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 block">Active Roster</span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-5xl font-black text-primary">{memberCount}</span>
@@ -313,10 +301,10 @@ export default function TeamProfilePage() {
               </div>
             </div>
 
-            {/* 🌟 クイックメニュー（ナビゲーション） */}
             <div className="space-y-3">
-              <button onClick={() => router.push('/team/players')} className="flex items-center gap-5 p-6 rounded-[32px] bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all group shadow-sm text-left w-full">
-                <div className="p-4 rounded-2xl bg-muted dark:bg-zinc-800 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
+              {/* 🌟 修正5: ボタンの角丸は `rounded-2xl`（親より少し小さめ）に設定し、アイコンは `rounded-xl` に連動 */}
+              <button onClick={() => router.push('/team/players')} className="flex items-center gap-5 p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all group shadow-sm text-left w-full">
+                <div className="p-4 rounded-xl bg-muted dark:bg-zinc-800 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
                   <Users className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
@@ -326,8 +314,8 @@ export default function TeamProfilePage() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-all group-hover:translate-x-1" />
               </button>
 
-              <button onClick={() => router.push('/team/stats')} className="flex items-center gap-5 p-6 rounded-[32px] bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all group shadow-sm text-left w-full">
-                <div className="p-4 rounded-2xl bg-muted dark:bg-zinc-800 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
+              <button onClick={() => router.push('/team/stats')} className="flex items-center gap-5 p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all group shadow-sm text-left w-full">
+                <div className="p-4 rounded-xl bg-muted dark:bg-zinc-800 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
                   <BarChart3 className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
@@ -338,8 +326,8 @@ export default function TeamProfilePage() {
               </button>
 
               {canManage && (
-                <button onClick={() => router.push('/team/settings')} className="flex items-center gap-5 p-6 rounded-[32px] bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all group shadow-sm text-left w-full">
-                  <div className="p-4 rounded-2xl bg-muted dark:bg-zinc-800 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
+                <button onClick={() => router.push('/team/settings')} className="flex items-center gap-5 p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all group shadow-sm text-left w-full">
+                  <div className="p-4 rounded-xl bg-muted dark:bg-zinc-800 group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
                     <Settings className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
