@@ -37,6 +37,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
   const [offsetX, setOffsetX] = useState(0);
 
   const [teamFullName, setTeamFullName] = useState("");
+
   useEffect(() => {
     const fetchTeamName = async () => {
       const teamId = localStorage.getItem("iScore_selectedTeamId");
@@ -59,11 +60,13 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
     setStartX(e.touches[0].clientX);
     setSwipeId(id);
   };
+
   const handleTouchMove = (e: React.TouchEvent) => {
     const currentX = e.touches[0].clientX;
     const diff = currentX - startX;
     if (Math.abs(diff) < 100) setOffsetX(diff);
   };
+
   const handleTouchEnd = () => {
     if (offsetX > 50) setOffsetX(80);
     else if (offsetX < -50) setOffsetX(-80);
@@ -113,32 +116,34 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
 
         return (
           <div key={match.id} className="relative">
-            {/* 🌟 修正：柔らかくてクールな背景色のスワイプボタン */}
-            <div className="absolute inset-0 flex items-center justify-between px-1">
-              <button
-                onClick={() => router.push(`/matches/edit?id=${match.id}`)}
-                className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-blue-400 dark:bg-blue-500 hover:bg-blue-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
-              >
-                <Edit2 className="h-5 w-5 mb-1 opacity-90" />
-                <span className="text-[10px] font-black tracking-widest opacity-90">編集</span>
-              </button>
-              <button
-                onClick={() => handleDelete(match.id)}
-                className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-rose-400 dark:bg-rose-500 hover:bg-rose-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
-              >
-                <Trash2 className="h-5 w-5 mb-1 opacity-90" />
-                <span className="text-[10px] font-black tracking-widest opacity-90">削除</span>
-              </button>
-            </div>
+            {/* 🌟 修正: イニングスコア展開中(isExpanded)は裏のボタンを完全に非表示にする！ */}
+            {!isExpanded && (
+              <div className="absolute inset-0 flex items-center justify-between px-1">
+                <button
+                  onClick={() => router.push(`/matches/edit?id=${match.id}`)}
+                  className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-blue-400 dark:bg-blue-500 hover:bg-blue-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
+                >
+                  <Edit2 className="h-5 w-5 mb-1 opacity-90" />
+                  <span className="text-[10px] font-black tracking-widest opacity-90">編集</span>
+                </button>
+                <button
+                  onClick={() => handleDelete(match.id)}
+                  className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-rose-400 dark:bg-rose-500 hover:bg-rose-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
+                >
+                  <Trash2 className="h-5 w-5 mb-1 opacity-90" />
+                  <span className="text-[10px] font-black tracking-widest opacity-90">削除</span>
+                </button>
+              </div>
+            )}
 
             {/* --- カード本体 --- */}
             <div
-              onTouchStart={(e) => handleTouchStart(e, match.id)}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              style={{ transform: isSwiping ? `translateX(${offsetX}px)` : 'translateX(0)' }}
+              // 🌟 修正: 展開中(isExpanded)はスワイプ操作を完全にロックする！
+              onTouchStart={(e) => { if (!isExpanded) handleTouchStart(e, match.id); }}
+              onTouchMove={(e) => { if (!isExpanded) handleTouchMove(e); }}
+              onTouchEnd={() => { if (!isExpanded) handleTouchEnd(); }}
+              style={{ transform: isSwiping && !isExpanded ? `translateX(${offsetX}px)` : 'translateX(0)' }}
               className={cn(
-                // 🌟 修正：透けをなくすため基本はソリッドな背景。選択時は薄いプライマリカラーに。
                 "relative z-10 rounded-2xl border transition-colors duration-200 ease-out",
                 isExpanded
                   ? "bg-primary/5 dark:bg-primary/10 border-primary shadow-md"
@@ -209,7 +214,6 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                       <table className="w-full text-center">
                         <thead>
                           <tr className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase border-b border-border/50">
-                            {/* 🌟 修正：チーム名列の幅を広げる（w-28） */}
                             <th className="text-left font-bold pb-1 w-28 sm:w-36">TEAM</th>
                             {Array.from({ length: inningCount }).map((_, i) => <th key={i} className="w-6 pb-1">{i + 1}</th>)}
                             <th className="w-8 text-primary pb-1">R</th>
@@ -218,12 +222,10 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                         <tbody className="text-xs sm:text-sm font-black tabular-nums">
                           <tr className="border-b border-border/30">
                             <td className="text-left py-1.5 pr-2">
-                              {/* 🌟 修正：w-28 に広げてより多くの文字を表示 */}
                               <div className="w-28 sm:w-36 truncate text-muted-foreground text-[10px] sm:text-xs">
                                 {match.battingOrder === 'first' ? (teamFullName || "自チーム") : (match.opponent || "相手")}
                               </div>
                             </td>
-                            {/* 🌟 修正：DBから取得した本物のイニングスコアを展開 */}
                             {Array.from({ length: inningCount }).map((_, i) => (
                               <td key={i}>
                                 {match.battingOrder === 'first'
