@@ -146,7 +146,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                 "relative z-10 rounded-2xl border transition-all duration-300 ease-out",
                 // 🌟 修正：監督ご指定の「bg-primary/10」を採用！最高のトーンになりました。
                 isExpanded
-                  ? "bg-primary/10 backdrop-blur-xl border-primary shadow-md shadow-primary/5"
+                  ? "bg-primary/10 backdrop-blur-sm border-primary shadow-md shadow-primary/5"
                   : "bg-white dark:bg-zinc-900 border-border/50 shadow-sm hover:border-border"
               )}
             >
