@@ -15,23 +15,27 @@ function MatchCreateContent() {
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
 
+  // --- 試合基本情報のステート ---
   const [opponent, setOpponent] = useState("");
+  const [tournamentName, setTournamentName] = useState(""); // 🌟 大会名
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("10:00");
   const [matchType, setMatchType] = useState<'official' | 'practice'>("practice");
   const [battingOrder, setBattingOrder] = useState<'first' | 'second'>("first");
   const [venue, setVenue] = useState("");
 
+  // --- スコア関連のステート ---
   const [inningCount, setInningCount] = useState(7);
   const [myInnings, setMyInnings] = useState<string[]>(Array(7).fill(""));
   const [opponentInnings, setOpponentInnings] = useState<string[]>(Array(7).fill(""));
 
+  // --- チーム・サジェスト用のステート ---
   const [opponentList, setOpponentList] = useState<string[]>([]);
   const [venueList, setVenueList] = useState<string[]>([]);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [teamName, setTeamName] = useState("自チーム");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 🌟 初期データの取得（自チーム名と、過去の対戦相手・球場リスト）
   useEffect(() => {
     const activeTeamId = localStorage.getItem("iScore_selectedTeamId");
     if (activeTeamId) {
@@ -55,6 +59,7 @@ function MatchCreateContent() {
     }
   }, []);
 
+  // リアルタイム入力モード（開発中）
   if (mode === 'live') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -65,9 +70,11 @@ function MatchCreateContent() {
     );
   }
 
+  // 合計スコアの計算
   const myTotalScore = myInnings.reduce((sum, val) => sum + (parseInt(val) || 0), 0);
   const opponentTotalScore = opponentInnings.reduce((sum, val) => sum + (parseInt(val) || 0), 0);
 
+  // イニングの追加・削除
   const addInning = () => {
     setInningCount(prev => prev + 1);
     setMyInnings(prev => [...prev, ""]);
@@ -81,6 +88,7 @@ function MatchCreateContent() {
     setOpponentInnings(prev => prev.slice(0, -1));
   };
 
+  // 🌟 試合結果の保存処理
   const handleSave = async () => {
     if (!opponent) {
       toast.error("対戦相手を入力してください");
@@ -91,12 +99,14 @@ function MatchCreateContent() {
     const activeTeamId = localStorage.getItem("iScore_selectedTeamId");
 
     try {
+      // 1. 試合の作成（tournamentNameも送信）
       const createRes = await fetch("/api/matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           teamId: activeTeamId,
           opponent,
+          tournamentName: matchType === 'official' ? tournamentName : "", // 🌟 公式戦のみ送信
           date: `${date} ${time}`,
           matchType,
           battingOrder,
@@ -109,6 +119,7 @@ function MatchCreateContent() {
       if (!createData.success) throw new Error(createData.error);
       const matchId = createData.matchId;
 
+      // 2. スコアの保存（イニングごとの詳細）
       const finishRes = await fetch(`/api/matches/${matchId}/finish`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -123,7 +134,7 @@ function MatchCreateContent() {
       if (!finishRes.ok) throw new Error("スコアの保存に失敗しました");
 
       toast.success("試合結果を保存しました！🔥");
-      router.push("/dashboard");
+      router.push("/dashboard"); // 保存後はダッシュボードへ帰還
 
     } catch (error: any) {
       toast.error(error.message || "エラーが発生しました");
@@ -133,10 +144,9 @@ function MatchCreateContent() {
   };
 
   return (
-    // 🌟 全体のパディングと間隔（space-y）を美しく調整
     <div className="min-h-screen bg-transparent p-4 sm:p-6 space-y-6 flex flex-col animate-in fade-in duration-300 max-w-lg mx-auto pb-32">
 
-      {/* 1. ヘッダー（保存ボタンを撤去し、スッキリと） */}
+      {/* 1. ヘッダー */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 rounded-full bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm border border-border/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 shadow-sm transition-all">
           <ChevronLeft className="h-5 w-5" />
@@ -144,7 +154,7 @@ function MatchCreateContent() {
         <h1 className="text-xl font-black tracking-tight">Quick Score</h1>
       </div>
 
-      {/* 2. 基本情報入力（要素のサイズを標準に戻し、Densityに追従させる） */}
+      {/* 2. 基本情報入力 */}
       <Card className="rounded-3xl border-border/40 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shadow-sm">
         <CardContent className="p-5 space-y-5">
 
@@ -200,11 +210,26 @@ function MatchCreateContent() {
                 <Trophy className="h-3.5 w-3.5" /> Match Type
               </label>
               <div className="flex gap-1.5">
-                <Button variant={matchType === 'official' ? 'default' : 'outline'} onClick={() => setMatchType('official')} className={cn("flex-1 h-11 px-0 rounded-2xl text-[10px] sm:text-xs font-bold transition-colors", matchType === 'official' && "bg-blue-600 hover:bg-blue-700")}>公式</Button>
+                <Button variant={matchType === 'official' ? 'default' : 'outline'} onClick={() => setMatchType('official')} className={cn("flex-1 h-11 px-0 rounded-2xl text-[10px] sm:text-xs font-bold transition-colors", matchType === 'official' && "bg-amber-600 hover:bg-amber-700")}>公式</Button>
                 <Button variant={matchType === 'practice' ? 'default' : 'outline'} onClick={() => setMatchType('practice')} className={cn("flex-1 h-11 px-0 rounded-2xl text-[10px] sm:text-xs font-bold transition-colors", matchType === 'practice' && "bg-emerald-600 hover:bg-emerald-700")}>練習</Button>
               </div>
             </div>
           </div>
+
+          {/* 🌟 隠し味：公式戦の時だけ「大会名」がフワッと現れる */}
+          {matchType === 'official' && (
+            <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+              <label className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1.5">
+                <Trophy className="h-3.5 w-3.5" /> Tournament Name
+              </label>
+              <Input
+                value={tournamentName}
+                onChange={(e) => setTournamentName(e.target.value)}
+                placeholder="大会名を入力 (例: 夏季大会)"
+                className="h-11 rounded-2xl text-sm font-bold bg-amber-500/5 border-amber-500/20 focus:border-amber-500"
+              />
+            </div>
+          )}
 
           <div className="pt-2">
             <div className="flex items-center p-1 bg-muted/50 rounded-2xl border border-border/50">
@@ -215,7 +240,7 @@ function MatchCreateContent() {
         </CardContent>
       </Card>
 
-      {/* 3. スコアボード（下部の無駄なスペースを削除し、スッキリと配置） */}
+      {/* 3. スコアボード */}
       <Card className="rounded-3xl border-border/40 bg-background shadow-xl overflow-hidden">
         <div className="bg-zinc-900 text-zinc-100 p-3 flex items-center justify-between">
           <h2 className="text-xs font-black italic tracking-wider">SCOREBOARD</h2>
@@ -286,7 +311,7 @@ function MatchCreateContent() {
         </div>
       </Card>
 
-      {/* 🌟 4. フローの終着点：超巨大な「保存」ボタンを一番下に配置 */}
+      {/* 4. アクションボタン（巨大ボタンで一撃保存！） */}
       <div className="pt-4">
         <Button
           onClick={handleSave}
@@ -306,6 +331,7 @@ function MatchCreateContent() {
   );
 }
 
+// 🌟 Suspenseでラップしてエクスポート
 export default function MatchCreatePage() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
