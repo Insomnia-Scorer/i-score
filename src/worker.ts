@@ -1,13 +1,13 @@
 // src/worker.ts
 import { Hono } from 'hono'
-import authRoute from './app/api/auth'
-import orgsRoute from './app/api/orgs'
-import teamsRoute from './app/api/teams'
-import matchesRoute from './app/api/matches'
-import adminRoute from './app/api/admin'
-import imagesRouter from './app/api/images'
-import seed from './app/api/seed'
-import tournaments from './app/api/tournaments'
+import authRoute from './api/auth'
+import orgsRoute from './api/orgs'
+import teamsRoute from './api/teams'
+import matchesRoute from './api/matches'
+import adminRoute from './api/admin'
+import imagesRouter from './api/images'
+import seed from './api/seed'
+import tournaments from './api/tournaments'
 
 const app = new Hono<{ Bindings: { DB: D1Database, ASSETS: Fetcher } }>()
 
@@ -22,9 +22,9 @@ app.route('/api/seed', seed)
 app.route('/api/tournaments', tournaments)
 
 export default {
-    async fetch(request: Request, env: any, ctx: ExecutionContext) {
-        const url = new URL(request.url)
-        if (url.pathname.startsWith('/api/')) return app.fetch(request, env, ctx)
-        return env.ASSETS.fetch(request)
-    }
+  async fetch(request: Request, env: any, ctx: ExecutionContext) {
+    const url = new URL(request.url)
+    if (url.pathname.startsWith('/api/')) return app.fetch(request, env, ctx)
+    return env.ASSETS.fetch(request)
+  }
 }
