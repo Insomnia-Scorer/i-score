@@ -1,4 +1,6 @@
 // src/components/matches/match-list.tsx
+// src/components/matches/match-list.tsx
+/* 💡 試合一覧リスト（スワイプ連動・x/ハイフン対応のフラットなイニングスコア実装） */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -8,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// APIレスポンスを想定した型定義
 interface Match {
   id: string;
   opponent: string;
@@ -28,6 +31,26 @@ interface MatchListProps {
   isLoading: boolean;
   onDelete?: (id: string) => void;
 }
+
+// 🔥 現場仕様：スコアのフォーマット関数（x・ハイフン対応）
+interface FormatScoreProps {
+  score: number | null | undefined;
+  isBottom: boolean;
+  isInningFinal: boolean;
+  isHomeWinning: boolean;
+}
+
+const formatScoreDisplay = ({ score, isBottom, isInningFinal, isHomeWinning }: FormatScoreProps) => {
+  // 後攻の最終回で、後攻が勝っていてスコアが未入力の場合、「x」を表示（サヨナラ・裏なし）
+  if (isBottom && isInningFinal && isHomeWinning && (score === null || score === undefined)) {
+    return "x";
+  }
+  // 未入力（未プレイ）のイニングは「-」を表示
+  if (score === null || score === undefined) {
+    return "-";
+  }
+  return score;
+};
 
 export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
   const router = useRouter();
@@ -56,7 +79,12 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
 
   if (isLoading) return <div className="space-y-3">{[1, 2, 3].map((i) => (<div key={i} className="h-28 w-full rounded-2xl bg-muted/50 animate-pulse" />))}</div>;
 
+  // 🌟 スマートなスワイプ挙動（コンテキストが変わったら自動で閉じる）
   const handleTouchStart = (e: React.TouchEvent, id: string) => {
+    // 別の試合を触り始めたら、開いているスコアを閉じる
+    if (expandedId !== null && expandedId !== id) {
+      setExpandedId(null);
+    }
     setStartX(e.touches[0].clientX);
     setSwipeId(id);
   };
@@ -64,6 +92,12 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
   const handleTouchMove = (e: React.TouchEvent) => {
     const currentX = e.touches[0].clientX;
     const diff = currentX - startX;
+
+    // スワイプ（横移動）が10px以上発生したら、自分自身が開いていても閉じる
+    if (Math.abs(diff) > 10 && expandedId !== null) {
+      setExpandedId(null);
+    }
+
     if (Math.abs(diff) < 100) setOffsetX(diff);
   };
 
@@ -113,9 +147,14 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
         const myScores = match.myInningScores || [];
         const oppScores = match.opponentInningScores || [];
 
+        // 先攻・後攻のスコア配列を決定
+        const topScores = match.battingOrder === 'first' ? myScores : oppScores;
+        const bottomScores = match.battingOrder === 'second' ? myScores : oppScores;
+        const isHomeWinning = secondScore > firstScore;
+
         return (
           <div key={match.id} className="relative">
-            {/* --- スワイプ時のボタン --- */}
+            {/* --- スワイプ時の背面ボタン --- */}
             <div className={cn(
               "absolute inset-0 flex items-center justify-between px-1 transition-opacity duration-200",
               Math.abs(offsetX) > 0 ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -138,13 +177,14 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
 
             {/* --- カード本体 --- */}
             <div
-              onTouchStart={(e) => { if (!isExpanded) handleTouchStart(e, match.id); }}
-              onTouchMove={(e) => { if (!isExpanded) handleTouchMove(e); }}
-              onTouchEnd={() => { if (!isExpanded) handleTouchEnd(); }}
-              style={{ transform: isSwiping && !isExpanded ? `translateX(${offsetX}px)` : 'translateX(0)' }}
+              // 🌟 !isExpanded の制限を外し、いつでもスワイプイベントを検知可能に
+              onTouchStart={(e) => handleTouchStart(e, match.id)}
+              onTouchMove={(e) => handleTouchMove(e)}
+              onTouchEnd={() => handleTouchEnd()}
+              // isSwiping のみに依存させ、開いていてもスワイプアニメーションを一時的に許可（直後に閉じる）
+              style={{ transform: isSwiping ? `translateX(${offsetX}px)` : 'translateX(0)' }}
               className={cn(
                 "relative z-10 rounded-2xl border transition-all duration-300 ease-out",
-                // 🌟 修正：監督ご指定の「bg-primary/10」を採用！最高のトーンになりました。
                 isExpanded
                   ? "bg-primary/10 backdrop-blur-sm border-primary shadow-md shadow-primary/5"
                   : "bg-white dark:bg-zinc-900 border-border/50 shadow-sm hover:border-border"
@@ -158,7 +198,6 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                 }}
               >
                 <div className="flex items-center justify-between gap-4">
-
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className={cn(
@@ -207,51 +246,71 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                   </div>
                 </div>
 
-                {/* 🌟 展開時：イニングスコア */}
+                {/* 🌟 展開時：イニングスコア（フラットデザイン ＆ x/- フォーマット対応） */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="overflow-x-auto pb-1">
-                      <table className="w-full text-center">
-                        <thead>
-                          <tr className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase border-b border-primary/20">
-                            <th className="text-left font-bold pb-1.5 w-28 sm:w-36">TEAM</th>
-                            {Array.from({ length: inningCount }).map((_, i) => <th key={i} className="w-6 pb-1.5">{i + 1}</th>)}
-                            <th className="w-8 text-primary pb-1.5">R</th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-xs sm:text-sm font-black tabular-nums">
-                          <tr className="border-b border-primary/10">
-                            <td className="text-left py-2 pr-2">
-                              <div className="w-28 sm:w-36 truncate text-muted-foreground text-[10px] sm:text-xs">
-                                {match.battingOrder === 'first' ? (teamFullName || "自チーム") : (match.opponent || "相手")}
-                              </div>
-                            </td>
-                            {Array.from({ length: inningCount }).map((_, i) => (
-                              <td key={i}>
-                                {match.battingOrder === 'first'
-                                  ? (myScores[i] ?? "-")
-                                  : (oppScores[i] ?? "-")}
+                  <div className="mt-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="w-full overflow-hidden rounded-xl border border-border bg-white dark:bg-black shadow-sm">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-center whitespace-nowrap">
+                          {/* ヘッダー行：イニング数は text-sm/md:text-base で見やすく */}
+                          <thead className="bg-muted/30 dark:bg-muted/10 border-b border-border/50">
+                            <tr>
+                              <th className="py-2 px-3 text-left font-normal text-muted-foreground text-xs w-20 md:w-32">
+                                TEAM
+                              </th>
+                              {Array.from({ length: inningCount }).map((_, i) => (
+                                <th key={i} className="py-2 px-1 sm:px-2 text-sm md:text-base font-semibold text-foreground">
+                                  {i + 1}
+                                </th>
+                              ))}
+                              <th className="py-2 px-3 text-sm md:text-base font-bold text-primary">R</th>
+                            </tr>
+                          </thead>
+
+                          <tbody className="divide-y divide-border/50 text-xs sm:text-sm font-medium tabular-nums">
+                            {/* 先攻（Top） */}
+                            <tr>
+                              <td className="py-2 px-3 text-left">
+                                {/* スマホでは省略、PCではフル表示 */}
+                                <div className="w-16 truncate md:w-auto md:whitespace-normal">
+                                  {match.battingOrder === 'first' ? (teamFullName || "自チーム") : (match.opponent || "相手")}
+                                </div>
                               </td>
-                            ))}
-                            <td className="text-primary">{firstScore}</td>
-                          </tr>
-                          <tr>
-                            <td className="text-left py-2 pr-2">
-                              <div className="w-28 sm:w-36 truncate text-muted-foreground text-[10px] sm:text-xs">
-                                {match.battingOrder === 'second' ? (teamFullName || "自チーム") : (match.opponent || "相手")}
-                              </div>
-                            </td>
-                            {Array.from({ length: inningCount }).map((_, i) => (
-                              <td key={i}>
-                                {match.battingOrder === 'second'
-                                  ? (myScores[i] ?? "-")
-                                  : (oppScores[i] ?? "-")}
+                              {Array.from({ length: inningCount }).map((_, i) => (
+                                <td key={`top-${i}`} className="py-2 text-muted-foreground">
+                                  {formatScoreDisplay({
+                                    score: topScores[i],
+                                    isBottom: false,
+                                    isInningFinal: i === inningCount - 1,
+                                    isHomeWinning
+                                  })}
+                                </td>
+                              ))}
+                              <td className="py-2 px-3 font-bold text-primary">{firstScore}</td>
+                            </tr>
+
+                            {/* 後攻（Bottom） */}
+                            <tr>
+                              <td className="py-2 px-3 text-left">
+                                <div className="w-16 truncate md:w-auto md:whitespace-normal">
+                                  {match.battingOrder === 'second' ? (teamFullName || "自チーム") : (match.opponent || "相手")}
+                                </div>
                               </td>
-                            ))}
-                            <td className="text-primary">{secondScore}</td>
-                          </tr>
-                        </tbody>
-                      </table>
+                              {Array.from({ length: inningCount }).map((_, i) => (
+                                <td key={`bottom-${i}`} className="py-2 text-foreground font-semibold">
+                                  {formatScoreDisplay({
+                                    score: bottomScores[i],
+                                    isBottom: true,
+                                    isInningFinal: i === inningCount - 1,
+                                    isHomeWinning
+                                  })}
+                                </td>
+                              ))}
+                              <td className="py-2 px-3 font-bold text-primary">{secondScore}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}
