@@ -19,7 +19,7 @@ interface Match {
   battingOrder: 'first' | 'second';
   surfaceDetails?: string;
   innings?: number;
-  myInningScores?: number[]; // APIから配列で渡ってくる
+  myInningScores?: number[];
   opponentInningScores?: number[];
 }
 
@@ -110,43 +110,44 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
         const secondScore = match.battingOrder === 'first' ? match.opponentScore : match.myScore;
         const inningCount = match.innings || 7;
 
-        // 安全にスコア配列を取得（未入力の場合は空配列）
         const myScores = match.myInningScores || [];
         const oppScores = match.opponentInningScores || [];
 
         return (
           <div key={match.id} className="relative">
-            {/* 🌟 修正: イニングスコア展開中(isExpanded)は裏のボタンを完全に非表示にする！ */}
-            {!isExpanded && (
-              <div className="absolute inset-0 flex items-center justify-between px-1">
-                <button
-                  onClick={() => router.push(`/matches/edit?id=${match.id}`)}
-                  className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-blue-400 dark:bg-blue-500 hover:bg-blue-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
-                >
-                  <Edit2 className="h-5 w-5 mb-1 opacity-90" />
-                  <span className="text-[10px] font-black tracking-widest opacity-90">編集</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(match.id)}
-                  className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-rose-400 dark:bg-rose-500 hover:bg-rose-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
-                >
-                  <Trash2 className="h-5 w-5 mb-1 opacity-90" />
-                  <span className="text-[10px] font-black tracking-widest opacity-90">削除</span>
-                </button>
-              </div>
-            )}
+            {/* 🌟 修正1：ボタンは常にHTMLにあるが、「スワイプ中以外」は透明（opacity-0）にする！
+                これにより、開閉アニメーション中のチラつきを完全に抹殺しました。 */}
+            <div className={cn(
+              "absolute inset-0 flex items-center justify-between px-1 transition-opacity duration-200",
+              Math.abs(offsetX) > 0 ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}>
+              <button
+                onClick={() => router.push(`/matches/edit?id=${match.id}`)}
+                className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-blue-400 dark:bg-blue-500 hover:bg-blue-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
+              >
+                <Edit2 className="h-5 w-5 mb-1 opacity-90" />
+                <span className="text-[10px] font-black tracking-widest opacity-90">編集</span>
+              </button>
+              <button
+                onClick={() => handleDelete(match.id)}
+                className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-rose-400 dark:bg-rose-500 hover:bg-rose-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
+              >
+                <Trash2 className="h-5 w-5 mb-1 opacity-90" />
+                <span className="text-[10px] font-black tracking-widest opacity-90">削除</span>
+              </button>
+            </div>
 
             {/* --- カード本体 --- */}
             <div
-              // 🌟 修正: 展開中(isExpanded)はスワイプ操作を完全にロックする！
               onTouchStart={(e) => { if (!isExpanded) handleTouchStart(e, match.id); }}
               onTouchMove={(e) => { if (!isExpanded) handleTouchMove(e); }}
               onTouchEnd={() => { if (!isExpanded) handleTouchEnd(); }}
               style={{ transform: isSwiping && !isExpanded ? `translateX(${offsetX}px)` : 'translateX(0)' }}
               className={cn(
-                "relative z-10 rounded-2xl border transition-colors duration-200 ease-out",
+                // 🌟 修正2：展開時は 90%不透明 ＋ 2xl(最強)のぼかし ＋ 薄い影 で「極上の曇りガラス」に！
+                "relative z-10 rounded-2xl border transition-all duration-300 ease-out",
                 isExpanded
-                  ? "bg-primary/5 dark:bg-primary/10 border-primary shadow-md"
+                  ? "bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border-primary shadow-lg shadow-primary/10"
                   : "bg-white dark:bg-zinc-900 border-border/50 shadow-sm hover:border-border"
               )}
             >
@@ -209,7 +210,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
 
                 {/* 🌟 展開時：イニングスコア */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-primary/20 animate-in fade-in slide-in-from-top-2">
+                  <div className="mt-4 pt-4 border-t border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="bg-background rounded-xl p-3 overflow-x-auto border border-primary/10 shadow-sm">
                       <table className="w-full text-center">
                         <thead>
