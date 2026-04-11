@@ -110,7 +110,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
 
   if (matches.length === 0) {
     return (
-      <div className="text-center py-10 px-4 rounded-3xl border-2 border-dashed border-border/50 bg-white/50 dark:bg-zinc-900/50">
+      <div className="text-center py-10 px-4 rounded-3xl border-2 border-dashed border-border/50 bg-card/50">
         <p className="text-sm font-bold text-muted-foreground">試合データがありません</p>
       </div>
     );
@@ -172,7 +172,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                 "relative z-10 rounded-2xl border transition-all duration-300 ease-out",
                 isExpanded
                   ? "bg-primary/10 backdrop-blur-sm border-primary shadow-md shadow-primary/5"
-                  : "bg-white dark:bg-zinc-900 border-border/50 shadow-sm hover:border-border"
+                  : "bg-card border-border/50 shadow-sm hover:border-border"
               )}
             >
               <div
@@ -234,7 +234,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                 {/* 🌟 展開時：イニングスコア（フラットデザイン ＆ x/- フォーマット対応） */}
                 {isExpanded && (
                   <div className="mt-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="w-full overflow-hidden rounded-xl border border-border bg-white dark:bg-black shadow-sm">
+                    <div className="w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                       <div className="overflow-x-auto">
                         <table className="w-full text-center whitespace-nowrap">
                           {/* ヘッダー行：イニング数は text-sm/md:text-base で見やすく */}
