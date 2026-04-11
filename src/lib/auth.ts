@@ -5,10 +5,19 @@ import { admin } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1"; // D1用drizzle
 import * as schema from "@/db/schema"; // schema全体をインポート
 
+/** getAuth に渡す env の最小インターフェイス（c.env と互換） */
+interface AuthEnv {
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  LINE_CLIENT_ID?: string;
+  LINE_CLIENT_SECRET?: string;
+  [key: string]: unknown; // 他の Bindings（DB, BUCKET, ASSETS 等）を許容
+}
+
 let authCache: ReturnType<typeof betterAuth> | null = null;
 let lastD1: D1Database | null = null;
 
-export const getAuth = (d1: D1Database, env?: Partial<{ GOOGLE_CLIENT_ID: string; GOOGLE_CLIENT_SECRET: string; LINE_CLIENT_ID: string; LINE_CLIENT_SECRET: string }>) => {
+export const getAuth = (d1: D1Database, env?: AuthEnv) => {
   // 💡 パフォーマンス最適化: ID が同じならキャッシュを返す (CPU 制限対策)
   if (authCache && lastD1 === d1) {
     return authCache;

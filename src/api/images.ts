@@ -1,8 +1,9 @@
 // src/app/api/images.ts
 import { Hono } from 'hono'
 import { getAuth } from "@/lib/auth"
+import type { WorkerEnv } from "@/types/api"
 
-const app = new Hono<{ Bindings: { DB: D1Database, BUCKET: R2Bucket, ASSETS: Fetcher } }>()
+const app = new Hono<{ Bindings: WorkerEnv }>()
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 💡 1. 画像アップロード API (POST /api/images/upload)
@@ -22,7 +23,7 @@ app.post('/upload', async (c) => {
 
   try {
     // R2バケットへ保存！
-    await c.env.BUCKET.put(fileName, await file.arrayBuffer(), {
+    await c.env.BUCKET!.put(fileName, await file.arrayBuffer(), {
       httpMetadata: { contentType: file.type },
     })
 
@@ -44,7 +45,7 @@ app.get('/:folder/:filename', async (c) => {
   const path = `${folder}/${filename}`
 
   // R2バケットから画像を取り出す
-  const object = await c.env.BUCKET.get(path)
+  const object = await c.env.BUCKET!.get(path)
   if (!object) return c.text('Not found', 404)
 
   const headers = new Headers()
