@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, X, Trash2, Settings, Info, Check, Swords, Tag, Building2 } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
-import { Organization } from "../types";
+import { Organization } from "@/types/teams";
 import { cn } from "@/lib/utils";
 
 interface CreateOrgModalProps {

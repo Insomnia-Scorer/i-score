@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, X, Trash2, Settings, Check, Calendar, Layers, UserCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { ROLES } from "@/lib/roles";
-import { Team } from "../types";
+import { Team } from "@/types/teams";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1. 編成新規作成モーダル

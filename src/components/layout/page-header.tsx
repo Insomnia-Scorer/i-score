@@ -1,4 +1,4 @@
-// src/components/PageHeader.tsx
+// src/components/layout/page-header.tsx
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";

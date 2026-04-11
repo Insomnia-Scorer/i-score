@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ChevronRight, Settings, Swords, Search, Plus, ChevronDown } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { cn } from "@/lib/utils";
-import { Organization } from "../types";
+import { Organization } from "@/types/teams";
 
 interface OrgListProps {
   orgs: Organization[];

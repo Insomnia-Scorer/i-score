@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { PageHeader } from "@/components/PageHeader";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Loader2, Newspaper, Trophy, Download, Activity, Target } from "lucide-react";
 import { cn } from "@/lib/utils";

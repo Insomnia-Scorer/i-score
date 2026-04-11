@@ -3,12 +3,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/PageHeader";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { toast } from "sonner";
-import { Organization, Team } from "./types";
+import { Organization, Team } from "@/types/teams";
 
 import { OrgList } from "./_components/org-list";
 import { TeamList } from "./_components/team-list";

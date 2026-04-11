@@ -3,7 +3,7 @@
 "use client";
 
 import React from "react";
-import { PageHeader } from "@/components/PageHeader";
+import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldCheck, Users, Trophy, Settings } from "lucide-react";
 

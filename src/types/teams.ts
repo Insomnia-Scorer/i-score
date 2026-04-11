@@ -1,4 +1,4 @@
-// src/app/(protected)/teams/types.ts
+// src/types/teams.ts
 export interface Organization {
     id: string;
     name: string;

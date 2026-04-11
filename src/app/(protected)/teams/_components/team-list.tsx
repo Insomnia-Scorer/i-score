@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ChevronRight, ChevronLeft, Settings, Info, CalendarDays, Layers, Users, Tag, Swords } from "lucide-react";
 import { RiTeamFill } from "react-icons/ri";
 import { cn } from "@/lib/utils";
-import { Organization, Team } from "../types";
+import { Organization, Team } from "@/types/teams";
 
 interface TeamListProps {
   teams: Team[];
