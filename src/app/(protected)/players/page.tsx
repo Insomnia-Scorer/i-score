@@ -1,375 +1,602 @@
 // src/app/(protected)/players/page.tsx
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
-/**
- * 💡 型安全プロトコル:
- * 1. UIの表示要素（ボタン、ラベル、統計指標）を日本語に統一。
- * 2. チームページと整合性のある、角丸40pxのカードとフラットなバッジデザイン。
- * 3. Gemini API を使用した日本語による AI スカウティング機能を搭載。
- */
-import {
-  Card,
-  CardContent
-} from "@/components/ui/card";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  Search,
-  UserPlus,
-  ChevronRight,
-  MoreHorizontal,
-  Target,
-  Zap,
-  Shield,
-  Loader2,
-  TrendingUp,
-  Award,
-  Activity,
-  Star,
-  Sparkles,
-  MessageSquare,
-  Trophy,
-  FileText
+  Search, UserPlus, ChevronRight,
+  Loader2, Activity, Pencil, Trash2,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚾️ 型定義 (Schema Protocol)
+// 型定義
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 interface Player {
   id: string;
   name: string;
-  nameKana: string;
-  number: string;
-  position: string;
-  mainPosition: 'P' | 'C' | 'IF' | 'OF';
-  battingAvg: string;
-  hr: number;
-  rbi: number;
-  condition: number;
-  isCaptain?: boolean;
-  status: 'active' | 'injured' | 'bench';
+  uniformNumber: string;
+  primaryPosition: string | null;
+  throws: string | null;
+  bats: string | null;
+  isActive: number | boolean;
 }
 
-interface GeminiResponse {
-  candidates?: {
-    content?: {
-      parts?: {
-        text?: string;
-      }[];
-    };
-  }[];
-  error?: { message: string };
+type PositionKey = "P" | "C" | "1B" | "2B" | "3B" | "SS" | "LF" | "CF" | "RF" | "DH";
+
+const POSITION_LABELS: Record<PositionKey, string> = {
+  P: "投手", C: "捕手", "1B": "一塁", "2B": "二塁", "3B": "三塁",
+  SS: "遊撃", LF: "左翼", CF: "中堅", RF: "右翼", DH: "指名打者",
+};
+
+const POSITION_CATEGORY: Record<PositionKey, "投手" | "捕手" | "内野手" | "外野手" | "DH"> = {
+  P: "投手", C: "捕手",
+  "1B": "内野手", "2B": "内野手", "3B": "内野手", SS: "内野手",
+  LF: "外野手", CF: "外野手", RF: "外野手",
+  DH: "DH",
+};
+
+const POSITION_STYLE: Record<string, string> = {
+  投手: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  捕手: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  内野手: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  外野手: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  DH: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+};
+
+// 選手の守備カテゴリを返す
+function getCategory(pos: string | null): string {
+  if (!pos) return "不明";
+  return POSITION_CATEGORY[pos as PositionKey] ?? "不明";
 }
 
-/**
- * ⚾️ 選手名簿コンポーネント
- */
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 選手フォーム（追加・編集共通）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+interface PlayerFormData {
+  name: string;
+  uniformNumber: string;
+  primaryPosition: string;
+  throws: string;
+  bats: string;
+}
+
+const EMPTY_FORM: PlayerFormData = {
+  name: "", uniformNumber: "", primaryPosition: "", throws: "", bats: "",
+};
+
+interface PlayerFormProps {
+  initial?: PlayerFormData;
+  onSubmit: (data: PlayerFormData) => Promise<void>;
+  onCancel: () => void;
+  isSubmitting: boolean;
+  submitLabel: string;
+}
+
+function PlayerForm({ initial = EMPTY_FORM, onSubmit, onCancel, isSubmitting, submitLabel }: PlayerFormProps) {
+  const [form, setForm] = useState<PlayerFormData>(initial);
+  const set = (key: keyof PlayerFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(prev => ({ ...prev, [key]: e.target.value }));
+
+  return (
+    <form
+      onSubmit={async (e) => { e.preventDefault(); await onSubmit(form); }}
+      className="space-y-4 pt-2"
+    >
+      <div className="grid grid-cols-2 gap-3">
+        {/* 背番号 */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">背番号 *</Label>
+          <Input
+            value={form.uniformNumber}
+            onChange={set("uniformNumber")}
+            placeholder="例: 1"
+            required
+            maxLength={3}
+            className="h-12 rounded-2xl bg-muted/20 border-border font-black text-lg"
+          />
+        </div>
+        {/* 氏名 */}
+        <div className="space-y-1.5 col-span-2 sm:col-span-1">
+          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">氏名 *</Label>
+          <Input
+            value={form.name}
+            onChange={set("name")}
+            placeholder="例: 山田 太郎"
+            required
+            className="h-12 rounded-2xl bg-muted/20 border-border font-bold"
+          />
+        </div>
+      </div>
+
+      {/* 守備位置 */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">守備位置</Label>
+        <select
+          value={form.primaryPosition}
+          onChange={set("primaryPosition")}
+          className="w-full h-12 rounded-2xl bg-muted/20 border border-border px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="">未設定</option>
+          {(Object.keys(POSITION_LABELS) as PositionKey[]).map(k => (
+            <option key={k} value={k}>{k} — {POSITION_LABELS[k]}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {/* 投 */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">投</Label>
+          <select
+            value={form.throws}
+            onChange={set("throws")}
+            className="w-full h-12 rounded-2xl bg-muted/20 border border-border px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">未設定</option>
+            <option value="R">右投 (R)</option>
+            <option value="L">左投 (L)</option>
+          </select>
+        </div>
+        {/* 打 */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">打</Label>
+          <select
+            value={form.bats}
+            onChange={set("bats")}
+            className="w-full h-12 rounded-2xl bg-muted/20 border border-border px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">未設定</option>
+            <option value="R">右打 (R)</option>
+            <option value="L">左打 (L)</option>
+            <option value="B">両打 (B)</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          className="flex-1 h-12 rounded-2xl font-black border-border"
+        >
+          キャンセル
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex-1 h-12 rounded-2xl font-black shadow-md shadow-primary/10"
+        >
+          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : submitLabel}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// メインコンポーネント
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function PlayerRosterContent() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("すべて");
+  const [teamId, setTeamId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState("すべて");
 
-  // AI 関連ステート
-  const [analyzingPlayerId, setAnalyzingPlayerId] = useState<string | null>(null);
-  const [scoutingReports, setScoutingReports] = useState<Record<string, string>>({});
-  const [isTeamAnalyzing, setIsTeamAnalyzing] = useState(false);
-  const [teamBriefing, setTeamBriefing] = useState<string | null>(null);
+  // モーダル状態
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Player | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Player | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const fetchPlayers = async () => {
-      // 実際には Firestore 等から取得。
-      setTimeout(() => {
-        setPlayers([
-          { id: "1", name: "山田 太郎", nameKana: "ヤマダ タロウ", number: "01", position: "エース / 投手", mainPosition: 'P', battingAvg: ".285", hr: 2, rbi: 12, condition: 95, isCaptain: true, status: 'active' },
-          { id: "2", name: "佐藤 次郎", nameKana: "サトウ ジロウ", number: "10", position: "正捕手", mainPosition: 'C', battingAvg: ".310", hr: 5, rbi: 20, condition: 82, status: 'active' },
-          { id: "3", name: "鈴木 一郎", nameKana: "スズキ イチロウ", number: "51", position: "センター", mainPosition: 'OF', battingAvg: ".350", hr: 1, rbi: 15, condition: 88, status: 'active' },
-          { id: "4", name: "田中 健太", nameKana: "タナカ ケンタ", number: "06", position: "ショート", mainPosition: 'IF', battingAvg: ".260", hr: 0, rbi: 8, condition: 42, status: 'injured' },
-          { id: "5", name: "伊藤 誠", nameKana: "イトウ マコト", number: "18", position: "リリーフ / 投手", mainPosition: 'P', battingAvg: ".120", hr: 0, rbi: 2, condition: 60, status: 'bench' },
-        ]);
-        setIsLoading(false);
-      }, 600);
-    };
-    fetchPlayers();
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // データ取得
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const fetchPlayers = useCallback(async (tid: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/teams/${tid}/players`);
+      if (!res.ok) throw new Error();
+      const data = await res.json() as Player[];
+      setPlayers(Array.isArray(data) ? data : []);
+    } catch {
+      toast.error("選手一覧の取得に失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // ✨ 個別選手のAI分析 (Gemini API)
-  const generateScoutingReport = async (player: Player) => {
-    setAnalyzingPlayerId(player.id);
+  useEffect(() => {
+    const tid = localStorage.getItem("iScore_selectedTeamId");
+    if (!tid) { setIsLoading(false); return; }
+    setTeamId(tid);
+    fetchPlayers(tid);
+  }, [fetchPlayers]);
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // CRUD ハンドラー
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const handleAdd = async (data: PlayerFormData) => {
+    if (!teamId) return;
+    setIsSubmitting(true);
     try {
-      const prompt = `プロ野球のスカウトとして、以下の選手の短評を日本語で作成してください。
-      名前: ${player.name} (${player.position})
-      成績: 打率${player.battingAvg}, 本塁打${player.hr}, 打点${player.rbi}
-      コンディション: ${player.condition}%
-      内容: 100文字程度で、現状の評価と今後の期待について、監督への報告形式で書いてください。`;
-
-      const apiKey = "";
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      const res = await fetch(`/api/teams/${teamId}/players`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
-      const result = (await res.json()) as GeminiResponse;
-      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) setScoutingReports(prev => ({ ...prev, [player.id]: text.trim() }));
-    } catch (e) {
-      toast.error("分析に失敗しました");
+      if (!res.ok) throw new Error();
+      toast.success(`${data.name} 選手を登録しました`);
+      setIsAddOpen(false);
+      await fetchPlayers(teamId);
+    } catch {
+      toast.error("登録に失敗しました");
     } finally {
-      setAnalyzingPlayerId(null);
+      setIsSubmitting(false);
     }
   };
 
-  const filteredPlayers = players.filter(p => {
-    const matchesSearch = p.name.includes(searchQuery) || p.nameKana.includes(searchQuery) || p.number.includes(searchQuery);
-    const posLabel = { 'P': '投手', 'C': '捕手', 'IF': '内野手', 'OF': '外野手' };
-    const matchesFilter = filter === "すべて" || posLabel[p.mainPosition] === filter;
+  const handleEdit = async (data: PlayerFormData) => {
+    if (!teamId || !editTarget) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/teams/${teamId}/players/${editTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${data.name} 選手を更新しました`);
+      setEditTarget(null);
+      await fetchPlayers(teamId);
+    } catch {
+      toast.error("更新に失敗しました");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!teamId || !deleteTarget) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/teams/${teamId}/players/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${deleteTarget.name} 選手を削除しました`);
+      setDeleteTarget(null);
+      await fetchPlayers(teamId);
+    } catch {
+      toast.error("削除に失敗しました");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // フィルタリング
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const filtered = players.filter(p => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.uniformNumber.includes(searchQuery);
+    const category = getCategory(p.primaryPosition);
+    const matchesFilter = filter === "すべて" || category === filter;
     return matchesSearch && matchesFilter;
   });
 
-  const getPositionBadge = (player: Player) => {
-    let styles = "";
-    switch (player.mainPosition) {
-      case 'P': styles = "bg-blue-500/10 text-blue-500 border-blue-500/20"; break;
-      case 'C': styles = "bg-orange-500/10 text-orange-500 border-orange-500/20"; break;
-      case 'IF': styles = "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"; break;
-      case 'OF': styles = "bg-amber-500/10 text-amber-500 border-amber-500/20"; break;
-    }
-    return (
-      <Badge variant="outline" className={cn("rounded-md text-[10px] font-black px-2 py-0.5 tracking-tighter border", styles)}>
-        {player.position}
-      </Badge>
-    );
-  };
+  const activeCount = players.filter(p => p.isActive).length;
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active': return <Badge className="bg-emerald-500 text-white border-none text-[9px] font-black rounded-md px-2">現役</Badge>;
-      case 'injured': return <Badge className="bg-red-500 text-white border-none text-[9px] font-black rounded-md px-2">故障中</Badge>;
-      case 'bench': return <Badge className="bg-zinc-500 text-white border-none text-[9px] font-black rounded-md px-2">控え</Badge>;
-    }
-  };
-
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ローディング
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary/30 mx-auto" />
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em] animate-pulse">
+            Loading Roster...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!teamId) {
+    return (
+      <div className="flex h-screen items-center justify-center p-6">
+        <div className="text-center space-y-4 opacity-40">
+          <UserCircle className="h-16 w-16 mx-auto" />
+          <p className="font-black text-lg">チームが選択されていません</p>
+          <p className="text-sm font-bold text-muted-foreground">ダッシュボードからチームを選択してください</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 relative pb-20 overflow-x-hidden">
+    <div className="min-h-screen pb-24 animate-in fade-in duration-500">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
 
-      {/* 💡 統一背景グラデーション */}
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(var(--primary),0.05),transparent)] pointer-events-none -z-10" />
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-10 animate-in fade-in duration-1000">
-
-        {/* ヘッダーエリア */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 rounded-full px-4 py-1 text-[10px] font-black tracking-[0.2em] uppercase">
-                選手管理システム
-              </Badge>
-              <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-                <Activity className="h-3 w-3" /> データ同期済み
-              </div>
-            </div>
-            <h1 className="text-5xl font-black tracking-tighter italic uppercase text-foreground leading-none">
+        {/* ヘッダー */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+              <Activity className="h-3.5 w-3.5" /> 選手管理
+            </p>
+            <h1 className="text-3xl font-black tracking-tight">
               選手<span className="text-primary">名簿</span>
             </h1>
+            <p className="text-xs text-muted-foreground font-bold">
+              {players.length}名登録済み・アクティブ {activeCount}名
+            </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="rounded-2xl h-14 px-6 border-border bg-card/40 backdrop-blur-sm font-black text-xs tracking-widest uppercase hover:bg-muted shadow-sm transition-all active:scale-95">
-              入部申請を確認
-            </Button>
-            <Button
-              className="rounded-2xl h-14 px-8 bg-primary text-primary-foreground font-black text-lg shadow-md shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3"
-            >
-              <UserPlus className="h-6 w-6 stroke-[3px]" /> 選手を追加
-            </Button>
-          </div>
+          <Button
+            onClick={() => setIsAddOpen(true)}
+            className="h-12 px-6 rounded-2xl font-black shadow-md shadow-primary/10 gap-2 w-full sm:w-auto"
+          >
+            <UserPlus className="h-5 w-5 stroke-[2.5px]" />
+            選手を追加
+          </Button>
         </div>
 
-        {/* 検索・フィルタエリア */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+        {/* 検索・フィルター */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="名前、背番号、フリガナで検索..."
-              className="h-14 pl-12 rounded-2xl bg-card/40 backdrop-blur-sm border-border focus:ring-primary/20 transition-all shadow-sm"
+              placeholder="名前・背番号で検索..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-12 pl-11 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border-border/40 font-bold"
             />
           </div>
-          <div className="flex overflow-x-auto pb-2 lg:pb-0 gap-2 scrollbar-hide">
-            {['すべて', '投手', '捕手', '内野手', '外野手'].map((pos) => (
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+            {["すべて", "投手", "捕手", "内野手", "外野手"].map(cat => (
               <Button
-                key={pos}
-                variant={filter === pos ? "default" : "outline"}
-                onClick={() => setFilter(pos)}
+                key={cat}
+                variant={filter === cat ? "default" : "outline"}
+                onClick={() => setFilter(cat)}
                 className={cn(
-                  "h-14 px-8 rounded-2xl font-black text-xs tracking-widest transition-all shrink-0",
-                  filter === pos ? "bg-primary shadow-md shadow-primary/10" : "bg-card/40 backdrop-blur-sm border-border"
+                  "h-12 px-5 rounded-2xl font-black text-xs whitespace-nowrap shrink-0",
+                  filter === cat
+                    ? "bg-primary shadow-md shadow-primary/10"
+                    : "bg-white/50 dark:bg-zinc-900/50 border-border/40"
                 )}
               >
-                {pos}
+                {cat}
               </Button>
             ))}
           </div>
         </div>
 
-        {/* 選手グリッド */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPlayers.map((player) => (
-            <Card
-              key={player.id}
-              className="bg-card/40 dark:bg-zinc-900/20 backdrop-blur-md border-border rounded-[40px] overflow-hidden group hover:border-primary/40 transition-all duration-300 shadow-sm border-t-primary/5"
-            >
-              <CardContent className="p-0">
-                <div className="p-8 space-y-8">
-                  {/* 選手基本情報 */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-5">
-                      <div className="relative">
-                        <div className="h-16 w-16 rounded-[22px] bg-muted flex items-center justify-center text-3xl font-black text-foreground border border-border group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-500 tabular-nums italic">
-                          {player.number}
-                        </div>
-                        {player.isCaptain && (
-                          <div className="absolute -top-2 -right-2 bg-yellow-500 text-black p-1.5 rounded-xl shadow-lg ring-4 ring-background">
-                            <Star className="h-3 w-3 fill-current" />
+        {/* 選手リスト */}
+        {filtered.length === 0 ? (
+          <div className="py-24 text-center space-y-3 opacity-30">
+            <UserCircle className="h-14 w-14 mx-auto" />
+            <p className="font-black text-lg italic uppercase tracking-tighter">
+              {players.length === 0 ? "選手未登録" : "該当なし"}
+            </p>
+            <p className="text-sm font-bold text-muted-foreground">
+              {players.length === 0
+                ? "「選手を追加」ボタンから最初の選手を登録しましょう"
+                : "条件を変えて再検索してください"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((player) => {
+              const category = getCategory(player.primaryPosition);
+              const posStyle = POSITION_STYLE[category] ?? "bg-zinc-500/10 text-zinc-500 border-zinc-500/20";
+              const posLabel = player.primaryPosition
+                ? `${player.primaryPosition} — ${POSITION_LABELS[player.primaryPosition as PositionKey] ?? player.primaryPosition}`
+                : "未設定";
+              const isActive = player.isActive === 1 || player.isActive === true;
+
+              return (
+                <Card
+                  key={player.id}
+                  className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border-border/40 rounded-[28px] overflow-hidden group hover:border-primary/40 hover:shadow-md transition-all duration-300"
+                >
+                  <CardContent className="p-0">
+                    <div className="p-5 space-y-4">
+                      {/* 上段：背番号・名前・バッジ */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-4">
+                          {/* 背番号 */}
+                          <div className="h-14 w-14 rounded-[18px] bg-muted flex items-center justify-center text-2xl font-black italic tabular-nums text-foreground border border-border/50 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-500 shrink-0">
+                            {player.uniformNumber}
                           </div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{player.nameKana}</p>
-                          {getStatusBadge(player.status)}
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {!isActive && (
+                                <Badge className="bg-zinc-500 text-white border-none text-[9px] font-black rounded-md px-1.5 py-0">
+                                  非アクティブ
+                                </Badge>
+                              )}
+                            </div>
+                            <h3 className="text-xl font-black tracking-tight text-foreground group-hover:text-primary transition-colors leading-none truncate">
+                              {player.name}
+                            </h3>
+                            {/* 守備位置バッジ */}
+                            <Badge
+                              variant="outline"
+                              className={cn("rounded-md text-[10px] font-black px-2 py-0.5 border", posStyle)}
+                            >
+                              {posLabel}
+                            </Badge>
+                          </div>
                         </div>
-                        <h3 className="text-3xl font-black text-foreground group-hover:text-primary transition-colors leading-none tracking-tighter italic">
-                          {player.name}
-                        </h3>
-                        <div className="pt-1">
-                          {getPositionBadge(player)}
+                        {/* 操作ボタン */}
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditTarget(player)}
+                            className="h-8 w-8 rounded-full text-muted-foreground/40 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteTarget(player)}
+                            className="h-8 w-8 rounded-full text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 text-muted-foreground/30 hover:text-foreground">
-                      <MoreHorizontal className="h-5 w-5" />
-                    </Button>
-                  </div>
 
-                  {/* 統計データセクション */}
-                  <div className="grid grid-cols-3 gap-3 bg-muted/30 p-5 rounded-[24px] border border-border/50 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-2 opacity-5">
-                      <Zap className="h-10 w-10 text-primary" />
+                      {/* 投打情報 */}
+                      {(player.throws || player.bats) && (
+                        <div className="flex gap-2">
+                          {player.throws && (
+                            <span className="text-[10px] font-black bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-muted-foreground">
+                              投 {player.throws === "R" ? "右" : "左"}
+                            </span>
+                          )}
+                          {player.bats && (
+                            <span className="text-[10px] font-black bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-muted-foreground">
+                              打 {player.bats === "R" ? "右" : player.bats === "L" ? "左" : "両"}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-center space-y-0.5">
-                      <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">打率</p>
-                      <p className="text-2xl font-black tabular-nums tracking-tighter text-foreground">{player.battingAvg}</p>
-                    </div>
-                    <div className="text-center border-x border-border/50 space-y-0.5">
-                      <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">本塁打</p>
-                      <p className="text-2xl font-black tabular-nums tracking-tighter text-foreground">{player.hr}</p>
-                    </div>
-                    <div className="text-center space-y-0.5">
-                      <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">打点</p>
-                      <p className="text-2xl font-black tabular-nums tracking-tighter text-foreground">{player.rbi}</p>
-                    </div>
-                  </div>
 
-                  {/* コンディション管理 */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-end">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2 opacity-60">
-                        <Activity className="h-3.5 w-3.5" /> コンディション
-                      </span>
-                      <span className={cn(
-                        "text-sm font-black tabular-nums",
-                        player.condition > 80 ? "text-primary" : "text-muted-foreground"
-                      )}>
-                        {player.condition}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          "h-full transition-all duration-1000 ease-out",
-                          player.condition > 80 ? "bg-primary" :
-                            player.condition < 50 ? "bg-red-500" : "bg-zinc-400"
-                        )}
-                        style={{ width: `${player.condition}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* AI スカウティングレポート表示 */}
-                  {scoutingReports[player.id] && (
-                    <div className="bg-primary/5 p-5 rounded-[24px] border border-primary/10 animate-in fade-in zoom-in-95 duration-500">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-[10px] font-black uppercase text-primary tracking-widest">AI スカウティング分析</span>
-                      </div>
-                      <p className="text-xs font-bold leading-relaxed text-foreground italic border-l-2 border-primary/20 pl-4 py-0.5">
-                        {scoutingReports[player.id]}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* アクションボタンエリア */}
-                <div className="flex border-t border-border/60">
-                  <button
-                    onClick={() => generateScoutingReport(player)}
-                    disabled={analyzingPlayerId === player.id}
-                    className="flex-1 py-5 hover:bg-primary/5 text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 transition-all border-r border-border/60 text-primary disabled:opacity-50"
-                  >
-                    {analyzingPlayerId === player.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    AI分析
-                  </button>
-                  <button className="flex-1 py-5 hover:bg-muted/30 text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 transition-all text-muted-foreground group/btn">
-                    詳細データ <ChevronRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* 検索結果なしの表示 */}
-        {filteredPlayers.length === 0 && (
-          <div className="py-24 flex flex-col items-center justify-center text-center space-y-4 opacity-20">
-            <Trophy className="h-16 w-16" />
-            <div className="space-y-1">
-              <p className="font-black text-2xl italic uppercase tracking-tighter">対象者なし</p>
-              <p className="text-sm font-bold">条件に合う選手が見つかりませんでした。</p>
-            </div>
+                    {/* 下段：詳細へのリンク */}
+                    <button
+                      onClick={() => router.push(
+                        `/players/detail?teamId=${teamId}&playerName=${encodeURIComponent(player.name)}&uniformNumber=${player.uniformNumber}`
+                      )}
+                      className="w-full flex items-center justify-between px-5 py-3.5 border-t border-border/40 hover:bg-muted/30 transition-colors text-[11px] font-black uppercase tracking-widest text-muted-foreground group/btn"
+                    >
+                      詳細・成績を見る
+                      <ChevronRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
+      </div>
 
-      </main>
+      {/* ━━━ 選手追加モーダル ━━━ */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="rounded-[32px] border-border/50 bg-background p-6 max-w-md w-full shadow-2xl">
+          <div className="mb-4">
+            <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-primary" /> 選手を追加
+            </h2>
+            <p className="text-xs text-muted-foreground font-bold mt-1">
+              背番号と氏名は必須です
+            </p>
+          </div>
+          <PlayerForm
+            onSubmit={handleAdd}
+            onCancel={() => setIsAddOpen(false)}
+            isSubmitting={isSubmitting}
+            submitLabel="登録する"
+          />
+        </DialogContent>
+      </Dialog>
 
-      <footer className="mt-20 py-12 border-t border-border text-center opacity-30">
-        <p className="text-[10px] font-black tracking-[0.6em] text-muted-foreground uppercase">
-          Elite Performance Tracking • i-Score Pro
-        </p>
-      </footer>
+      {/* ━━━ 選手編集モーダル ━━━ */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent className="rounded-[32px] border-border/50 bg-background p-6 max-w-md w-full shadow-2xl">
+          {editTarget && (
+            <>
+              <div className="mb-4">
+                <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
+                  <Pencil className="h-5 w-5 text-primary" /> 選手情報を編集
+                </h2>
+                <p className="text-xs text-muted-foreground font-bold mt-1">
+                  #{editTarget.uniformNumber} {editTarget.name}
+                </p>
+              </div>
+              <PlayerForm
+                initial={{
+                  name: editTarget.name,
+                  uniformNumber: editTarget.uniformNumber,
+                  primaryPosition: editTarget.primaryPosition ?? "",
+                  throws: editTarget.throws ?? "",
+                  bats: editTarget.bats ?? "",
+                }}
+                onSubmit={handleEdit}
+                onCancel={() => setEditTarget(null)}
+                isSubmitting={isSubmitting}
+                submitLabel="保存する"
+              />
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ━━━ 削除確認モーダル ━━━ */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="rounded-[32px] border-red-500/20 bg-background p-6 max-w-sm w-full shadow-2xl">
+          {deleteTarget && (
+            <div className="space-y-5">
+              <div className="space-y-1">
+                <h2 className="text-xl font-black tracking-tight text-red-500 flex items-center gap-2">
+                  <Trash2 className="h-5 w-5" /> 選手を削除
+                </h2>
+                <p className="text-sm font-bold text-muted-foreground">
+                  この操作は取り消せません
+                </p>
+              </div>
+              <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4">
+                <p className="font-black text-lg">#{deleteTarget.uniformNumber} {deleteTarget.name}</p>
+                <p className="text-xs text-muted-foreground font-bold mt-0.5">
+                  この選手のデータを完全に削除します
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteTarget(null)}
+                  className="flex-1 h-12 rounded-2xl font-black"
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  disabled={isSubmitting}
+                  className="flex-1 h-12 rounded-2xl font-black bg-red-500 hover:bg-red-600 text-white border-none shadow-md shadow-red-500/20"
+                >
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "削除する"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 export default function PlayerRoster() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-background"><Loader2 className="animate-spin text-primary" /></div>}>
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="animate-spin text-primary h-8 w-8" />
+      </div>
+    }>
       <PlayerRosterContent />
     </Suspense>
   );
