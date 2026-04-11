@@ -1,470 +1,673 @@
+// src/app/(protected)/tournaments/map/page.tsx
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
-/**
- * 💡 大会マップ: チーム参戦トラッカー v3.7 (Type-Safe Edition)
- * 配置パス: src/app/(protected)/tournaments/map/page.tsx
- * * 🛠 修正・改善事項:
- * 1. TypeScriptの厳格な型チェックに対応。APIレスポンスのキャストを徹底し `any` を排除。
- * 2. `JSON.parse` の結果を型安全に処理し、AI分析結果の反映を確実に。
- * 3. 影を一切使わない「究極のフラットデザイン」を継承。
- * 4. プレビュー環境でのビルドエラーを避けるため、標準のナビゲーションAPIを使用。
- */
-import {
-    Card,
-    CardContent
-} from "@/components/ui/card";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-    Trophy,
-    Calendar,
-    MapPin,
-    ChevronRight,
-    Loader2,
-    Sparkles,
-    Zap,
-    Target,
-    Users2,
-    Activity,
-    Medal,
-    TrendingUp,
-    Sword,
-    Search,
-    Plus,
-    BarChart4,
-    Flame,
-    ArrowLeft
+    Trophy, Calendar, MapPin, ChevronRight,
+    Loader2, Target, Users2, Activity,
+    TrendingUp, Sword, Flame, Zap,
+    ArrowLeft, Plus, Pencil, Trash2,
+    UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚾️ 型定義 (Schema Protocol)
+// 型定義
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 interface Tournament {
     id: string;
     name: string;
-    category: string;
-    status: 'ongoing' | 'upcoming' | 'finished';
-    period: string;
-    venue: string;
-    currentRound: string;
-    nextMatchDate?: string;
-    teamCount: number;
-    winProbability?: number;
+    season: string;
+    organizer: string | null;
+    bracketUrl: string | null;
+    timeLimit: string | null;
+    coldGameRule: string | null;
+    tiebreakerRule: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    createdAt: number;
 }
 
-interface AiAnalysisResult {
-    insight: string;
-    mvp: string;
-    probability: number;
+interface TournamentFormData {
+    name: string;
+    season: string;
+    organizer: string;
+    startDate: string;
+    endDate: string;
+    timeLimit: string;
+    coldGameRule: string;
+    tiebreakerRule: string;
+    bracketUrl: string;
 }
 
-interface GeminiResponse {
-    candidates?: {
-        content?: {
-            parts?: {
-                text?: string;
-            }[];
-        };
-    }[];
-    error?: { message: string };
+const EMPTY_FORM: TournamentFormData = {
+    name: "",
+    season: String(new Date().getFullYear()),
+    organizer: "",
+    startDate: "",
+    endDate: "",
+    timeLimit: "",
+    coldGameRule: "",
+    tiebreakerRule: "",
+    bracketUrl: "",
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 大会ステータス判定
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getTournamentStatus(t: Tournament): "ongoing" | "upcoming" | "finished" {
+    const today = new Date().toISOString().split("T")[0];
+    if (t.startDate && t.endDate) {
+        if (today < t.startDate) return "upcoming";
+        if (today > t.endDate) return "finished";
+        return "ongoing";
+    }
+    if (t.startDate && today >= t.startDate) return "ongoing";
+    return "upcoming";
 }
 
-/**
- * 🏟 大会マップメインコンポーネント
- */
+function getPeriodLabel(t: Tournament): string {
+    const fmt = (d: string) => {
+        const [y, m] = d.split("-");
+        return `${y}年${Number(m)}月`;
+    };
+    if (t.startDate && t.endDate) return `${fmt(t.startDate)} 〜 ${fmt(t.endDate)}`;
+    if (t.startDate) return `${fmt(t.startDate)} 〜`;
+    return `${t.season}年度`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 大会フォームコンポーネント
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+interface TournamentFormProps {
+    initial?: TournamentFormData;
+    onSubmit: (data: TournamentFormData) => Promise<void>;
+    onCancel: () => void;
+    isSubmitting: boolean;
+    submitLabel: string;
+}
+
+function TournamentForm({ initial = EMPTY_FORM, onSubmit, onCancel, isSubmitting, submitLabel }: TournamentFormProps) {
+    const [form, setForm] = useState<TournamentFormData>(initial);
+    const set = (key: keyof TournamentFormData) =>
+        (e: React.ChangeEvent<HTMLInputElement>) =>
+            setForm(prev => ({ ...prev, [key]: e.target.value }));
+
+    return (
+        <form onSubmit={async (e) => { e.preventDefault(); await onSubmit(form); }} className="space-y-4 pt-1">
+            {/* 大会名 */}
+            <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">大会名 *</Label>
+                <Input
+                    value={form.name}
+                    onChange={set("name")}
+                    placeholder="第○○回 春季市民野球大会"
+                    required
+                    className="h-11 rounded-[var(--radius-xl)] font-bold"
+                />
+            </div>
+
+            {/* シーズン & 主催者 */}
+            <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">年度 *</Label>
+                    <Input
+                        value={form.season}
+                        onChange={set("season")}
+                        placeholder="2026"
+                        required maxLength={4}
+                        className="h-11 rounded-[var(--radius-xl)] font-bold text-center"
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">主催</Label>
+                    <Input
+                        value={form.organizer}
+                        onChange={set("organizer")}
+                        placeholder="○○連盟"
+                        className="h-11 rounded-[var(--radius-xl)] font-bold"
+                    />
+                </div>
+            </div>
+
+            {/* 期間 */}
+            <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">開始日</Label>
+                    <Input
+                        type="date"
+                        value={form.startDate}
+                        onChange={set("startDate")}
+                        className="h-11 rounded-[var(--radius-xl)] font-bold"
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">終了日</Label>
+                    <Input
+                        type="date"
+                        value={form.endDate}
+                        onChange={set("endDate")}
+                        className="h-11 rounded-[var(--radius-xl)] font-bold"
+                    />
+                </div>
+            </div>
+
+            {/* 試合規定（折りたたみ的に下に配置） */}
+            <div className="space-y-3 pt-1 border-t border-border/50">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-2">試合規定（任意）</p>
+                <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold text-muted-foreground">制限時間</Label>
+                    <Input
+                        value={form.timeLimit}
+                        onChange={set("timeLimit")}
+                        placeholder="例: 1時間30分 (新しいイニングに入らない)"
+                        className="h-10 rounded-[var(--radius-xl)] text-sm"
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold text-muted-foreground">コールド規定</Label>
+                    <Input
+                        value={form.coldGameRule}
+                        onChange={set("coldGameRule")}
+                        placeholder="例: 3回10点、5回7点差"
+                        className="h-10 rounded-[var(--radius-xl)] text-sm"
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold text-muted-foreground">タイブレーク</Label>
+                    <Input
+                        value={form.tiebreakerRule}
+                        onChange={set("tiebreakerRule")}
+                        placeholder="例: 1アウト満塁から"
+                        className="h-10 rounded-[var(--radius-xl)] text-sm"
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold text-muted-foreground">組み合わせ表URL</Label>
+                    <Input
+                        value={form.bracketUrl}
+                        onChange={set("bracketUrl")}
+                        placeholder="https://..."
+                        type="url"
+                        className="h-10 rounded-[var(--radius-xl)] text-sm"
+                    />
+                </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-12 rounded-[var(--radius-xl)] font-black">
+                    キャンセル
+                </Button>
+                <Button type="submit" disabled={isSubmitting} className="flex-1 h-12 rounded-[var(--radius-xl)] font-black">
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : submitLabel}
+                </Button>
+            </div>
+        </form>
+    );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 大会カード
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+interface TournamentCardProps {
+    t: Tournament;
+    onEdit: (t: Tournament) => void;
+    onDelete: (t: Tournament) => void;
+}
+
+function TournamentCard({ t, onEdit, onDelete }: TournamentCardProps) {
+    const status = getTournamentStatus(t);
+    const period = getPeriodLabel(t);
+
+    const statusConfig = {
+        ongoing:  { label: "参戦中",  icon: <Activity className="h-5 w-5 animate-pulse" />, accent: "bg-primary text-primary-foreground" },
+        upcoming: { label: "待機中",  icon: <Calendar className="h-5 w-5 opacity-50" />,    accent: "bg-muted/60 text-muted-foreground" },
+        finished: { label: "終了",    icon: <Trophy className="h-5 w-5 opacity-40" />,       accent: "bg-muted/40 text-muted-foreground" },
+    };
+    const sc = statusConfig[status];
+
+    return (
+        <Card className={cn(
+            "bg-card border-border rounded-[var(--radius-2xl)] overflow-hidden",
+            "transition-all duration-300 hover:border-primary/30 shadow-none",
+            status === "ongoing" && "ring-1 ring-primary/20",
+        )}>
+            <CardContent className="p-0">
+                <div className="flex items-stretch">
+
+                    {/* 左ステータスバー */}
+                    <div className={cn(
+                        "w-16 shrink-0 flex flex-col items-center justify-center gap-1.5 py-4",
+                        sc.accent,
+                    )}>
+                        {sc.icon}
+                        <span className="text-[8px] font-black tracking-widest uppercase leading-none" style={{ writingMode: "vertical-rl" }}>
+                            {sc.label}
+                        </span>
+                    </div>
+
+                    {/* 中央：大会情報 */}
+                    <div className="flex-1 px-5 py-4 min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className="bg-muted text-muted-foreground border-none text-[9px] font-black px-2 py-0.5 rounded-md">
+                                {t.season}年度
+                            </Badge>
+                            {t.organizer && (
+                                <span className="text-[10px] font-bold text-muted-foreground">{t.organizer}</span>
+                            )}
+                        </div>
+
+                        <h3 className="text-base font-black tracking-tight text-card-foreground leading-snug line-clamp-2">
+                            {t.name}
+                        </h3>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />{period}
+                            </span>
+                            {t.timeLimit && (
+                                <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
+                                    <Target className="h-3 w-3" />{t.timeLimit}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* オプション情報 */}
+                        {(t.coldGameRule || t.tiebreakerRule) && (
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                {t.coldGameRule && (
+                                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground border border-border/50">
+                                        コールド: {t.coldGameRule}
+                                    </span>
+                                )}
+                                {t.tiebreakerRule && (
+                                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground border border-border/50">
+                                        TB: {t.tiebreakerRule}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 右：アクション（常時表示） */}
+                    <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-3 border-l border-border/40 shrink-0 bg-muted/10">
+                        <button
+                            onClick={() => onEdit(t)}
+                            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-lg)] text-muted-foreground hover:text-primary hover:bg-primary/10 active:scale-90 transition-all"
+                            title="編集"
+                        >
+                            <Pencil className="h-[15px] w-[15px]" strokeWidth={2.2} />
+                        </button>
+                        <button
+                            onClick={() => onDelete(t)}
+                            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-lg)] text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-90 transition-all"
+                            title="削除"
+                        >
+                            <Trash2 className="h-[15px] w-[15px]" strokeWidth={2.2} />
+                        </button>
+                        {t.bracketUrl && (
+                            <a
+                                href={t.bracketUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-lg)] text-muted-foreground hover:text-card-foreground hover:bg-muted active:scale-90 transition-all"
+                                title="組み合わせ表"
+                            >
+                                <ChevronRight className="h-[15px] w-[15px]" strokeWidth={2.5} />
+                            </a>
+                        )}
+                    </div>
+
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// メインページ
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function TournamentMapContent() {
+    const router = useRouter();
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [aiAnalysis, setAiAnalysis] = useState<AiAnalysisResult | null>(null);
 
-    // 💡 ブラウザ標準APIによるナビゲーション
-    const navigateTo = (path: string) => {
-        if (typeof window !== "undefined") {
-            window.location.href = path;
+    // モーダル管理
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [editTarget, setEditTarget] = useState<Tournament | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<Tournament | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // ━━ データ取得 ━━
+    const fetchTournaments = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch("/api/tournaments");
+            if (!res.ok) throw new Error();
+            const data = await res.json() as Tournament[];
+            setTournaments(Array.isArray(data) ? data : []);
+        } catch {
+            toast.error("大会一覧の取得に失敗しました");
+        } finally {
+            setIsLoading(false);
         }
-    };
-
-    const goBack = () => {
-        if (typeof window !== "undefined") {
-            window.history.back();
-        }
-    };
-
-    useEffect(() => {
-        const fetchTournaments = async () => {
-            // API取得を模したモックデータ
-            const timer = setTimeout(() => {
-                setTournaments([
-                    {
-                        id: "t_1",
-                        name: "第45回 春季市民野球大会",
-                        category: "Aクラス",
-                        status: 'ongoing',
-                        period: "2024年3月 〜 5月",
-                        venue: "市営第一球場 他",
-                        currentRound: "準々決勝 進出",
-                        nextMatchDate: "04/05 10:00",
-                        teamCount: 32,
-                        winProbability: 68
-                    },
-                    {
-                        id: "t_2",
-                        name: "2024 サマートーナメント",
-                        category: "オープン",
-                        status: 'upcoming',
-                        period: "2024年7月 〜 8月",
-                        venue: "河川敷グラウンド",
-                        currentRound: "エントリー完了",
-                        teamCount: 16,
-                        winProbability: 15
-                    }
-                ]);
-                setIsLoading(false);
-            }, 600);
-            return () => clearTimeout(timer);
-        };
-        fetchTournaments();
     }, []);
 
-    // ✨ Gemini 2.5 Flash による戦術シミュレーション
-    const analyzeTournamentPath = async () => {
-        if (tournaments.length === 0) return;
+    useEffect(() => { fetchTournaments(); }, [fetchTournaments]);
 
-        setIsAnalyzing(true);
+    // ━━ CRUD ━━
+    const handleAdd = async (data: TournamentFormData) => {
+        setIsSubmitting(true);
         try {
-            const activeT = tournaments[0];
-            const prompt = `
-        野球の大会 "${activeT.name}" で現在「${activeT.currentRound}」という状況のチームに対し、
-        プロのアナリストとして以下の3点を日本語のJSONで回答してください。
-        1. insight: 勝ち上がりのための核心的な助言（100文字以内）
-        2. mvp: 次戦のキーマンとなる選手の名前
-        3. probability: 優勝の可能性（0-100の数値のみ）
-      `;
-
-            const apiKey = ""; // Canvas環境で自動付与
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const res = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        responseMimeType: "application/json"
-                    },
-                    systemInstruction: {
-                        parts: [{ text: "あなたはチーム専属の敏腕データアナリストです。監督・選手が奮い立つような、データに基づいた鋭い分析を行ってください。" }]
-                    }
-                })
+            const res = await fetch("/api/tournaments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
             });
-
-            // 💡 型安全プロトコル: 明示的なキャストによる unknown 回避
-            const result = (await res.json()) as GeminiResponse;
-
-            if (result.error) {
-                throw new Error(result.error.message);
-            }
-
-            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (text) {
-                // 💡 パース結果を型安全に扱う
-                const parsed = JSON.parse(text) as AiAnalysisResult;
-                setAiAnalysis(parsed);
-                toast.success("最新のシミュレーションが完了しました");
-            }
-        } catch (e) {
-            console.error(e);
-            toast.error("シミュレーションエンジンに接続できませんでした");
+            if (!res.ok) throw new Error();
+            toast.success(`「${data.name}」を登録しました`);
+            setIsAddOpen(false);
+            await fetchTournaments();
+        } catch {
+            toast.error("登録に失敗しました");
         } finally {
-            setIsAnalyzing(false);
+            setIsSubmitting(false);
         }
     };
+
+    const handleEdit = async (data: TournamentFormData) => {
+        if (!editTarget) return;
+        setIsSubmitting(true);
+        try {
+            const res = await fetch(`/api/tournaments/${editTarget.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error();
+            toast.success(`「${data.name}」を更新しました`);
+            setEditTarget(null);
+            await fetchTournaments();
+        } catch {
+            toast.error("更新に失敗しました");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        setIsSubmitting(true);
+        try {
+            const res = await fetch(`/api/tournaments/${deleteTarget.id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error();
+            toast.success(`「${deleteTarget.name}」を削除しました`);
+            setDeleteTarget(null);
+            await fetchTournaments();
+        } catch {
+            toast.error("削除に失敗しました");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // ステータス別カウント
+    const counts = { ongoing: 0, upcoming: 0, finished: 0 };
+    tournaments.forEach(t => { counts[getTournamentStatus(t)]++; });
 
     if (isLoading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-transparent">
-                <Loader2 className="animate-spin text-primary opacity-30 h-10 w-10" />
+            <div className="flex h-[60vh] items-center justify-center">
+                <div className="text-center space-y-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary/40 mx-auto" />
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Loading...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-transparent text-foreground transition-colors duration-500 relative pb-20 overflow-x-hidden">
-
-            {/* 🏟 スタジアム背景グラデーション */}
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(var(--primary),0.05),transparent)] pointer-events-none -z-10" />
+        <div className="min-h-screen pb-28 animate-in fade-in duration-400">
 
             {/* ニュースティッカー */}
-            <div className="w-full bg-primary/5 border-b border-border/40 h-10 flex items-center overflow-hidden backdrop-blur-md">
-                <div className="flex animate-[marquee_30s_linear_infinite] whitespace-nowrap gap-16">
-                    <span className="text-[11px] font-bold text-primary flex items-center gap-2">
-                        <Flame className="h-3.5 w-3.5" /> 速報：次戦の相手が「ベアーズ」に決定
-                    </span>
-                    <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-2">
-                        お知らせ：春季大会のトーナメント表が更新されました
-                    </span>
-                    <span className="text-[11px] font-bold text-primary flex items-center gap-2">
-                        <Zap className="h-3.5 w-3.5" /> AI予測：現在の優勝期待度は前回比 +5% です
-                    </span>
-                </div>
-            </div>
-
-            <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-10 animate-in fade-in duration-700">
-
-                {/* 1. ヘッダーセクション */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border/40 pb-8">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <Button variant="ghost" onClick={goBack} className="h-8 w-8 p-0 rounded-full hover:bg-primary/10 transition-colors">
-                                <ArrowLeft className="h-4 w-4" />
-                            </Button>
-                            <Badge variant="outline" className="border-primary/20 text-primary bg-primary/5 rounded-full px-3 py-0.5 text-[10px] font-black tracking-widest uppercase">
-                                Championship Tracker
-                            </Badge>
+            {tournaments.length > 0 && (
+                <div className="w-full bg-primary/5 border-b border-border/40 h-9 flex items-center overflow-hidden">
+                    {/* 2セット並べることでループが途切れない */}
+                    {[0, 1].map(i => (
+                        <div key={i} className="flex animate-[marquee_30s_linear_infinite] whitespace-nowrap gap-16 shrink-0 pr-16">
+                            {tournaments.filter(t => getTournamentStatus(t) === "ongoing").map(t => (
+                                <span key={t.id} className="text-[11px] font-bold text-primary flex items-center gap-2">
+                                    <Flame className="h-3 w-3 shrink-0" /> 参戦中: {t.name}
+                                </span>
+                            ))}
+                            <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-2">
+                                <Zap className="h-3 w-3 shrink-0" /> 登録大会数: {tournaments.length}件
+                            </span>
                         </div>
-                        <h1 className="text-4xl font-black tracking-tighter italic text-foreground leading-none">
-                            大会<span className="text-primary underline decoration-primary/10 underline-offset-[6px]">マップ</span>
-                        </h1>
-                    </div>
+                    ))}
+                </div>
+            )}
 
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => navigateTo('/tournaments')}
-                            className="rounded-2xl h-12 px-6 border-border bg-card/40 backdrop-blur-md hover:bg-muted font-bold text-xs"
-                        >
-                            大会の新規登録
+            <div className="max-w-2xl mx-auto px-4 pt-6 space-y-6">
+
+                {/* ━━ ページヘッダー ━━ */}
+                <div className="flex items-end justify-between gap-3">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1.5">
+                            <button
+                                onClick={() => router.back()}
+                                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                            </button>
+                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.25em] flex items-center gap-1">
+                                <Trophy className="h-3 w-3" /> 大会管理
+                            </span>
+                        </div>
+                        <h1 className="text-[1.7rem] font-black tracking-tight leading-none italic">
+                            大会<span className="text-primary">マップ</span>
+                        </h1>
+                        <p className="text-xs font-bold text-muted-foreground mt-1">
+                            {tournaments.length}件登録中
+                            {counts.ongoing > 0 && (
+                                <span className="ml-2 text-primary font-black">● {counts.ongoing}件参戦中</span>
+                            )}
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => setIsAddOpen(true)}
+                        size="sm"
+                        className="h-10 px-4 rounded-[var(--radius-xl)] font-black gap-2 shadow-sm shrink-0"
+                    >
+                        <Plus className="h-4 w-4" strokeWidth={2.5} />
+                        大会を追加
+                    </Button>
+                </div>
+
+                {/* ━━ サマリーバー ━━ */}
+                <div className="grid grid-cols-3 gap-2">
+                    {(["ongoing", "upcoming", "finished"] as const).map(s => {
+                        const labels = { ongoing: "参戦中", upcoming: "待機中", finished: "終了" };
+                        const colors = {
+                            ongoing:  "border-primary/30 bg-primary/5 text-primary",
+                            upcoming: "border-border bg-card text-muted-foreground",
+                            finished: "border-border bg-card text-muted-foreground",
+                        };
+                        return (
+                            <div key={s} className={cn(
+                                "rounded-[var(--radius-xl)] p-3 border text-center",
+                                colors[s],
+                            )}>
+                                <p className="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-70">{labels[s]}</p>
+                                <p className="text-2xl font-black tabular-nums leading-none">{counts[s]}</p>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* ━━ 大会リスト ━━ */}
+                {tournaments.length === 0 ? (
+                    <div className="py-20 text-center space-y-4">
+                        <div className="w-16 h-16 rounded-[var(--radius-2xl)] bg-muted/50 flex items-center justify-center mx-auto">
+                            <Trophy className="h-8 w-8 text-muted-foreground/40" />
+                        </div>
+                        <p className="font-black text-base text-foreground/30 uppercase tracking-wider">大会未登録</p>
+                        <p className="text-sm font-bold text-muted-foreground/50">「大会を追加」から登録しましょう</p>
+                        <Button onClick={() => setIsAddOpen(true)} variant="outline" className="rounded-[var(--radius-xl)]">
+                            <Plus className="h-4 w-4 mr-2" /> 大会を追加
                         </Button>
                     </div>
-                </div>
-
-                {/* 2. AI 戦略シミュレーター */}
-                <section
-                    className="relative group cursor-pointer"
-                    onClick={!aiAnalysis ? analyzeTournamentPath : undefined}
-                >
-                    <div className="absolute inset-0 bg-primary/5 blur-3xl opacity-30 group-hover:opacity-60 transition-opacity" />
-                    <Card className="relative bg-card/10 dark:bg-zinc-950/10 border-border/60 backdrop-blur-xl rounded-[32px] overflow-hidden border-dashed border-2 hover:border-primary/30 transition-all duration-500 shadow-none">
-                        <CardContent className="p-6 sm:p-10">
-                            {!aiAnalysis ? (
-                                <div className="flex flex-col md:flex-row items-center gap-8">
-                                    <div className="relative">
-                                        <div className="h-16 w-16 rounded-[20px] bg-primary flex items-center justify-center text-primary-foreground group-hover:rotate-3 transition-transform duration-500">
-                                            {isAnalyzing ? <Loader2 className="h-8 w-8 animate-spin" /> : <Sparkles className="h-8 w-8" />}
-                                        </div>
-                                    </div>
-                                    <div className="flex-1 text-center md:text-left space-y-1">
-                                        <h2 className="text-lg font-black italic text-foreground flex items-center justify-center md:justify-start gap-2">
-                                            頂点への最短ルートをシミュレート
-                                        </h2>
-                                        <p className="text-xs font-bold text-muted-foreground leading-relaxed">
-                                            参戦中のデータを分析し、次戦の勝利戦略と優勝確率を算出します。
-                                        </p>
-                                        <div className="pt-2">
-                                            <span className="inline-flex items-center gap-1.5 text-primary font-black text-[9px] uppercase tracking-[0.1em] bg-primary/10 px-3 py-1.5 rounded-full">
-                                                AI解析を実行 <ChevronRight className="h-3 w-3" />
-                                            </span>
-                                        </div>
-                                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {/* 参戦中を先頭に、次に待機中、最後に終了 */}
+                        {(["ongoing", "upcoming", "finished"] as const).map(statusGroup => {
+                            const group = tournaments.filter(t => getTournamentStatus(t) === statusGroup);
+                            if (group.length === 0) return null;
+                            const groupLabels = { ongoing: "参戦中", upcoming: "待機中", finished: "終了した大会" };
+                            return (
+                                <div key={statusGroup} className="space-y-2">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground flex items-center gap-1.5 px-1">
+                                        <TrendingUp className="h-3 w-3" />
+                                        {groupLabels[statusGroup]}
+                                    </p>
+                                    {group.map(t => (
+                                        <TournamentCard
+                                            key={t.id}
+                                            t={t}
+                                            onEdit={setEditTarget}
+                                            onDelete={setDeleteTarget}
+                                        />
+                                    ))}
                                 </div>
-                            ) : (
-                                <div className="animate-in zoom-in-95 duration-500 space-y-6">
-                                    <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-                                        <div className="space-y-4 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <Badge className="bg-primary text-primary-foreground border-none font-black text-[9px] uppercase px-3 rounded-md shadow-sm">Analysis Ready</Badge>
-                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Strategic Insight</span>
-                                            </div>
-                                            <h3 className="text-xl md:text-2xl font-black italic leading-snug border-l-4 border-primary pl-5 text-foreground">
-                                                「{aiAnalysis.insight}」
-                                            </h3>
-                                            <div className="flex items-center gap-3 text-xs font-bold text-muted-foreground pl-5">
-                                                <Target className="h-4 w-4 text-primary opacity-60" />
-                                                注目選手: <span className="text-foreground border-b border-primary/20 font-black">{aiAnalysis.mvp}</span>
-                                            </div>
-                                        </div>
-                                        {/* 優勝期待値サークル */}
-                                        <div className="w-24 h-24 relative shrink-0">
-                                            <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
-                                                <circle cx="48" cy="48" r="42" className="stroke-muted/20 fill-none" strokeWidth="5" />
-                                                <circle
-                                                    cx="48" cy="48" r="42"
-                                                    className="stroke-primary fill-none transition-all duration-1000"
-                                                    strokeWidth="5"
-                                                    strokeDasharray={264}
-                                                    strokeDashoffset={264 - (264 * aiAnalysis.probability) / 100}
-                                                    strokeLinecap="round"
-                                                />
-                                            </svg>
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                <span className="text-2xl font-black tabular-nums">{aiAnalysis.probability}%</span>
-                                                <span className="text-[8px] font-black uppercase opacity-40 text-center leading-none">Victory<br />Goal</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <Button variant="ghost" onClick={() => setAiAnalysis(null)} className="w-full border-t border-border/40 rounded-none h-10 text-[10px] font-black uppercase tracking-widest hover:bg-primary/5">リセット</Button>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </section>
-
-                {/* 3. 参戦大会リスト */}
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between px-2">
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-primary opacity-60" /> 参戦中の大会一覧
-                        </h2>
+                            );
+                        })}
                     </div>
+                )}
 
-                    <div className="grid grid-cols-1 gap-6">
-                        {tournaments.map((t) => (
-                            <Card
-                                key={t.id}
-                                className={cn(
-                                    "bg-card/30 dark:bg-zinc-900/10 backdrop-blur-md border-border/80 rounded-[32px] overflow-hidden group transition-all duration-500 hover:border-primary/20 shadow-none",
-                                    t.status === 'ongoing' ? "ring-1 ring-primary/20 bg-card/50" : ""
-                                )}
-                            >
-                                <CardContent className="p-0">
-                                    <div className="flex flex-col lg:flex-row items-stretch">
-
-                                        {/* 左側ラベル */}
-                                        <div className={cn(
-                                            "w-full lg:w-24 flex flex-col items-center justify-center p-6 border-b lg:border-b-0 lg:border-r border-border/40 gap-2",
-                                            t.status === 'ongoing' ? "bg-primary text-primary-foreground" : "bg-muted/40"
-                                        )}>
-                                            {t.status === 'ongoing' ? (
-                                                <>
-                                                    <Activity className="h-6 w-6 animate-pulse" />
-                                                    <span className="text-[9px] font-black uppercase tracking-tighter vertical-text">参戦中</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Calendar className="h-6 w-6 opacity-30" />
-                                                    <span className="text-[9px] font-black uppercase tracking-tighter opacity-30 vertical-text">待機中</span>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {/* 中央メインエリア */}
-                                        <div className="flex-1 p-6 md:p-8 space-y-8">
-                                            <div className="flex flex-col xl:flex-row justify-between gap-6">
-                                                <div className="space-y-3 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge className="bg-muted text-muted-foreground border-none text-[9px] font-black px-2 py-0.5 rounded-md">{t.category}</Badge>
-                                                        <span className="text-[10px] font-black text-primary/70 uppercase tracking-widest">{t.period}</span>
-                                                    </div>
-                                                    <h3 className="text-2xl md:text-3xl font-black italic uppercase text-foreground leading-tight tracking-tighter group-hover:text-primary transition-colors duration-500">
-                                                        {t.name}
-                                                    </h3>
-                                                    <div className="flex flex-wrap items-center gap-5 pt-1">
-                                                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground/80">
-                                                            <MapPin className="h-3.5 w-3.5 text-primary opacity-40" />
-                                                            {t.venue}
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground/80">
-                                                            <Users2 className="h-3.5 w-3.5 text-primary opacity-40" />
-                                                            {t.teamCount} チーム参戦
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* スケジュールチップ */}
-                                                {t.nextMatchDate && (
-                                                    <div className="relative bg-background/40 border border-border/60 rounded-[24px] p-5 flex flex-col items-center gap-1.5 min-w-[180px] backdrop-blur-sm">
-                                                        <span className="text-[9px] font-black text-primary uppercase tracking-widest">Next Match</span>
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-xl font-black tabular-nums italic">{t.nextMatchDate.split(' ')[0]}</span>
-                                                            <div className="h-5 w-px bg-border rotate-[20deg]" />
-                                                            <span className="text-xl font-black tabular-nums italic text-primary">{t.nextMatchDate.split(' ')[1]}</span>
-                                                        </div>
-                                                        <Badge variant="outline" className="mt-1 border-primary/20 text-primary text-[8px] font-black uppercase rounded-full px-3 italic">対戦相手 未定</Badge>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* 進行度トラッカー */}
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between items-center px-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="p-1.5 bg-muted rounded-lg"><Target className="h-3.5 w-3.5 text-muted-foreground/60" /></div>
-                                                        <span className="text-xs font-black italic text-foreground uppercase tracking-tight">現在の状況: {t.currentRound}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-60">頂点まで</span>
-                                                        <span className="text-sm font-black italic text-primary tabular-nums">75%</span>
-                                                    </div>
-                                                </div>
-                                                <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-primary transition-all duration-1000 ease-out"
-                                                        style={{ width: t.status === 'ongoing' ? '75%' : '0%' }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* ナビゲーションアクション */}
-                                        <button className="w-full lg:w-20 flex items-center justify-center p-6 border-t lg:border-t-0 lg:border-l border-border/40 hover:bg-primary/5 transition-all group/btn bg-muted/5">
-                                            <div className="h-10 w-10 rounded-full border border-border group-hover/btn:border-primary group-hover/btn:bg-primary group-hover/btn:text-primary-foreground flex items-center justify-center transition-all duration-500 shadow-inner">
-                                                <ChevronRight className="h-5 w-5 group-hover/btn:translate-x-0.5 transition-all" />
-                                            </div>
-                                        </button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 4. 格言エリア */}
-                <div className="pt-12 pb-10 flex flex-col items-center gap-5">
-                    <div className="h-10 w-px bg-gradient-to-b from-border to-transparent" />
-                    <div className="flex items-center gap-3 px-8 py-2.5 rounded-full bg-card/20 border border-border/40 backdrop-blur-md">
-                        <Sword className="h-4 w-4 text-primary opacity-60" />
-                        <p className="text-[10px] font-black italic text-muted-foreground tracking-[0.4em] uppercase text-center">
+                {/* 格言 */}
+                <div className="pt-8 pb-4 flex flex-col items-center gap-4">
+                    <div className="h-8 w-px bg-gradient-to-b from-border to-transparent" />
+                    <div className="flex items-center gap-3 px-6 py-2 rounded-full bg-card/60 border border-border/40">
+                        <Sword className="h-3.5 w-3.5 text-primary opacity-50" />
+                        <p className="text-[10px] font-black italic text-muted-foreground tracking-[0.3em] uppercase">
                             Victory is earned in the details
                         </p>
                     </div>
                 </div>
 
-            </main>
+            </div>
 
-            {/* フッター */}
-            <footer className="mt-20 py-20 border-t border-border/30 text-center opacity-30">
-                <div className="flex flex-col items-center gap-4">
-                    <Trophy className="h-7 w-7 text-primary opacity-20" />
-                    <p className="text-[10px] font-black tracking-[1.2em] uppercase pl-[1.2em]">
-                        知略 • 誠実 • 卓越
-                    </p>
-                </div>
-            </footer>
+            {/* ━━━ 大会追加モーダル ━━━ */}
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <DialogContent className="rounded-[var(--radius-2xl)] max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
+                    <div className="mb-3">
+                        <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
+                            <Plus className="h-4 w-4 text-primary" /> 大会を追加
+                        </h2>
+                    </div>
+                    <TournamentForm
+                        onSubmit={handleAdd}
+                        onCancel={() => setIsAddOpen(false)}
+                        isSubmitting={isSubmitting}
+                        submitLabel="登録"
+                    />
+                </DialogContent>
+            </Dialog>
 
-            {/* グローバルスタイル */}
+            {/* ━━━ 大会編集モーダル ━━━ */}
+            <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+                <DialogContent className="rounded-[var(--radius-2xl)] max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
+                    {editTarget && (
+                        <>
+                            <div className="mb-3">
+                                <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
+                                    <Pencil className="h-4 w-4 text-primary" /> 大会を編集
+                                </h2>
+                                <p className="text-xs text-muted-foreground font-bold mt-0.5">{editTarget.name}</p>
+                            </div>
+                            <TournamentForm
+                                initial={{
+                                    name: editTarget.name,
+                                    season: editTarget.season,
+                                    organizer: editTarget.organizer ?? "",
+                                    startDate: editTarget.startDate ?? "",
+                                    endDate: editTarget.endDate ?? "",
+                                    timeLimit: editTarget.timeLimit ?? "",
+                                    coldGameRule: editTarget.coldGameRule ?? "",
+                                    tiebreakerRule: editTarget.tiebreakerRule ?? "",
+                                    bracketUrl: editTarget.bracketUrl ?? "",
+                                }}
+                                onSubmit={handleEdit}
+                                onCancel={() => setEditTarget(null)}
+                                isSubmitting={isSubmitting}
+                                submitLabel="保存"
+                            />
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* ━━━ 削除確認モーダル ━━━ */}
+            <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <DialogContent className="rounded-[var(--radius-2xl)] max-w-xs w-full p-6">
+                    {deleteTarget && (
+                        <div className="space-y-4">
+                            <div>
+                                <h2 className="text-lg font-black text-destructive flex items-center gap-2">
+                                    <Trash2 className="h-4 w-4" /> 大会を削除
+                                </h2>
+                                <p className="text-xs text-muted-foreground font-bold mt-0.5">この操作は取り消せません</p>
+                            </div>
+                            <div className="bg-destructive/5 border border-destructive/20 rounded-[var(--radius-xl)] p-3">
+                                <p className="font-black text-sm text-card-foreground">{deleteTarget.name}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    ※関連する試合の大会情報も削除されます
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => setDeleteTarget(null)} className="flex-1 rounded-[var(--radius-xl)] font-black">
+                                    キャンセル
+                                </Button>
+                                <Button
+                                    onClick={handleDelete}
+                                    disabled={isSubmitting}
+                                    className="flex-1 rounded-[var(--radius-xl)] font-black bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                                >
+                                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "削除"}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* ニュースティッカー用アニメーション */}
             <style jsx global>{`
-        @keyframes marquee {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
-        }
-        .vertical-text {
-          writing-mode: vertical-rl;
-          text-orientation: mixed;
-        }
-      `}</style>
+                @keyframes marquee {
+                    0%   { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+            `}</style>
         </div>
     );
 }
 
 export default function TournamentMapPage() {
     return (
-        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-transparent"><Loader2 className="animate-spin text-primary" /></div>}>
+        <Suspense fallback={
+            <div className="flex h-[60vh] items-center justify-center">
+                <Loader2 className="animate-spin text-primary h-8 w-8" />
+            </div>
+        }>
             <TournamentMapContent />
         </Suspense>
     );
