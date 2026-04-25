@@ -11,7 +11,7 @@ export interface OpenMeteoResponse {
 }
 
 /**
- * 💡 緯度経度から市区町村名を取得する
+ * 💡 緯度経度から「都道府県＋市区町村＋区」を取得する
  */
 export async function reverseGeocode(lat: number, lon: number): Promise<string> {
   try {
@@ -21,14 +21,11 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string> 
     if (res.ok) {
       const data = await res.json();
       const addr = data.address;
-      
-      // 日本の住所体系に合わせた抽出
-      const prefecture = addr.province || addr.state || addr.region || "";
-      const city = addr.city || addr.town || addr.village || addr.suburb || addr.ward || "";
-      const district = addr.city_district || ""; // 区など
-      
-      const fullName = `${prefecture}${city}${district}`;
-      return fullName || "現在地を特定できません";
+      // 都道府県 + 市区町村 + 区(あれば) を連結
+      const pref = addr.province || addr.state || addr.region || "";
+      const city = addr.city || addr.town || addr.village || "";
+      const dist = addr.city_district || addr.suburb || addr.ward || "";
+      return `${pref}${city}${dist}` || "現在地";
     }
     return "現在地";
   } catch (e) {
@@ -36,18 +33,12 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string> 
   }
 }
 
-/**
- * 💡 風向角度を野球で伝わりやすい16方位に変換
- */
 export function getWindDirectionLabel(degree: number): string {
   const directions = ["北", "北北東", "北東", "東北東", "東", "東南東", "南東", "南南東", "南", "南南西", "南西", "西南西", "西", "西北西", "北西", "北北西"];
   const index = Math.round(degree / 22.5) % 16;
   return directions[index];
 }
 
-/**
- * 💡 天気コードを日本語に変換
- */
 export function getWMOWeatherText(code: number): string {
   const weatherMap: Record<number, string> = {
     0: "快晴", 1: "晴れ", 2: "晴れ", 3: "曇り", 45: "霧", 48: "霧",
