@@ -1,5 +1,5 @@
 // filepath: src/app/(protected)/dashboard/page.tsx
-/* 💡 i-score ダッシュボード：元のデザインを維持しつつリアルタイム天気を統合 */
+/* 💡 i-Score ダッシュボード：完全復旧版 + リアルタイム天気のみ統合 */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -14,7 +14,7 @@ import {
   getWindDirectionLabel, 
   getWMOWeatherText, 
   type OpenMeteoResponse 
-} from "@/lib/weather"; // 🌟 weather.ts からインポート
+} from "@/lib/weather";
 
 interface UserMembership {
   teamId: string;
@@ -52,7 +52,7 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, [router]);
 
-  // 天気取得ロジック（バックグラウンドで実行）
+  // 天気取得ロジック（バックグラウンド）
   useEffect(() => {
     const fetchWeather = async (lat: number, lon: number) => {
       try {
@@ -119,128 +119,107 @@ export default function DashboardPage() {
   const dateString = currentTime.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
 
   return (
-    <div className="w-full animate-in fade-in duration-500 bg-transparent min-h-screen pb-24">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6 sm:space-y-8">
+    <div className="w-full animate-in fade-in duration-500">
+      <div className="max-w-5xl mx-auto px-4 pt-6 space-y-8">
         
-        {/* --- ヒーローセクション（元のデザイン） --- */}
+        {/* ヘッダー */}
         <section>
-          <h2 className="text-sm font-black text-primary uppercase tracking-widest mb-1 flex items-center gap-2">
+          <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-1 flex items-center gap-2">
             <Activity className="h-4 w-4" /> Overview
           </h2>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight flex flex-wrap gap-x-2">
+          <h1 className="text-3xl font-black tracking-tight flex items-baseline gap-2">
             {teamInfo ? (
               <><span className="text-foreground">{teamInfo.org}</span><span className="text-primary">{teamInfo.name}</span></>
             ) : (
-              <span className="text-foreground">Team Loading...</span>
+              <span className="text-foreground">Loading Team...</span>
             )}
           </h1>
         </section>
 
-        {/* --- 環境ウィジェット（元の角丸[40px]・透過bg-background/40デザイン） --- */}
-        <section className="bg-background/40 backdrop-blur-xl border border-border/40 shadow-sm rounded-[40px] p-4 sm:p-5">
-          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-4 sm:gap-6">
-            
-            {/* 時計 */}
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-2.5 bg-primary/10 rounded-full text-primary shrink-0"><Clock className="h-5 w-5 sm:h-6 sm:w-6" /></div>
-              <div>
-                <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase">{dateString}</p>
-                <p className="text-base sm:text-lg font-black text-foreground tabular-nums leading-none mt-0.5">{timeString}</p>
-              </div>
+        {/* 環境ウィジェット - レイアウトは以前のまま、値だけ流し込み */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-card p-4 rounded-xl border shadow-sm flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg text-primary"><Clock className="h-5 w-5" /></div>
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase">{dateString}</p>
+              <p className="text-lg font-bold tabular-nums">{timeString}</p>
             </div>
+          </div>
 
-            <div className="hidden sm:block h-8 w-px bg-border/50" />
-
-            {/* 天気 */}
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-2.5 bg-amber-500/10 rounded-full text-amber-500 shrink-0"><CloudSun className="h-5 w-5 sm:h-6 sm:w-6" /></div>
-              <div>
-                <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase">Weather</p>
-                <p className="text-sm sm:text-base font-black text-foreground leading-none mt-0.5">
-                  {weather ? (
-                    <>{getWMOWeatherText(weather.weatherCode)} <span className="text-muted-foreground text-xs ml-0.5">{weather.temp}°C</span></>
-                  ) : "---"}
-                </p>
-              </div>
+          <div className="bg-card p-4 rounded-xl border shadow-sm flex items-center gap-3">
+            <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500"><CloudSun className="h-5 w-5" /></div>
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase">Weather</p>
+              <p className="text-base font-bold">
+                {weather ? `${getWMOWeatherText(weather.weatherCode)} ${weather.temp}°C` : "---"}
+              </p>
             </div>
+          </div>
 
-            <div className="hidden sm:block h-8 w-px bg-border/50" />
-
-            {/* 風向き */}
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-2.5 bg-blue-500/10 rounded-full text-blue-500 shrink-0">
-                <Navigation 
-                  className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-700" 
-                  style={{ transform: `rotate(${weather ? weather.windDir : 45}deg)` }} 
-                />
-              </div>
-              <div>
-                <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase">Wind Dir</p>
-                <p className="text-sm sm:text-base font-black text-foreground leading-none mt-0.5">
-                  {weather ? getWindDirectionLabel(weather.windDir) : "---"}
-                </p>
-              </div>
+          <div className="bg-card p-4 rounded-xl border shadow-sm flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+              <Navigation 
+                className="h-5 w-5 transition-transform duration-700" 
+                style={{ transform: `rotate(${weather ? weather.windDir : 0}deg)` }} 
+              />
             </div>
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase">Wind Dir</p>
+              <p className="text-base font-bold">{weather ? getWindDirectionLabel(weather.windDir) : "---"}</p>
+            </div>
+          </div>
 
-            <div className="hidden sm:block h-8 w-px bg-border/50" />
-
-            {/* 風速 */}
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-2.5 bg-teal-500/10 rounded-full text-teal-500 shrink-0"><Wind className="h-5 w-5 sm:h-6 sm:w-6" /></div>
-              <div>
-                <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase">Wind Spd</p>
-                <p className="text-sm sm:text-base font-black text-foreground leading-none mt-0.5 tabular-nums">
-                  {weather ? weather.windSpd : "--"} <span className="text-muted-foreground text-xs font-bold">m/s</span>
-                </p>
-              </div>
+          <div className="bg-card p-4 rounded-xl border shadow-sm flex items-center gap-3">
+            <div className="p-2 bg-teal-500/10 rounded-lg text-teal-500"><Wind className="h-5 w-5" /></div>
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase">Wind Spd</p>
+              <p className="text-base font-bold tabular-nums">{weather ? `${weather.windSpd} m/s` : "--"}</p>
             </div>
           </div>
         </section>
 
-        {/* --- クイックアクション（元のRounded-fullデザイン） --- */}
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* クイックアクション - 元のボタンデザイン（variant="outline" 等を維持） */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Button 
             onClick={() => router.push("/matches/create")}
-            className="h-auto py-4 sm:py-6 rounded-full flex flex-col gap-1 sm:gap-2 font-bold transition-all hover:scale-105 active:scale-95 bg-primary text-primary-foreground shadow-lg"
+            className="h-auto py-6 flex flex-col gap-2 font-bold"
           >
-            <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="text-xs sm:text-sm">New Match</span>
+            <Plus className="h-6 w-6" />
+            <span>New Match</span>
           </Button>
           <Button 
             variant="outline"
             onClick={() => router.push("/players")}
-            className="h-auto py-4 sm:py-6 rounded-full flex flex-col gap-1 sm:gap-2 font-bold backdrop-blur-md bg-background/40 border-border/40 transition-all hover:scale-105"
+            className="h-auto py-6 flex flex-col gap-2 font-bold"
           >
-            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="text-xs sm:text-sm">Players</span>
+            <Users className="h-6 w-6" />
+            <span>Players</span>
           </Button>
           <Button 
             variant="outline"
             onClick={() => router.push("/team")}
-            className="h-auto py-4 sm:py-6 rounded-full flex flex-col gap-1 sm:gap-2 font-bold backdrop-blur-md bg-background/40 border-border/40 transition-all hover:scale-105"
+            className="h-auto py-6 flex flex-col gap-2 font-bold"
           >
-            <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="text-xs sm:text-sm">Team Stats</span>
+            <Trophy className="h-6 w-6" />
+            <span>Team Stats</span>
           </Button>
           <Button 
             variant="outline"
-            className="h-auto py-4 sm:py-6 rounded-full flex flex-col gap-1 sm:gap-2 font-bold backdrop-blur-md bg-background/40 border-border/40 transition-all hover:scale-105"
+            className="h-auto py-6 flex flex-col gap-2 font-bold"
           >
-            <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="text-xs sm:text-sm">Training</span>
+            <PlayCircle className="h-6 w-6" />
+            <span>Training</span>
           </Button>
         </section>
 
-        {/* --- 試合リスト（元のRounded-[40px]デザイン） --- */}
-        <section className="space-y-4 sm:space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <h3 className="text-lg sm:text-xl font-black flex items-center gap-2 tracking-tight">
+        {/* 試合リスト - 不要なコンテナを削除し、以前のままの構造へ */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold flex items-center gap-2">
               <Trophy className="h-5 w-5 text-primary" /> Recent Matches
             </h3>
           </div>
-          <div className="bg-background/40 backdrop-blur-xl rounded-[40px] border border-border/40 p-2 sm:p-4 min-h-[300px] shadow-sm">
-            <MatchList matches={matches} isLoading={isLoading} />
-          </div>
+          <MatchList matches={matches} isLoading={isLoading} />
         </section>
 
       </div>
