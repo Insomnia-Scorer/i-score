@@ -4,13 +4,13 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, Users, PlayCircle, Plus, ChevronLeft, ChevronRight, Activity, Swords, Clock, CloudSun, Navigation, Wind, MapPin } from "lucide-react"; // 🌟 MapPin追加
+import { Trophy, Users, PlayCircle, Plus, ChevronLeft, ChevronRight, Activity, Swords, Clock, CloudSun, Navigation, Wind, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatchList } from "@/components/matches/match-list";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { Match } from "@/types/match";
-import { getWindDirectionLabel, getWMOWeatherText, reverseGeocode, type OpenMeteoResponse } from "@/lib/weather"; // 🌟 reverseGeocode追加
+import { getWindDirectionLabel, getWMOWeatherText, reverseGeocode, type OpenMeteoResponse } from "@/lib/weather";
 
 interface UserMembership {
   teamId: string;
@@ -30,7 +30,7 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [teamInfo, setTeamInfo] = useState<{ org: string; name: string } | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [locationName, setLocationName] = useState<string | null>(null); // 🌟 追加
+  const [locationName, setLocationName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
@@ -52,7 +52,7 @@ export default function DashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    const fetchWeatherAndLocation = async (lat: number, lon: number) => { // 🌟 名前変更
+    const fetchWeatherAndLocation = async (lat: number, lon: number) => {
       try {
         const res = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m`
@@ -66,11 +66,8 @@ export default function DashboardPage() {
             windSpd: Math.round(data.current.wind_speed_10m),
           });
         }
-        
-        // 🌟 現在地名の取得を追加
         const name = await reverseGeocode(lat, lon);
         setLocationName(name);
-
       } catch (e) {
         console.error("Fetch error", e);
       }
@@ -143,17 +140,17 @@ export default function DashboardPage() {
           </h1>
         </section>
 
-        {/* --- 🌟 現在地ステータス（時計・天気枠の上に配置） --- */}
-        <div className="flex items-center px-1">
-          <div className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-zinc-100/50 dark:bg-zinc-800/50 border border-border/40 backdrop-blur-sm">
-            <MapPin className="h-3 w-3 text-primary animate-pulse" />
-            <span className="text-[10px] sm:text-xs font-black text-foreground">
-              {locationName || "現在地を特定中..."}
+        {/* --- 🌟 現在地ステータス（位置を調整・フォント拡大・プライマリ半透明背景） --- */}
+        <div className="flex items-center px-1 -mb-4 sm:-mb-6 relative z-10">
+          <div className="flex items-center gap-2 py-2 px-4 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md shadow-sm">
+            <MapPin className="h-4 w-4 text-primary animate-pulse" />
+            <span className="text-xs sm:text-sm font-black text-foreground tracking-tight">
+              現在地：{locationName || "取得中..."}
             </span>
           </div>
         </div>
 
-        {/* --- 🌟 環境ウィジェット（元の統合デザイン） --- */}
+        {/* --- 🌟 環境ウィジェット --- */}
         <section className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 shadow-sm rounded-3xl p-4 sm:p-5">
           <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-4 sm:gap-6">
             {/* 時計 */}
@@ -167,7 +164,7 @@ export default function DashboardPage() {
 
             <div className="hidden sm:block h-8 w-px bg-border/50" />
 
-            {/* 天気（リアルデータ） */}
+            {/* 天気 */}
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-amber-500/10 rounded-xl text-amber-500 shrink-0"><CloudSun className="h-5 w-5 sm:h-6 sm:w-6" /></div>
               <div>
@@ -213,7 +210,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- 2. クイックアクション（元のまま） --- */}
+        {/* --- 2. クイックアクション --- */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <button 
             onClick={() => router.push('/matches/create?mode=quick')} 
@@ -242,7 +239,7 @@ export default function DashboardPage() {
           </button>
         </section>
 
-        {/* --- 3. 試合リスト（元のまま） --- */}
+        {/* --- 3. 試合リスト --- */}
         <section className="pt-2 sm:pt-4">
           <div className="flex items-center justify-between mb-4 px-1">
             <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Swords className="h-4 w-4" /> Recent Matches</h2>
