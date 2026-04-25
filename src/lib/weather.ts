@@ -20,9 +20,16 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string> 
     );
     if (res.ok) {
       const data = await res.json();
-      // 市区町村、または県名を取得
       const addr = data.address;
-      return addr.city || addr.town || addr.village || addr.suburb || addr.province || "現在地";
+      
+      // 都道府県名を取得 (province, state, regionの順で確認)
+      const prefecture = addr.province || addr.state || addr.region || "";
+      // 市区町村名を取得
+      const city = addr.city || addr.town || addr.village || addr.suburb || addr.ward || "";
+      
+      if (!prefecture && !city) return "現在地取得中";
+      
+      return `${prefecture}${city}`;
     }
     return "現在地";
   } catch (e) {
