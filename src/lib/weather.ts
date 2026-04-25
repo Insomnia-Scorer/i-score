@@ -22,14 +22,13 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string> 
       const data = await res.json();
       const addr = data.address;
       
-      // 都道府県名を取得 (province, state, regionの順で確認)
+      // 日本の住所体系に合わせた抽出
       const prefecture = addr.province || addr.state || addr.region || "";
-      // 市区町村名を取得
       const city = addr.city || addr.town || addr.village || addr.suburb || addr.ward || "";
+      const district = addr.city_district || ""; // 区など
       
-      if (!prefecture && !city) return "現在地取得中";
-      
-      return `${prefecture}${city}`;
+      const fullName = `${prefecture}${city}${district}`;
+      return fullName || "現在地を特定できません";
     }
     return "現在地";
   } catch (e) {
