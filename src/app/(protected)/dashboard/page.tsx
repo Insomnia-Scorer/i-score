@@ -1,5 +1,5 @@
 // filepath: src/app/(protected)/dashboard/page.tsx
-/* 💡 i-Score ダッシュボード：完全復旧版 + リアルタイム天気のみ統合 */
+/* 💡 i-Score ダッシュボード：完全復旧（デザイン完全一致版） */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -52,7 +52,7 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, [router]);
 
-  // 天気取得ロジック（バックグラウンド）
+  // 天気データ取得（ロジックのみ追加）
   useEffect(() => {
     const fetchWeather = async (lat: number, lon: number) => {
       try {
@@ -122,36 +122,45 @@ export default function DashboardPage() {
     <div className="w-full animate-in fade-in duration-500">
       <div className="max-w-5xl mx-auto px-4 pt-6 space-y-8">
         
-        {/* ヘッダー */}
+        {/* ヘッダーセクション */}
         <section>
           <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-1 flex items-center gap-2">
             <Activity className="h-4 w-4" /> Overview
           </h2>
-          <h1 className="text-3xl font-black tracking-tight flex items-baseline gap-2">
+          <h1 className="text-3xl font-black tracking-tight">
             {teamInfo ? (
-              <><span className="text-foreground">{teamInfo.org}</span><span className="text-primary">{teamInfo.name}</span></>
+              <div className="flex items-baseline gap-2">
+                <span className="text-foreground">{teamInfo.org}</span>
+                <span className="text-primary">{teamInfo.name}</span>
+              </div>
             ) : (
-              <span className="text-foreground">Loading Team...</span>
+              <span className="text-foreground">Loading...</span>
             )}
           </h1>
         </section>
 
-        {/* 環境ウィジェット - レイアウトは以前のまま、値だけ流し込み */}
+        {/* 環境ウィジェット - 元のデザインを完全に維持 */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card p-4 rounded-xl border shadow-sm flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg text-primary"><Clock className="h-5 w-5" /></div>
+            <div className="p-2 bg-primary/10 rounded-lg text-primary">
+              <Clock className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-[10px] font-medium text-muted-foreground uppercase">{dateString}</p>
-              <p className="text-lg font-bold tabular-nums">{timeString}</p>
+              <p className="text-lg font-bold tabular-nums leading-none mt-1">{timeString}</p>
             </div>
           </div>
 
           <div className="bg-card p-4 rounded-xl border shadow-sm flex items-center gap-3">
-            <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500"><CloudSun className="h-5 w-5" /></div>
+            <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
+              <CloudSun className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-[10px] font-medium text-muted-foreground uppercase">Weather</p>
-              <p className="text-base font-bold">
-                {weather ? `${getWMOWeatherText(weather.weatherCode)} ${weather.temp}°C` : "---"}
+              <p className="text-base font-bold leading-none mt-1">
+                {weather ? (
+                  <>{getWMOWeatherText(weather.weatherCode)} <span className="text-sm font-normal opacity-70">{weather.temp}°C</span></>
+                ) : "---"}
               </p>
             </div>
           </div>
@@ -165,20 +174,26 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] font-medium text-muted-foreground uppercase">Wind Dir</p>
-              <p className="text-base font-bold">{weather ? getWindDirectionLabel(weather.windDir) : "---"}</p>
+              <p className="text-base font-bold leading-none mt-1">
+                {weather ? getWindDirectionLabel(weather.windDir) : "---"}
+              </p>
             </div>
           </div>
 
           <div className="bg-card p-4 rounded-xl border shadow-sm flex items-center gap-3">
-            <div className="p-2 bg-teal-500/10 rounded-lg text-teal-500"><Wind className="h-5 w-5" /></div>
+            <div className="p-2 bg-teal-500/10 rounded-lg text-teal-500">
+              <Wind className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-[10px] font-medium text-muted-foreground uppercase">Wind Spd</p>
-              <p className="text-base font-bold tabular-nums">{weather ? `${weather.windSpd} m/s` : "--"}</p>
+              <p className="text-base font-bold leading-none mt-1 tabular-nums">
+                {weather ? `${weather.windSpd} m/s` : "--"}
+              </p>
             </div>
           </div>
         </section>
 
-        {/* クイックアクション - 元のボタンデザイン（variant="outline" 等を維持） */}
+        {/* クイックアクション - ボタンデザインを復旧 */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Button 
             onClick={() => router.push("/matches/create")}
@@ -212,7 +227,7 @@ export default function DashboardPage() {
           </Button>
         </section>
 
-        {/* 試合リスト - 不要なコンテナを削除し、以前のままの構造へ */}
+        {/* 試合リスト - コンテナを削除し、MatchListをそのまま配置 */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold flex items-center gap-2">
