@@ -1,5 +1,5 @@
 // filepath: src/app/(protected)/dashboard/page.tsx
-/* 💡 ダッシュボード（管理者自動転送 ＆ リアルタイム天気統合版） */
+/* 💡 ダッシュボード（管理者自動転送 ＆ リアルタイム天気 ＆ 現在地統合版） */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -30,7 +30,7 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [teamInfo, setTeamInfo] = useState<{ org: string; name: string } | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [locationName, setLocationName] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState<string | null>(null); // 🌟 追加
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
@@ -66,6 +66,7 @@ export default function DashboardPage() {
             windSpd: Math.round(data.current.wind_speed_10m),
           });
         }
+        // 🌟 現在地取得
         const name = await reverseGeocode(lat, lon);
         setLocationName(name);
       } catch (e) {
@@ -140,11 +141,11 @@ export default function DashboardPage() {
           </h1>
         </section>
 
-        {/* --- 🌟 現在地ステータス（位置を調整・フォント拡大・プライマリ半透明背景） --- */}
-        <div className="flex items-center px-1 -mb-4 sm:-mb-6 relative z-10">
-          <div className="flex items-center gap-2 py-2 px-4 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md shadow-sm">
+        {/* --- 🌟 現在地ステータス（指定通りのスタイルで追加） --- */}
+        <div className="flex justify-center px-1 mb-2">
+          <div className="flex items-center gap-2 py-2 px-6 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-xl shadow-lg">
             <MapPin className="h-4 w-4 text-primary animate-pulse" />
-            <span className="text-xs sm:text-sm font-black text-foreground tracking-tight">
+            <span className="text-sm sm:text-base font-black text-foreground tracking-tight">
               現在地：{locationName || "取得中..."}
             </span>
           </div>
@@ -164,7 +165,7 @@ export default function DashboardPage() {
 
             <div className="hidden sm:block h-8 w-px bg-border/50" />
 
-            {/* 天気 */}
+            {/* 天気（リアルデータ） */}
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-amber-500/10 rounded-xl text-amber-500 shrink-0"><CloudSun className="h-5 w-5 sm:h-6 sm:w-6" /></div>
               <div>
@@ -210,7 +211,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- 2. クイックアクション --- */}
+        {/* --- 2. クイックアクション（元のまま） --- */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <button 
             onClick={() => router.push('/matches/create?mode=quick')} 
@@ -239,7 +240,7 @@ export default function DashboardPage() {
           </button>
         </section>
 
-        {/* --- 3. 試合リスト --- */}
+        {/* --- 3. 試合リスト（元のまま） --- */}
         <section className="pt-2 sm:pt-4">
           <div className="flex items-center justify-between mb-4 px-1">
             <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Swords className="h-4 w-4" /> Recent Matches</h2>
