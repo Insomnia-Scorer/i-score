@@ -1,71 +1,58 @@
 // filepath: `src/components/features/dashboard/ScoreTypeSelector.tsx`
-"use client";
-
-import React from "react";
-import { useRouter } from "next/navigation";
-import { Zap, PencilLine } from "lucide-react";
-import { cn } from "@/lib/utils";
+// ... (インポートは維持)
 
 export const ScoreTypeSelector = () => {
   const router = useRouter();
-
-  // 💡 本日のダッシュボード修正に合わせた「環境ウィジェット連動」の角丸設定
-  // ユーザー設定やウィジェットと統一感が出るように rounded-3xl を適用
-  const cardStyle = "rounded-3xl";
+  const cardStyle = "rounded-3xl"; 
 
   return (
     <div className="grid grid-cols-2 gap-4 px-1">
-      {/* 🌟 MAIN: Real Score - 左側に配置（塗り） */}
+      {/* Real Score */}
       <button
         onClick={() => router.push('/matches/new')}
         className={cn(
-          "relative group overflow-hidden flex flex-col items-center justify-center p-6 sm:p-8 transition-all active:scale-[0.96]",
-          "bg-primary text-primary-foreground shadow-lg shadow-primary/20 border border-white/10",
+          "relative group overflow-hidden flex flex-col items-center justify-center p-7 sm:p-10 transition-all active:scale-[0.96]",
+          "bg-primary text-primary-foreground shadow-xl shadow-primary/20 border border-white/10",
           cardStyle
         )}
       >
-        {/* 背景の透かしアイコン */}
         <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform duration-500">
-          <PencilLine className="w-24 h-24 rotate-12" />
+          <PencilLine className="w-28 h-28 rotate-12" />
         </div>
-
-        <div className="relative z-10 flex flex-col items-center text-center gap-4">
-          {/* アイコンサイズ: 現場視認性重視 (h-8 w-8) */}
-          <div className="p-3.5 bg-white/20 backdrop-blur-md rounded-2xl border border-white/20">
-            <PencilLine className="h-8 w-8 text-white" />
+        <div className="relative z-10 flex flex-col items-center text-center gap-5">
+          <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
+            <PencilLine className="h-9 w-9 text-white" />
           </div>
-
-          <div className="space-y-1.5">
-            <h3 className="text-xl sm:text-2xl font-black tracking-tighter uppercase leading-none">
-              Real Score
+          <div className="space-y-2">
+            <h3 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase leading-none">
+              Real
             </h3>
-            <p className="text-xs sm:text-sm font-bold text-primary-foreground/70 whitespace-nowrap">
-              一球一球を本格的に記録
+            <p className="text-[11px] sm:text-xs font-bold text-primary-foreground/70 uppercase tracking-widest whitespace-nowrap">
+              本格記録
             </p>
           </div>
         </div>
       </button>
 
-      {/* ⚡️ SUB: Quick Score - 右側に配置（極太枠） */}
+      {/* Quick Score */}
       <button
         onClick={() => router.push('/matches/create?mode=quick')}
         className={cn(
-          "relative group overflow-hidden flex flex-col items-center justify-center p-6 sm:p-8 transition-all active:scale-[0.96]",
-          "bg-card border-[4px] border-primary text-foreground shadow-sm",
+          "relative group overflow-hidden flex flex-col items-center justify-center p-7 sm:p-10 transition-all active:scale-[0.96]",
+          "bg-card border-[5px] border-primary text-foreground shadow-sm",
           cardStyle
         )}
       >
-        <div className="relative z-10 flex flex-col items-center text-center gap-4">
-          <div className="p-3.5 bg-amber-500/10 rounded-2xl border border-amber-500/20">
-            <Zap className="h-8 w-8 text-amber-600" />
+        <div className="relative z-10 flex flex-col items-center text-center gap-5">
+          <div className="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20">
+            <Zap className="h-9 w-9 text-amber-600" />
           </div>
-
-          <div className="space-y-1.5">
-            <h3 className="text-xl sm:text-2xl font-black tracking-tighter uppercase leading-none">
-              Quick Score
+          <div className="space-y-2">
+            <h3 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase leading-none">
+              Quick
             </h3>
-            <p className="text-xs sm:text-sm font-bold text-muted-foreground whitespace-nowrap">
-              結果のみを爆速で記録
+            <p className="text-[11px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+              結果入力
             </p>
           </div>
         </div>
