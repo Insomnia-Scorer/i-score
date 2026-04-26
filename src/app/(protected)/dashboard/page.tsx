@@ -40,10 +40,15 @@ export default function DashboardPage() {
   useEffect(() => {
     setMounted(true);
     const checkAdminAndStartTimer = async () => {
-      const { data: session } = await authClient.getSession();
-      if (session?.user?.role === "SYSTEM_ADMIN") {
-        router.replace("/admin");
-        return;
+      try {
+        const { data: session } = await authClient.getSession();
+        if (session?.user?.role === "SYSTEM_ADMIN") {
+          router.replace("/admin");
+          return;
+        }
+      } catch (err) {
+        // 🌟 オフラインや通信エラー時はログアウトさせず続行（現場至上主義）
+        console.warn("Network check failed. Maintaining current session context.");
       }
     };
     checkAdminAndStartTimer();
@@ -66,7 +71,6 @@ export default function DashboardPage() {
             windSpd: Math.round(data.current.wind_speed_10m),
           });
         }
-        // 🌟 現在地取得
         const name = await reverseGeocode(lat, lon);
         setLocationName(name);
       } catch (e) {
@@ -107,7 +111,9 @@ export default function DashboardPage() {
           setMatches(sorted);
         }
       } catch (error) {
-        toast.error("データの読み込みに失敗しました");
+        if (navigator.onLine) {
+          toast.error("データの読み込みに失敗しました");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -141,7 +147,7 @@ export default function DashboardPage() {
           </h1>
         </section>
 
-        {/* --- 🌟 現在地ステータス（透過率アップ・ボカシ弱・影なしへ修正） --- */}
+        {/* --- 🌟 現在地ステータス（中央配置・透過・低ぼかし・影なし） --- */}
         <div className="flex justify-center px-1 mb-2 relative z-10">
           <div className="flex items-center gap-2 py-2 px-6 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm">
             <MapPin className="h-4 w-4 text-primary animate-pulse" />
@@ -165,7 +171,7 @@ export default function DashboardPage() {
 
             <div className="hidden sm:block h-8 w-px bg-border/50" />
 
-            {/* 天気（リアルデータ） */}
+            {/* 天気 */}
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-amber-500/10 rounded-xl text-amber-500 shrink-0"><CloudSun className="h-5 w-5 sm:h-6 sm:w-6" /></div>
               <div>
@@ -211,7 +217,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- 2. クイックアクション（元のまま） --- */}
+        {/* --- 2. クイックアクション --- */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <button 
             onClick={() => router.push('/matches/create?mode=quick')} 
@@ -240,7 +246,7 @@ export default function DashboardPage() {
           </button>
         </section>
 
-        {/* --- 3. 試合リスト（元のまま） --- */}
+        {/* --- 3. 試合リスト --- */}
         <section className="pt-2 sm:pt-4">
           <div className="flex items-center justify-between mb-4 px-1">
             <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Swords className="h-4 w-4" /> Recent Matches</h2>
@@ -281,4 +287,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
- }
+}
