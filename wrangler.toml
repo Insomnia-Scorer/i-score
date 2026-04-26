@@ -13,7 +13,7 @@ enabled = true
 # D1データベースの設定
 [[d1_databases]]
 binding = "DB"
-database_name = "iscore-db"
+database_name = "i-score-db"
 database_id = "eadfe6d2-e75a-4234-bf68-e19a13e59648"
 migrations_dir = "drizzle"
 
