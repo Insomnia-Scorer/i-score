@@ -147,12 +147,12 @@ export default function DashboardPage() {
           </h1>
         </section>
 
-        {/* --- 🌟 現在地ステータス（ページャーのボタンと全く同じ透過ロジック） --- */}
+        {/* --- 🌟 現在地ステータス（ページャーボタンの透明感を再現） --- */}
         <div className="flex justify-center px-1 -mt-2 mb-2 relative z-10">
-          <div className="flex items-center gap-2 py-2 px-6 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/20 backdrop-blur-sm shadow-sm transition-all">
+          <div className="flex items-center gap-2 py-2 px-6 rounded-full bg-white/20 dark:bg-black/20 border border-primary/20 backdrop-blur-md shadow-sm transition-all hover:bg-white/30">
             <MapPin className="h-4 w-4 text-primary animate-pulse" />
-            <span className="text-sm sm:text-base font-black text-primary tracking-tight">
-              現在地：{locationName || "取得中..."}
+            <span className="text-sm sm:text-base font-black text-foreground tracking-tight">
+              現在地：<span className="text-primary">{locationName || "取得中..."}</span>
             </span>
           </div>
         </div>
