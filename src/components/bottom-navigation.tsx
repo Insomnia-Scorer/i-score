@@ -1,4 +1,5 @@
 // src/components/bottom-navigation.tsx
+/* 💡 ボトムナビゲーション: アプリ下部のメインメニュー（現場での片手操作・視認性を最優先） */
 "use client";
 
 import React from "react";
@@ -20,13 +21,13 @@ export function BottomNavigation({ activeTab, onNavigate, onOpenDrawer }: Bottom
     return null;
   }
 
+  // 🚨 脱・グラスモーフィズム: 屋外視認性のため透過(bg-background/80, backdrop-blur-2xl)を廃止し、ソリッドな bg-background に変更
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/80 backdrop-blur-2xl border-t border-border/40 pb-safe-area-inset-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background border-t border-border/40 pb-safe-area-inset-bottom">
       <div className="flex items-center justify-between h-16 px-4 relative">
 
         {/* 左側：チーム, 選手名簿 */}
         <div className="flex w-[40%] justify-around h-full">
-          {/* 🔥 遷移先を先ほど作った '/team' に修正！ */}
           <button
             onClick={() => onNavigate('/team', 'team')}
             className={cn("flex flex-col items-center justify-center w-full h-full gap-1 transition-all", activeTab === 'team' ? "text-primary scale-105" : "text-muted-foreground opacity-50")}
@@ -45,7 +46,8 @@ export function BottomNavigation({ activeTab, onNavigate, onOpenDrawer }: Bottom
         </div>
 
         {/* 🌟 センター：アプリアイコン (ダッシュボード) */}
-        <div className="absolute left-1/2 -translate-x-1/2 -top-6">
+        {/* 🔥 全体を大きくした分、浮き出しの高さも -top-6 から -top-8 に調整 */}
+        <div className="absolute left-1/2 -translate-x-1/2 -top-8">
           <button
             onClick={() => onNavigate('/dashboard', 'dashboard')}
             className="relative group flex items-center justify-center"
@@ -54,14 +56,18 @@ export function BottomNavigation({ activeTab, onNavigate, onOpenDrawer }: Bottom
               "absolute inset-0 rounded-full blur-xl group-active:scale-90 transition-all duration-500",
               activeTab === "dashboard" ? "bg-primary/30" : "bg-transparent"
             )} />
+
+            {/* 🔥 コンテナを特大化: h-16 w-16 (64px) -> h-20 w-20 (80px) */}
+            {/* 🚨 脱・グラスモーフィズム: backdrop-blur-md を削除し、ソリッドな bg-card を採用。影(shadow-md)を足して立体感を強調 */}
             <div className={cn(
-              "relative flex items-center justify-center h-16 w-16 rounded-full border-[3px] border-background bg-card backdrop-blur-md transition-all duration-300 active:scale-95 overflow-hidden shadow-sm",
+              "relative flex items-center justify-center h-20 w-20 rounded-full border-[3px] border-background bg-card transition-all duration-300 active:scale-95 overflow-hidden shadow-md",
               activeTab === "dashboard" ? "ring-2 ring-primary/50" : "opacity-90 hover:opacity-100"
             )}>
+              {/* 🔥 画像サイズを拡大: h-10 w-10 (40px) -> h-14 w-14 (56px) */}
               <img
                 src="/logo.webp"
                 alt="iScore"
-                className={cn("h-10 w-10 object-contain transition-transform duration-500", activeTab !== "dashboard" && "grayscale opacity-70")}
+                className={cn("h-14 w-14 object-contain transition-transform duration-500", activeTab !== "dashboard" && "grayscale opacity-70")}
               />
             </div>
           </button>
