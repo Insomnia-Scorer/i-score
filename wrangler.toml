@@ -1,4 +1,4 @@
-name = "i-score"
+name = "iScore"
 main = "src/worker.ts"
 compatibility_date = "2025-10-08"
 compatibility_flags = ["nodejs_compat"]
@@ -13,7 +13,7 @@ enabled = true
 # D1データベースの設定
 [[d1_databases]]
 binding = "DB"
-database_name = "i-score-db"
+database_name = "iscore-db"
 database_id = "eadfe6d2-e75a-4234-bf68-e19a13e59648"
 migrations_dir = "drizzle"
 
@@ -24,8 +24,8 @@ bucket_name = "iscore-images"
 
 # 環境変数の設定
 [vars]
-BETTER_AUTH_URL = "https://i-score.insomnia-scorer.workers.dev"
-NEXT_PUBLIC_API_URL = "https://i-score.insomnia-scorer.workers.dev"
-NEXT_PUBLIC_BETTER_AUTH_URL = "https://i-score.insomnia-scorer.workers.dev"
+BETTER_AUTH_URL = "https://iscore.insomnia-scorer.workers.dev"
+NEXT_PUBLIC_API_URL = "https://iscore.insomnia-scorer.workers.dev"
+NEXT_PUBLIC_BETTER_AUTH_URL = "https://iscore.insomnia-scorer.workers.dev"
 GOOGLE_CLIENT_ID = "792942722187-rs65cnd38a9nkncqvo0is3uk80r6118l.apps.googleusercontent.com"
 LINE_CLIENT_ID = "2009221282"
