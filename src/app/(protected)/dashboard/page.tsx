@@ -47,8 +47,8 @@ export default function DashboardPage() {
           return;
         }
       } catch (err) {
-        // 🌟 オフラインや通信エラー時はログアウトさせず続行（現場至上主義）
-        console.warn("Network check failed. Maintaining current session context.");
+        // オフライン・通信エラー時は維持
+        console.warn("Auth check deferred due to connection.");
       }
     };
     checkAdminAndStartTimer();
@@ -134,7 +134,7 @@ export default function DashboardPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6 sm:space-y-8">
 
         {/* --- 1. ヒーローセクション --- */}
-        <section className="relative">
+        <section>
           <h2 className="text-sm font-black text-primary uppercase tracking-widest mb-1 flex items-center gap-2">
             <Activity className="h-4 w-4" /> Overview
           </h2>
@@ -147,9 +147,9 @@ export default function DashboardPage() {
           </h1>
         </section>
 
-        {/* --- 🌟 現在地ステータス（ページャーのボタンと完全同期） --- */}
-        <div className="flex justify-center px-1 -mt-2 mb-2 relative z-10">
-          <div className="flex items-center gap-2 py-2 px-6 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary shadow-sm transition-all cursor-default">
+        {/* --- 🌟 現在地ステータス（ページャーボタン完全同期・ぼかしなし版） --- */}
+        <div className="flex justify-center px-1 mb-2">
+          <div className="flex items-center gap-2 py-2 px-6 rounded-full bg-primary/10 border border-primary/20 text-primary shadow-sm transition-all cursor-default">
             <MapPin className="h-4 w-4 animate-pulse" />
             <span className="text-sm sm:text-base font-black tracking-tight">
               現在地：{locationName || "取得中..."}
@@ -171,7 +171,7 @@ export default function DashboardPage() {
 
             <div className="hidden sm:block h-8 w-px bg-border/50" />
 
-            {/* 天気 */}
+            {/* 天気（リアルデータ） */}
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-amber-500/10 rounded-xl text-amber-500 shrink-0"><CloudSun className="h-5 w-5 sm:h-6 sm:w-6" /></div>
               <div>
@@ -238,7 +238,7 @@ export default function DashboardPage() {
           </button>
 
           <button onClick={() => router.push('/team')} className="flex flex-col items-start justify-between p-5 sm:p-6 rounded-3xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 shadow-sm hover:shadow-md hover:border-primary/40 active:scale-[0.98] transition-all group">
-            <div className="p-3 bg-muted dark:bg-zinc-800 rounded-2xl group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-4"><Trophy className="h-6 w-6" /></div>
+            <div className="p-3 bg-muted dark:bg-zinc-800 rounded-2xl group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-4"><Users className="h-6 w-6" /></div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-foreground mb-1">チーム成績</h3>
               <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest">Analytics</p>
