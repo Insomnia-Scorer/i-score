@@ -1,96 +1,84 @@
+// filepath: src/components/layout/protected-client-layout.tsx
+/* 💡 認証ガード・レイアウト（オフライン耐性強化版） */
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { MAIN_NAV_ITEMS, BOTTOM_NAV_ITEMS } from "@/config/navigation";
-import { Sidebar } from "@/components/sidebar";
-import { MobileDrawer } from "@/components/mobile-drawer";
-import { cn } from "@/lib/utils";
+import React, { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { signOut, useSession } from "@/lib/auth-client";
-import { Loader2 } from "lucide-react";
 
 export function ProtectedClientLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname() || "";
-  const { data: session, isPending } = useSession();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const pathname = usePathname();
+  const [isPending, setIsPending] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    if (!isPending) {
-      if (!session || !session.user) router.replace("/login");
-      else if (session.user.role === "GUEST") router.replace("/pending-approval");
-    }
-  }, [session, isPending, router]);
+    const checkAuth = async () => {
+      // 🌟 オフライン時はチェックをスキップし、既存の認証状態を信じる
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        console.log("Offline mode: Skipping auth check and maintaining current state.");
+        // すでに一度認証を通っていれば、そのまま表示を維持
+        if (isAuthorized) {
+          setIsPending(false);
+          return;
+        }
+      }
 
-  const handleLogout = async () => {
-    toast.info("ログアウトしています...", { duration: 1500 });
-    try {
-      await signOut();
-      router.push("/");
-    } catch {
-      toast.error("ログアウトに失敗しました。");
-    }
-  };
+      try {
+        const { data: session, error } = await authClient.getSession();
 
-  const handleNavigate = (path: string) => {
-    router.push(path);
-    setIsDrawerOpen(false);
-  };
+        if (error || !session) {
+          // 🌟 通信エラー（ネットワークダウン）の場合はリダイレクトしない
+          if (error && !navigator.onLine) {
+             console.warn("Auth check failed due to network. Staying on page.");
+             return; 
+          }
+          
+          console.log("No session found, redirecting to login...");
+          router.replace("/login");
+          return;
+        }
 
-  if (isPending || !session || session.user.role === "GUEST") {
+        // 承認待ちチェック
+        if (session.user.role === "PENDING" && pathname !== "/pending-approval") {
+          router.replace("/pending-approval");
+          return;
+        }
+
+        setIsAuthorized(true);
+      } catch (err) {
+        // 🌟 通信例外が発生しても、オフラインならログアウトさせない
+        if (!navigator.onLine) {
+          console.error("Network error during auth check, but user is offline. Keeping session.");
+        } else {
+          router.replace("/login");
+        }
+      } finally {
+        setIsPending(false);
+      }
+    };
+
+    checkAuth();
+
+    // 🌟 ネットワーク復帰時に自動で再チェックするリスナー
+    const handleOnline = () => {
+      console.log("Network restored. Re-validating session...");
+      checkAuth();
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+
+  }, [router, pathname, isAuthorized]);
+
+  // ローディング中かつ未認証時のみスケルトン等を表示
+  if (isPending && !isAuthorized) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[60px] -z-10" />
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  const userSession = {
-    user: {
-      name: session.user.name,
-      role: session.user.role,
-      image: session.user.image,
-    }
-  };
-
-  return (
-    <div className="relative flex w-full bg-transparent text-foreground selection:bg-primary/20">
-      <Sidebar
-        session={userSession}
-        pathname={pathname}
-        isCollapsed={isCollapsed}
-        toggleSidebar={() => setIsCollapsed(!isCollapsed)}
-        mainNavItems={MAIN_NAV_ITEMS}
-        bottomNavItems={BOTTOM_NAV_ITEMS}
-        onClickAvatar={() => router.push("/user")}
-        isUploadingAvatar={false}
-        onLogout={handleLogout}
-      />
-
-      <div className={cn(
-        "flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out",
-        isCollapsed ? "md:pl-16" : "md:pl-56"
-      )}>
-        <main className="flex-1 w-full relative z-0">
-          {/* 🔥 修正: `max-w-7xl mx-auto` のストッパーを完全に削除しました！ */}
-          {/* これにより、子要素（カバー画像など）が画面の端から端まで無限に広がれるようになります */}
-          <div className={cn("w-full pb-24 md:pb-12")}>
-            {children}
-          </div>
-        </main>
-      </div>
-
-      <div className="md:hidden">
-        <MobileDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          onNavigate={handleNavigate}
-          onLogout={handleLogout}
-        />
-      </div>
-    </div>
-  );
+  return <>{children}</>;
 }
