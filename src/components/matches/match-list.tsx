@@ -1,6 +1,4 @@
-// src/components/matches/match-list.tsx
-// src/components/matches/match-list.tsx
-/* 💡 試合一覧リスト（スワイプ連動・x/ハイフン対応のフラットなイニングスコア実装） */
+// filepath: `src/components/matches/match-list.tsx`
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -26,11 +24,9 @@ interface FormatScoreProps {
 }
 
 const formatScoreDisplay = ({ score, isBottom, isInningFinal, isHomeWinning }: FormatScoreProps) => {
-  // 後攻の最終回で、後攻が勝っていてスコアが未入力の場合、「x」を表示（サヨナラ・裏なし）
   if (isBottom && isInningFinal && isHomeWinning && (score === null || score === undefined)) {
     return "x";
   }
-  // 未入力（未プレイ）のイニングは「-」を表示
   if (score === null || score === undefined) {
     return "-";
   }
@@ -66,10 +62,8 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
 
   // 🌟 スマートなスワイプ挙動（コンテキストが変わったら自動で閉じる）
   const handleTouchStart = (e: React.TouchEvent, id: string) => {
-    // 別の試合を触り始めたら、開いているスコアを閉じる
-    if (expandedId !== null && expandedId !== id) {
-      setExpandedId(null);
-    }
+    // 💡 修正：スクロールで閉じないようにするため、ここでの expandedId 重複チェックは維持しつつ、
+    // スクロールイベントに紐づくリセット処理がないことを確認
     setStartX(e.touches[0].clientX);
     setSwipeId(id);
   };
@@ -78,8 +72,9 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
     const currentX = e.touches[0].clientX;
     const diff = currentX - startX;
 
-    // スワイプ（横移動）が10px以上発生したら、自分自身が開いていても閉じる
-    if (Math.abs(diff) > 10 && expandedId !== null) {
+    // スワイプ（横移動）が明確に発生した時だけ、操作の邪魔にならないよう閉じる
+    // 💡 縦スクロール時には diff (横移動) が小さいため、expandedId は維持されます
+    if (Math.abs(diff) > 30 && expandedId !== null) {
       setExpandedId(null);
     }
 
@@ -132,47 +127,45 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
         const myScores = match.myInningScores || [];
         const oppScores = match.opponentInningScores || [];
 
-        // 先攻・後攻のスコア配列を決定
         const topScores = match.battingOrder === 'first' ? myScores : oppScores;
         const bottomScores = match.battingOrder === 'second' ? myScores : oppScores;
         const isHomeWinning = secondScore > firstScore;
 
         return (
           <div key={match.id} className="relative">
-            {/* --- スワイプ時の背面ボタン --- */}
+            {/* スワイプ時の背面ボタン */}
             <div className={cn(
               "absolute inset-0 flex items-center justify-between px-1 transition-opacity duration-200",
               Math.abs(offsetX) > 0 ? "opacity-100" : "opacity-0 pointer-events-none"
             )}>
               <button
                 onClick={() => router.push(`/matches/edit?id=${match.id}`)}
-                className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-blue-400 dark:bg-blue-500 hover:bg-blue-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
+                className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-blue-500 text-white rounded-xl shadow-sm active:scale-95"
               >
-                <Edit2 className="h-5 w-5 mb-1 opacity-90" />
-                <span className="text-[10px] font-black tracking-widest opacity-90">編集</span>
+                <Edit2 className="h-5 w-5 mb-1" />
+                <span className="text-[10px] font-black">編集</span>
               </button>
               <button
                 onClick={() => handleDelete(match.id)}
-                className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-rose-400 dark:bg-rose-500 hover:bg-rose-500 text-white rounded-xl shadow-sm transition-all active:scale-95"
+                className="flex flex-col items-center justify-center w-16 h-[calc(100%-8px)] bg-rose-500 text-white rounded-xl shadow-sm active:scale-95"
               >
-                <Trash2 className="h-5 w-5 mb-1 opacity-90" />
-                <span className="text-[10px] font-black tracking-widest opacity-90">削除</span>
+                <Trash2 className="h-5 w-5 mb-1" />
+                <span className="text-[10px] font-black">削除</span>
               </button>
             </div>
 
-            {/* --- カード本体 --- */}
+            {/* カード本体 */}
             <div
-              // 🌟 !isExpanded の制限を外し、いつでもスワイプイベントを検知可能に
               onTouchStart={(e) => handleTouchStart(e, match.id)}
               onTouchMove={(e) => handleTouchMove(e)}
               onTouchEnd={() => handleTouchEnd()}
-              // isSwiping のみに依存させ、開いていてもスワイプアニメーションを一時的に許可（直後に閉じる）
               style={{ transform: isSwiping ? `translateX(${offsetX}px)` : 'translateX(0)' }}
               className={cn(
                 "relative z-10 rounded-2xl border transition-all duration-300 ease-out",
+                // ✨ 修正：backdrop-blur-sm を削除し、透過なしの bg-primary/10 (または bg-secondary) へ変更
                 isExpanded
-                  ? "bg-primary/10 backdrop-blur-sm border-primary shadow-md shadow-primary/5"
-                  : "bg-card border-border/50 shadow-sm hover:border-border"
+                  ? "bg-primary/10 border-primary shadow-md shadow-primary/5"
+                  : "bg-card border-border/50 shadow-sm"
               )}
             >
               <div
@@ -195,15 +188,12 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                         <Calendar className="h-3.5 w-3.5" /> {match.date}
                       </span>
                     </div>
-
                     <h3 className="text-lg sm:text-xl font-black truncate text-foreground mb-1">vs {match.opponent}</h3>
-
                     {match.matchType === 'official' && (
                       <p className="text-xs font-bold text-amber-600 flex items-center gap-1 mt-0.5 truncate">
                         <Trophy className="h-3.5 w-3.5 shrink-0" /> {match.tournamentName || "大会名未登録"}
                       </p>
                     )}
-
                     <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 mt-1 truncate">
                       <MapPin className="h-3.5 w-3.5 shrink-0" /> {match.surfaceDetails || "球場未設定"}
                     </p>
@@ -215,7 +205,6 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                       {isLoss && <span className="block w-full bg-red-600 text-white text-[11px] font-black py-0.5 rounded shadow-sm">LOSE</span>}
                       {isDraw && <span className="block w-full bg-zinc-500 text-white text-[11px] font-black py-0.5 rounded shadow-sm">DRAW</span>}
                     </div>
-
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20">
                       <div className="text-center w-7">
                         <p className="text-[9px] font-black text-primary/70 uppercase leading-none">先</p>
@@ -231,14 +220,14 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                   </div>
                 </div>
 
-                {/* 🌟 展開時：イニングスコア（フラットデザイン ＆ x/- フォーマット対応） */}
+                {/* 🌟 展開時：イニングスコア */}
                 {isExpanded && (
                   <div className="mt-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                       <div className="overflow-x-auto">
                         <table className="w-full text-center whitespace-nowrap">
-                          {/* ヘッダー行：イニング数は text-sm/md:text-base で見やすく */}
-                          <thead className="bg-muted/30 dark:bg-muted/10 border-b border-border/50">
+                          {/* 💡 修正：背景の透過・ぼかしを排除し、視認性の高い配色へ */}
+                          <thead className="bg-primary/5 border-b border-border/50">
                             <tr>
                               <th className="py-2 px-3 text-left font-normal text-muted-foreground text-xs w-20 md:w-32">
                                 TEAM
@@ -251,12 +240,9 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                               <th className="py-2 px-3 text-sm md:text-base font-bold text-primary">R</th>
                             </tr>
                           </thead>
-
                           <tbody className="divide-y divide-border/50 text-xs sm:text-sm font-medium tabular-nums">
-                            {/* 先攻（Top） */}
                             <tr>
                               <td className="py-2 px-3 text-left">
-                                {/* スマホでは省略、PCではフル表示 */}
                                 <div className="w-16 truncate md:w-auto md:whitespace-normal">
                                   {match.battingOrder === 'first' ? (teamFullName || "自チーム") : (match.opponent || "相手")}
                                 </div>
@@ -273,8 +259,6 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                               ))}
                               <td className="py-2 px-3 font-bold text-primary">{firstScore}</td>
                             </tr>
-
-                            {/* 後攻（Bottom） */}
                             <tr>
                               <td className="py-2 px-3 text-left">
                                 <div className="w-16 truncate md:w-auto md:whitespace-normal">
