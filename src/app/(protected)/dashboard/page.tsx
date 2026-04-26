@@ -147,11 +147,11 @@ export default function DashboardPage() {
           </h1>
         </section>
 
-        {/* --- 🌟 現在地ステータス（重なりと透過を強化） --- */}
-        <div className="flex justify-center -mt-4 mb-2 relative z-10">
-          <div className="flex items-center gap-2 py-1.5 px-5 rounded-full bg-white/30 dark:bg-zinc-900/30 border border-white/20 dark:border-zinc-800/20 backdrop-blur-md shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05)]">
-            <MapPin className="h-3.5 w-3.5 text-primary/80 animate-pulse" />
-            <span className="text-xs sm:text-sm font-bold text-foreground/80 tracking-wide">
+        {/* --- 🌟 現在地ステータス（ページャーのボタンと全く同じ透過ロジック） --- */}
+        <div className="flex justify-center px-1 -mt-2 mb-2 relative z-10">
+          <div className="flex items-center gap-2 py-2 px-6 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/20 backdrop-blur-sm shadow-sm transition-all">
+            <MapPin className="h-4 w-4 text-primary animate-pulse" />
+            <span className="text-sm sm:text-base font-black text-primary tracking-tight">
               現在地：{locationName || "取得中..."}
             </span>
           </div>
