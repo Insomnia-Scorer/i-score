@@ -10,7 +10,9 @@ import {
   Trophy, 
   MapPin, 
   ArrowRightLeft, 
-  PlayCircle 
+  PlayCircle,
+  PlusCircle,
+  Hash // スコア用
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +23,7 @@ import { cn } from "@/lib/utils";
 export default function CreateMatchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const mode = searchParams.get("mode") || "real"; // デフォルトをrealに
+  const mode = searchParams.get("mode") || "real";
 
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -30,13 +32,23 @@ export default function CreateMatchPage() {
     matchType: "practice" as "official" | "practice",
     tournamentName: "",
     surfaceDetails: "",
-    battingOrder: "first" as "first" | "second", // 先攻・後攻
+    battingOrder: "first" as "first" | "second",
     innings: 7,
+    // 💡 Quickモード用の追加フィールド
+    myScore: "",
+    opponentScore: "",
+    myInningScores: [] as string[],
+    opponentInningScores: [] as string[],
   });
 
-  // モードに応じたタイトル
-  const title = mode === "real" ? "本格記録" : "結果入力";
-  const subtitle = mode === "real" ? "Real-time Recording" : "Quick Result Entry";
+  // イニングスコア入力欄の初期化
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      myInningScores: Array(prev.innings).fill(""),
+      opponentInningScores: Array(prev.innings).fill(""),
+    }));
+  }, [formData.innings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,18 +58,11 @@ export default function CreateMatchPage() {
     }
 
     setIsLoading(true);
-    // 💡 将来的にはここでAPIを叩いてMatch IDを発行し、
-    // Realモードならスタメン設定（/matches/lineup?id=xxx）へ遷移させます
+    // API連携は後ほど。今は成功体験を優先。
     setTimeout(() => {
       setIsLoading(false);
-      if (mode === "real") {
-        toast.success("試合をセットアップしました。スタメンを登録しましょう！");
-        // 次のステップへ
-        // router.push(`/matches/lineup?id=new_match_id`);
-      } else {
-        // Quickモードは直接スコア入力へ
-        toast.success("試合を作成しました");
-      }
+      toast.success(mode === "real" ? "セットアップ完了！" : "結果を保存しました");
+      router.push("/dashboard");
     }, 800);
   };
 
@@ -67,134 +72,127 @@ export default function CreateMatchPage() {
         
         {/* ヘッダー */}
         <div className="flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => router.back()}
-            className="rounded-full"
-          >
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
             <ChevronLeft className="h-6 w-6" />
           </Button>
-          <SectionHeader title={title} subtitle={subtitle} showPulse />
-          <div className="w-10" /> {/* バランス調整用 */}
+          <SectionHeader title={mode === "real" ? "本格記録" : "結果入力"} subtitle={mode === "real" ? "Lineup & Play-by-play" : "Quick Entry"} showPulse />
+          <div className="w-10" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           
-          {/* 基本情報カード */}
-          <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
+          {/* 1. 基本情報（共通） */}
+          <div className="bg-card/50 border-2 border-dashed border-border/40 rounded-3xl p-6 space-y-6 shadow-xs">
             <div className="space-y-4">
-              <label className="flex items-center gap-2 text-xs font-black text-muted-foreground uppercase tracking-widest ml-1">
-                <Swords className="h-4 w-4 text-primary" /> Opponent / 対戦相手
-              </label>
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-widest ml-1">Opponent</label>
               <Input 
-                placeholder="相手チーム名を入力" 
+                placeholder="相手チーム名" 
                 value={formData.opponent}
                 onChange={(e) => setFormData({...formData, opponent: e.target.value})}
-                className="h-14 rounded-2xl bg-background/50 border-2 border-border/40 text-lg font-bold focus:border-primary/50 transition-all"
+                className="h-14 rounded-2xl bg-background/50 border-2 border-border/40 text-lg font-bold"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-                  <Calendar className="h-3.5 w-3.5 text-primary" /> Date
-                </label>
-                <Input 
-                  type="date" 
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="h-12 rounded-xl bg-background/50 border-border/40 font-bold"
-                />
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Date</label>
+                <Input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="h-12 bg-background/50 border-border/40 font-bold" />
               </div>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-                  <ArrowRightLeft className="h-3.5 w-3.5 text-primary" /> Order
-                </label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Order</label>
                 <div className="grid grid-cols-2 h-12 bg-background/50 rounded-xl border border-border/40 p-1">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, battingOrder: "first"})}
-                    className={cn(
-                      "rounded-lg text-[10px] font-black transition-all",
-                      formData.battingOrder === "first" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-                    )}
-                  >先攻</button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, battingOrder: "second"})}
-                    className={cn(
-                      "rounded-lg text-[10px] font-black transition-all",
-                      formData.battingOrder === "second" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-                    )}
-                  >後攻</button>
+                  <button type="button" onClick={() => setFormData({...formData, battingOrder: "first"})} className={cn("rounded-lg text-[10px] font-black", formData.battingOrder === "first" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>先攻</button>
+                  <button type="button" onClick={() => setFormData({...formData, battingOrder: "second"})} className={cn("rounded-lg text-[10px] font-black", formData.battingOrder === "second" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>後攻</button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 詳細設定カード */}
-          <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
+          {/* 💡 2. Quickモード専用：スコア入力セクション */}
+          {mode === "quick" && (
+            <div className="animate-in slide-in-from-top-4 duration-500 space-y-6">
+              <SectionHeader title="スコア入力" subtitle="Match Result" />
+              <div className="bg-card/50 border-2 border-dashed border-border/40 rounded-3xl p-6 space-y-8 shadow-xs">
+                
+                {/* 合計スコア */}
+                <div className="flex items-center justify-around gap-4 py-4">
+                  <div className="text-center space-y-2">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase">自チーム</p>
+                    <Input 
+                      type="number" 
+                      placeholder="0"
+                      className="w-20 h-20 text-center text-3xl font-black rounded-2xl bg-primary/5 border-primary/20 text-primary"
+                      value={formData.myScore}
+                      onChange={(e) => setFormData({...formData, myScore: e.target.value})}
+                    />
+                  </div>
+                  <span className="text-2xl font-black text-muted-foreground/30 mt-6">-</span>
+                  <div className="text-center space-y-2">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase">相手</p>
+                    <Input 
+                      type="number" 
+                      placeholder="0"
+                      className="w-20 h-20 text-center text-3xl font-black rounded-2xl bg-background border-border/40"
+                      value={formData.opponentScore}
+                      onChange={(e) => setFormData({...formData, opponentScore: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                {/* 各回スコア（スクローラブル） */}
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Inning Scores (Optional)</p>
+                  <div className="overflow-x-auto pb-2 -mx-2 px-2">
+                    <div className="flex gap-3">
+                      {Array.from({ length: formData.innings }).map((_, i) => (
+                        <div key={i} className="flex flex-col gap-2 shrink-0">
+                          <span className="text-[10px] font-black text-center text-muted-foreground/50">{i + 1}</span>
+                          <Input 
+                            type="text" 
+                            placeholder="-"
+                            className="w-10 h-10 p-0 text-center font-bold bg-primary/5 border-primary/10 rounded-lg"
+                            value={formData.myInningScores[i]}
+                            onChange={(e) => {
+                              const newScores = [...formData.myInningScores];
+                              newScores[i] = e.target.value;
+                              setFormData({...formData, myInningScores: newScores});
+                            }}
+                          />
+                          <Input 
+                            type="text" 
+                            placeholder="-"
+                            className="w-10 h-10 p-0 text-center font-bold bg-background border-border/40 rounded-lg"
+                            value={formData.opponentInningScores[i]}
+                            onChange={(e) => {
+                              const newScores = [...formData.opponentInningScores];
+                              newScores[i] = e.target.value;
+                              setFormData({...formData, opponentInningScores: newScores});
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 3. 詳細設定（共通：Realなら必須、Quickなら隠し気味でも良いが今回は表示） */}
+          <div className="bg-card/50 border-2 border-dashed border-border/40 rounded-3xl p-6 space-y-6 shadow-xs">
              <div className="space-y-4">
-                <label className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-                  <Trophy className="h-4 w-4 text-amber-500" /> Match Type
-                </label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Match Type / Location</label>
                 <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, matchType: "official"})}
-                    className={cn(
-                      "h-14 rounded-2xl border-2 font-black transition-all flex items-center justify-center gap-2",
-                      formData.matchType === "official" ? "border-amber-500 bg-amber-500/10 text-amber-600 shadow-sm shadow-amber-500/10" : "border-border/40 text-muted-foreground bg-background/30"
-                    )}
-                  >公式戦</button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, matchType: "practice"})}
-                    className={cn(
-                      "h-14 rounded-2xl border-2 font-black transition-all flex items-center justify-center gap-2",
-                      formData.matchType === "practice" ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 shadow-sm shadow-emerald-500/10" : "border-border/40 text-muted-foreground bg-background/30"
-                    )}
-                  >練習試合</button>
+                  <button type="button" onClick={() => setFormData({...formData, matchType: "official"})} className={cn("h-14 rounded-2xl border-2 font-black", formData.matchType === "official" ? "border-amber-500 bg-amber-500/10 text-amber-600" : "border-border/40 text-muted-foreground")}>公式戦</button>
+                  <button type="button" onClick={() => setFormData({...formData, matchType: "practice"})} className={cn("h-14 rounded-2xl border-2 font-black", formData.matchType === "practice" ? "border-emerald-500 bg-emerald-500/10 text-emerald-600" : "border-border/40 text-muted-foreground")}>練習試合</button>
                 </div>
-             </div>
-
-             {formData.matchType === "official" && (
-                <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                  <Input 
-                    placeholder="大会名を入力" 
-                    value={formData.tournamentName}
-                    onChange={(e) => setFormData({...formData, tournamentName: e.target.value})}
-                    className="h-12 rounded-xl bg-background/50 border-border/40 font-bold"
-                  />
-                </div>
-             )}
-
-             <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-                  <MapPin className="h-3.5 w-3.5 text-primary" /> Location
-                </label>
-                <Input 
-                  placeholder="球場名・グラウンド詳細" 
-                  value={formData.surfaceDetails}
-                  onChange={(e) => setFormData({...formData, surfaceDetails: e.target.value})}
-                  className="h-12 rounded-xl bg-background/50 border-border/40 font-bold"
-                />
+                <Input placeholder="球場名・詳細" value={formData.surfaceDetails} onChange={(e) => setFormData({...formData, surfaceDetails: e.target.value})} className="h-12 bg-background/50 border-border/40 font-bold" />
              </div>
           </div>
 
-          {/* 送信ボタン */}
-          <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full h-16 rounded-full text-lg font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            {isLoading ? "設定中..." : (
-              <>
-                {mode === "real" ? "スタメン設定へ" : "スコア入力へ"}
-                <PlayCircle className="ml-2 h-6 w-6" />
-              </>
-            )}
+          <Button type="submit" disabled={isLoading} className="w-full h-16 rounded-full text-lg font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
+            {isLoading ? "保存中..." : (mode === "real" ? "スタメン設定へ" : "試合結果を保存")}
+            <PlayCircle className="ml-2 h-6 w-6" />
           </Button>
 
         </form>
