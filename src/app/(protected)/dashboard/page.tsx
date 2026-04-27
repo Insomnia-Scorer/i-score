@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MatchList } from "@/components/matches/match-list";
 import { ScoreTypeSelector } from "@/components/features/dashboard/ScoreTypeSelector"; 
+import { SectionHeader } from "@/components/layout/SectionHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
@@ -39,14 +40,14 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
 
-  // 1. マウント管理 & 時計
+  // 1. マウント管理 & 時計タイマー
   useEffect(() => {
     setMounted(true);
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // 2. 認証チェック
+  // 2. 認証・管理者チェック
   useEffect(() => {
     const checkAdmin = async () => {
       try {
@@ -88,14 +89,12 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // 4. 試合データ取得
+  // 4. 試合データ取得 (iscore_selectedTeamId 対応)
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        // 💡 修正済みキー：iscore_selectedTeamId
         const teamId = typeof window !== "undefined" ? localStorage.getItem("iscore_selectedTeamId") : null;
-        
         if (!teamId) {
           setIsLoading(false);
           return;
@@ -124,6 +123,20 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
+  // 💡 チーム勝敗成績の自動計算
+  const stats = useMemo(() => {
+    const s = { win: 0, loss: 0, draw: 0 };
+    matches.forEach(m => {
+      if (m.myScore > m.opponentScore) s.win++;
+      else if (m.myScore < m.opponentScore) s.loss++;
+      else s.draw++;
+    });
+    const total = s.win + s.loss + s.draw;
+    // 野球特有の勝率表記 (.xxx)
+    const rate = total > 0 ? (s.win / total).toFixed(3).replace(/^0/, '') : ".000";
+    return { ...s, total, rate };
+  }, [matches]);
+
   const recentMatches = useMemo(() => matches.slice(0, 3), [matches]);
 
   if (!mounted) return null;
@@ -131,33 +144,13 @@ export default function DashboardPage() {
   const timeString = currentTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const dateString = currentTime.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
 
-  // 💡 共通見出し：シンメトリーデザイン
-  const SectionHeader = ({ title, subtitle, showPulse = false }: { title: string, subtitle: string, showPulse?: boolean }) => (
-    <div className="flex flex-col items-center gap-3">
-      <h2 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-5 uppercase tracking-[0.15em]">
-        <div className="flex gap-2">
-          <span className="w-1.5 h-1.5 bg-primary/20 rounded-full" />
-          <span className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
-          <span className={cn("w-1.5 h-1.5 bg-primary rounded-full", showPulse && "animate-pulse")} />
-        </div>
-        {title}
-        <div className="flex gap-2">
-          <span className={cn("w-1.5 h-1.5 bg-primary rounded-full", showPulse && "animate-pulse")} />
-          <span className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
-          <span className="w-1.5 h-1.5 bg-primary/20 rounded-full" />
-        </div>
-      </h2>
-      <p className="text-[10px] font-bold text-muted-foreground tracking-[0.4em] uppercase">{subtitle}</p>
-    </div>
-  );
-
   return (
     <div className="w-full animate-in fade-in duration-500 bg-transparent min-h-screen pb-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 space-y-16">
 
-        {/* --- 1. Dashboard タイトルエリア --- */}
+        {/* --- 1. タイトルエリア (巨大Dashboard) --- */}
         <section className="text-center space-y-3">
-          <h2 className="text-2xl sm:text-4xl font-black text-primary uppercase tracking-[0.5em] flex items-center justify-center gap-4">
+          <h2 className="text-3xl sm:text-4xl font-black text-primary uppercase tracking-[0.5em] flex items-center justify-center gap-4">
             <Activity className="h-8 w-8 sm:h-10 sm:w-10" /> Dashboard
           </h2>
           <h1 className="text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-[0.4em] opacity-50">
@@ -165,7 +158,7 @@ export default function DashboardPage() {
           </h1>
         </section>
 
-        {/* 現在地ステータス */}
+        {/* 現在地表示 */}
         <div className="flex justify-center px-1">
           <div className="flex items-center gap-2 py-3.5 px-10 rounded-3xl bg-primary/10 border border-primary/20 text-primary shadow-sm transition-all cursor-default">
             <MapPin className="h-4 w-4 animate-pulse" />
@@ -180,7 +173,7 @@ export default function DashboardPage() {
           <ScoreTypeSelector />
         </section>
 
-        {/* --- 環境ウィジェット --- */}
+        {/* --- 3. 環境ウィジェット --- */}
         <section className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 shadow-sm rounded-3xl p-6 sm:p-8">
           <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-6 sm:gap-8 text-center sm:text-left">
             <div className="flex items-center gap-3">
@@ -230,24 +223,61 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- 3. 試合予定 (UPCOMING MATCHES) --- */}
+        {/* --- 4. チーム成績 (SEASON STANDINGS) --- */}
+        <section className="space-y-6">
+          <SectionHeader title="チーム成績" subtitle="Season Standings" />
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="sm:col-span-1 bg-primary text-primary-foreground rounded-3xl p-6 flex flex-col items-center justify-center shadow-lg shadow-primary/20">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Win Rate</p>
+              <p className="text-4xl font-black tabular-nums mt-1">{stats.rate}</p>
+            </div>
+            <div className="sm:col-span-3 grid grid-cols-3 gap-4">
+              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-xs">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Wins</p>
+                </div>
+                <p className="text-3xl font-black text-blue-600 tabular-nums">{stats.win}</p>
+              </div>
+              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-xs">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 bg-rose-500 rounded-full" />
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Losses</p>
+                </div>
+                <p className="text-3xl font-black text-rose-600 tabular-nums">{stats.loss}</p>
+              </div>
+              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-xs">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 bg-zinc-400 rounded-full" />
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Draws</p>
+                </div>
+                <p className="text-3xl font-black text-muted-foreground tabular-nums">{stats.draw}</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-center">
+             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
+               Total: {stats.total} Games Played
+             </p>
+          </div>
+        </section>
+
+        {/* --- 5. 試合予定 (UPCOMING MATCHES) --- */}
         <section className="space-y-10">
           <SectionHeader title="試合予定" subtitle="Upcoming Matches" />
           <EmptyState 
             icon={CalendarDays}
             title="現在、予定されている試合はありません"
-            description="Next game scheduling coming soon"
+            description="Next match scheduling coming soon"
           />
         </section>
 
-        {/* --- 4. 試合結果 (LATEST MATCHES) --- */}
+        {/* --- 6. 試合結果 (LATEST MATCHES) --- */}
         <section className="space-y-10">
           <SectionHeader title="試合結果" subtitle="Latest 3 Matches" showPulse />
           <div className="min-h-[100px]">
             <MatchList matches={recentMatches} isLoading={isLoading} />
           </div>
-          
-          {/* 全件表示ボタン：データがある時のみ表示 */}
           {!isLoading && matches.length > 0 && (
             <div className="flex justify-center pt-6">
               <Button
