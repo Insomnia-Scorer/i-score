@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 export const ScoreTypeSelector = () => {
   const router = useRouter();
   const cardStyle = "rounded-3xl";
-  const titleTracking = "tracking-[0.15em] sm:tracking-[0.2em]";
+
+  // 💡 共通の文字間隔スタイル
+  const titleTracking = "tracking-[0.25em] sm:tracking-[0.4em]";
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 px-1">
