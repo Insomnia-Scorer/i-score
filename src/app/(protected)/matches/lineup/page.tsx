@@ -64,7 +64,8 @@ export default function LineupPage() {
   };
 
   return (
-    <div className="w-full animate-in fade-in duration-500 min-h-screen pb-40">
+    // 💡 下部Fixedをやめたので、pb-40 を pb-24 に変更
+    <div className="w-full animate-in fade-in duration-500 min-h-screen pb-24">
       <div className="max-w-2xl mx-auto px-4 pt-8 space-y-8">
 
         {/* ヘッダー */}
@@ -81,20 +82,22 @@ export default function LineupPage() {
           <button
             onClick={() => setActiveTab("myTeam")}
             className={cn(
-              "flex-1 py-4 text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2",
+              // 💡 text-xs -> text-sm sm:text-base にサイズアップ
+              "flex-1 py-4 text-sm sm:text-base font-black rounded-2xl transition-all flex items-center justify-center gap-2",
               activeTab === "myTeam" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
             )}
           >
-            <Shield className="w-4 h-4" /> 自チーム
+            <Shield className="w-4 h-4 sm:w-5 sm:h-5" /> 自チーム
           </button>
           <button
             onClick={() => setActiveTab("opponent")}
             className={cn(
-              "flex-1 py-4 text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2",
+              // 💡 text-xs -> text-sm sm:text-base にサイズアップ
+              "flex-1 py-4 text-sm sm:text-base font-black rounded-2xl transition-all flex items-center justify-center gap-2",
               activeTab === "opponent" ? "bg-rose-500 text-white shadow-sm" : "text-muted-foreground"
             )}
           >
-            <Swords className="w-4 h-4" /> 相手チーム
+            <Swords className="w-4 h-4 sm:w-5 sm:h-5" /> 相手チーム
           </button>
         </div>
 
@@ -127,9 +130,16 @@ export default function LineupPage() {
                 <select
                   value={player.position}
                   onChange={(e) => {
-                    const list = activeTab === "myTeam" ? [...myLineup] : [...opponentLineup];
-                    list[index].position = e.target.value;
-                    activeTab === "myTeam" ? setMyLineup(list) : setOpponentLineup(list);
+                    // 💡 TypeScriptエラー解消：明示的に分岐させる
+                    if (activeTab === "myTeam") {
+                      const list = [...myLineup];
+                      list[index].position = e.target.value;
+                      setMyLineup(list);
+                    } else {
+                      const list = [...opponentLineup];
+                      list[index].position = e.target.value;
+                      setOpponentLineup(list);
+                    }
                   }}
                   className={cn(
                     "w-14 h-11 rounded-xl text-white font-black text-xs appearance-none text-center shadow-sm",
@@ -164,17 +174,15 @@ export default function LineupPage() {
           })}
         </div>
 
-        {/* プレイボールボタン */}
-        <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-background via-background to-transparent">
-          <div className="max-w-2xl mx-auto">
-            <Button
-              onClick={() => router.push(`/matches/play?id=${matchId}`)} // 💡 IDを維持してプレイ画面へ
-              className="w-full h-20 rounded-full text-xl font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/30 active:scale-95 transition-all"
-            >
-              PLAYBALL
-              <ChevronRight className="ml-2 h-8 w-8" />
-            </Button>
-          </div>
+        {/* 💡 プレイボールボタン (Fixed解除・通常フロー配置) */}
+        <div className="pt-8">
+          <Button
+            onClick={() => router.push(`/matches/play?id=${matchId}`)}
+            className="w-full h-20 rounded-full text-xl font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/30 active:scale-95 transition-all"
+          >
+            PLAYBALL
+            <ChevronRight className="ml-2 h-8 w-8" />
+          </Button>
         </div>
       </div>
 
