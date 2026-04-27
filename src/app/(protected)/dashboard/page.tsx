@@ -91,7 +91,7 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        const teamId = typeof window !== "undefined" ? localStorage.getItem("iScore_selectedTeamId") : null;
+        const teamId = typeof window !== "undefined" ? localStorage.getItem("iscore_selectedTeamId") : null;
         if (!teamId) {
           setIsLoading(false);
           return;
