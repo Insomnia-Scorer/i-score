@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MatchList } from "@/components/matches/match-list";
 import { ScoreTypeSelector } from "@/components/features/dashboard/ScoreTypeSelector"; 
+import { EmptyState } from "@/components/layout/EmptyState";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { Match } from "@/types/match";
@@ -92,7 +93,7 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        // 💡 修正：小文字の s (iscore_selectedTeamId) に合わせました
+        // 💡 修正済みキー：iscore_selectedTeamId
         const teamId = typeof window !== "undefined" ? localStorage.getItem("iscore_selectedTeamId") : null;
         
         if (!teamId) {
@@ -130,7 +131,7 @@ export default function DashboardPage() {
   const timeString = currentTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const dateString = currentTime.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
 
-  // 共通見出し
+  // 💡 共通見出し：シンメトリーデザイン
   const SectionHeader = ({ title, subtitle, showPulse = false }: { title: string, subtitle: string, showPulse?: boolean }) => (
     <div className="flex flex-col items-center gap-3">
       <h2 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-5 uppercase tracking-[0.15em]">
@@ -154,19 +155,19 @@ export default function DashboardPage() {
     <div className="w-full animate-in fade-in duration-500 bg-transparent min-h-screen pb-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 space-y-16">
 
-        {/* 1. タイトルエリア */}
-        <section className="text-center space-y-2.5">
-          <h2 className="text-2xl sm:text-3xl font-black text-primary uppercase tracking-[0.5em] flex items-center justify-center gap-3">
-            <Activity className="h-8 w-8" /> Dashboard
+        {/* --- 1. Dashboard タイトルエリア --- */}
+        <section className="text-center space-y-3">
+          <h2 className="text-2xl sm:text-4xl font-black text-primary uppercase tracking-[0.5em] flex items-center justify-center gap-4">
+            <Activity className="h-8 w-8 sm:h-10 sm:w-10" /> Dashboard
           </h2>
-          <h1 className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-[0.35em] opacity-60">
+          <h1 className="text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-[0.4em] opacity-50">
             Match Management & Live Recording
           </h1>
         </section>
 
-        {/* 現在地 */}
+        {/* 現在地ステータス */}
         <div className="flex justify-center px-1">
-          <div className="flex items-center gap-2 py-3 px-10 rounded-3xl bg-primary/10 border border-primary/20 text-primary shadow-sm transition-all cursor-default">
+          <div className="flex items-center gap-2 py-3.5 px-10 rounded-3xl bg-primary/10 border border-primary/20 text-primary shadow-sm transition-all cursor-default">
             <MapPin className="h-4 w-4 animate-pulse" />
             <span className="text-sm sm:text-base font-black tracking-tight">
               現在地：{locationName || "取得中..."}
@@ -174,34 +175,34 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 2. スコア入力選択 */}
+        {/* --- 2. スコア入力選択 (Real / Quick) --- */}
         <section>
           <ScoreTypeSelector />
         </section>
 
-        {/* 環境ウィジェット */}
-        <section className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 shadow-sm rounded-3xl p-5 sm:p-6">
-          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-4 sm:gap-6 text-center sm:text-left">
+        {/* --- 環境ウィジェット --- */}
+        <section className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/40 shadow-sm rounded-3xl p-6 sm:p-8">
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-6 sm:gap-8 text-center sm:text-left">
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-primary/10 rounded-xl text-primary shrink-0"><Clock className="h-5 w-5 sm:h-6 sm:w-6" /></div>
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">{dateString}</p>
-                <p className="text-base sm:text-lg font-black text-foreground tabular-nums leading-none mt-1">{timeString}</p>
+                <p className="text-base sm:text-xl font-black text-foreground tabular-nums leading-none mt-1.5">{timeString}</p>
               </div>
             </div>
-            <div className="hidden sm:block h-8 w-px bg-border/50" />
+            <div className="hidden sm:block h-10 w-px bg-border/50" />
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-amber-500/10 rounded-xl text-amber-500 shrink-0"><CloudSun className="h-5 w-5 sm:h-6 sm:w-6" /></div>
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Weather</p>
-                <p className="text-sm sm:text-base font-black text-foreground leading-none mt-1">
+                <p className="text-sm sm:text-lg font-black text-foreground leading-none mt-1.5">
                   {weather ? (
                     <>{getWMOWeatherText(weather.weatherCode)} <span className="text-muted-foreground text-xs ml-0.5">{weather.temp}°C</span></>
                   ) : "---"}
                 </p>
               </div>
             </div>
-            <div className="hidden sm:block h-8 w-px bg-border/50" />
+            <div className="hidden sm:block h-10 w-px bg-border/50" />
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-blue-500/10 rounded-xl text-blue-500 shrink-0">
                 <Navigation 
@@ -211,17 +212,17 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Wind Dir</p>
-                <p className="text-sm sm:text-base font-black text-foreground leading-none mt-1">
+                <p className="text-sm sm:text-lg font-black text-foreground leading-none mt-1.5">
                   {weather ? getWindDirectionLabel(weather.windDir) : "---"}
                 </p>
               </div>
             </div>
-            <div className="hidden sm:block h-8 w-px bg-border/50" />
+            <div className="hidden sm:block h-10 w-px bg-border/50" />
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-teal-500/10 rounded-xl text-teal-500 shrink-0"><Wind className="h-5 w-5 sm:h-6 sm:w-6" /></div>
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Wind Spd</p>
-                <p className="text-sm sm:text-base font-black text-foreground leading-none mt-1 tabular-nums">
+                <p className="text-sm sm:text-lg font-black text-foreground leading-none mt-1.5 tabular-nums">
                   {weather ? weather.windSpd : "--"} <span className="text-muted-foreground text-xs font-bold">m/s</span>
                 </p>
               </div>
@@ -229,32 +230,32 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* 3. 試合予定 (モック) */}
-        <section className="space-y-8">
+        {/* --- 3. 試合予定 (UPCOMING MATCHES) --- */}
+        <section className="space-y-10">
           <SectionHeader title="試合予定" subtitle="Upcoming Matches" />
-          <div className="relative group overflow-hidden p-10 rounded-3xl border-2 border-dashed border-border/40 bg-card/30 flex flex-col items-center justify-center text-center transition-all hover:border-primary/20">
-            <div className="p-4 bg-muted/20 rounded-full mb-4">
-              <CalendarDays className="h-8 w-8 text-muted-foreground/40" />
-            </div>
-            <h3 className="text-base font-black text-muted-foreground uppercase tracking-wider">現在、予定されている試合はありません</h3>
-            <p className="text-xs font-bold text-muted-foreground/60 mt-2">チームを強化し、次の対戦相手を登録しましょう</p>
-          </div>
+          <EmptyState 
+            icon={CalendarDays}
+            title="現在、予定されている試合はありません"
+            description="Next game scheduling coming soon"
+          />
         </section>
 
-        {/* 4. 試合結果 */}
-        <section className="space-y-8">
+        {/* --- 4. 試合結果 (LATEST MATCHES) --- */}
+        <section className="space-y-10">
           <SectionHeader title="試合結果" subtitle="Latest 3 Matches" showPulse />
           <div className="min-h-[100px]">
             <MatchList matches={recentMatches} isLoading={isLoading} />
           </div>
+          
+          {/* 全件表示ボタン：データがある時のみ表示 */}
           {!isLoading && matches.length > 0 && (
-            <div className="flex justify-center pt-4">
+            <div className="flex justify-center pt-6">
               <Button
                 onClick={() => router.push('/matches')}
-                className="bg-white/50 dark:bg-zinc-800/50 hover:bg-primary/10 text-primary border-2 border-primary/20 rounded-full px-10 h-14 font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 group shadow-sm"
+                className="bg-white/50 dark:bg-zinc-800/50 hover:bg-primary/10 text-primary border-2 border-primary/20 rounded-full px-12 h-16 font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 group shadow-sm"
               >
                 全ての試合結果を表示
-                <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
           )}
