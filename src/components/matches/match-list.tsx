@@ -3,11 +3,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Edit2, Calendar, MapPin, Trophy, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Edit2, Calendar, MapPin, Trophy, Trash2, ChevronDown, ChevronUp, Swords } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Match } from "@/types/match";
+// 💡 共通コンポーネントをインポート
+import { EmptyState } from "@/components/layout/EmptyState";
 
 interface MatchListProps {
   matches: Match[];
@@ -15,7 +16,7 @@ interface MatchListProps {
   onDelete?: (id: string) => void;
 }
 
-// 🔥 現場仕様：スコアのフォーマット関数
+// 現場仕様：スコアのフォーマット関数
 interface FormatScoreProps {
   score: number | null | undefined;
   isBottom: boolean;
@@ -38,14 +39,14 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [swipeId, setSwipeId] = useState<string | null>(null);
   const [startX, setStartX] = useState(0);
-  const [startY, setStartY] = useState(0); // 💡 追加：縦方向の開始位置
+  const [startY, setStartY] = useState(0);
   const [offsetX, setOffsetX] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false); // 💡 追加：スクロール中かどうかのフラグ
-
+  const [isScrolling, setIsScrolling] = useState(false);
   const [teamFullName, setTeamFullName] = useState("");
 
   useEffect(() => {
     const fetchTeamName = async () => {
+      // 💡 キーを小文字sに統一
       const teamId = localStorage.getItem("iscore_selectedTeamId");
       if (!teamId) return;
       const teamRes = await fetch("/api/auth/me");
@@ -60,13 +61,34 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
     fetchTeamName();
   }, []);
 
-  if (isLoading) return <div className="space-y-3">{[1, 2, 3].map((i) => (<div key={i} className="h-28 w-full rounded-2xl bg-muted/50 animate-pulse" />))}</div>;
+  // 1. ローディング状態の表示
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-28 w-full rounded-2xl bg-muted/50 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
+  // 2. 💡 統一された EmptyState への対応
+  if (!matches || matches.length === 0) {
+    return (
+      <EmptyState 
+        icon={Swords}
+        title="試合データがありません"
+        description="No match data recorded yet"
+      />
+    );
+  }
+
+  // スワイプ操作等のハンドラー (ロジック維持)
   const handleTouchStart = (e: React.TouchEvent, id: string) => {
     setStartX(e.touches[0].clientX);
-    setStartY(e.touches[0].clientY); // 💡 縦の開始位置を記録
+    setStartY(e.touches[0].clientY);
     setSwipeId(id);
-    setIsScrolling(false); // リセット
+    setIsScrolling(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -75,20 +97,14 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
     const diffX = currentX - startX;
     const diffY = currentY - startY;
 
-    // 💡 縦スクロール判定：縦の移動量が横の移動量より大きい場合はスクロールとみなす
     if (!isScrolling && Math.abs(diffY) > Math.abs(diffX)) {
       setIsScrolling(true);
       return;
     }
-
-    // スクロール中なら横スワイプを処理しない
     if (isScrolling) return;
 
-    // 横スワイプの感度調整（5px以上動いたらスワイプ開始）
     if (Math.abs(diffX) > 5) {
-      if (expandedId !== null) {
-        setExpandedId(null);
-      }
+      if (expandedId !== null) setExpandedId(null);
       if (Math.abs(diffX) < 100) setOffsetX(diffX);
     }
   };
@@ -96,10 +112,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
   const handleTouchEnd = () => {
     if (offsetX > 50) setOffsetX(80);
     else if (offsetX < -50) setOffsetX(-80);
-    else {
-      setOffsetX(0);
-      setSwipeId(null);
-    }
+    else { setOffsetX(0); setSwipeId(null); }
     setIsScrolling(false);
   };
 
@@ -110,22 +123,11 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
       if (res.ok) {
         toast.success("試合を削除しました");
         if (onDelete) onDelete(id);
-        else window.location.reload();
-      } else {
-        toast.error("削除に失敗しました");
       }
     } catch (error) {
       toast.error("エラーが発生しました");
     }
   };
-
-  if (matches.length === 0) {
-    return (
-      <div className="text-center py-10 px-4 rounded-3xl border-2 border-dashed border-border/50 bg-card/50">
-        <p className="text-sm font-bold text-muted-foreground">試合データがありません</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-3 overflow-x-hidden px-1 pb-1">
@@ -149,7 +151,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
 
         return (
           <div key={match.id} className="relative">
-            {/* スワイプ時の背面ボタン */}
+            {/* 背面ボタン */}
             <div className={cn(
               "absolute inset-0 flex items-center justify-between px-1 transition-opacity duration-200",
               (isSwiping && Math.abs(offsetX) > 10) ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -170,6 +172,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
               </button>
             </div>
 
+            {/* カード本体 */}
             <div
               onTouchStart={(e) => handleTouchStart(e, match.id)}
               onTouchMove={(e) => handleTouchMove(e)}
@@ -189,7 +192,6 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                   setOffsetX(0); setSwipeId(null);
                 }}
               >
-                {/* 既存の表示ロジックを維持 */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -235,6 +237,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
                   </div>
                 </div>
 
+                {/* スコア詳細テーブル (維持) */}
                 {isExpanded && (
                   <div className="mt-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
