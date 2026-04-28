@@ -2,25 +2,19 @@
 "use client";
 
 import React, { useEffect, Suspense } from "react";
-/**
- * 💡 試合スコア入力：究極のフィールド・インターフェース
- * 1. 意匠: 背景を bg-transparent に設定し、Stadium Sync グラデーションを透過。
- * 2. 構造: ScoreProvider で状態を管理し、全パーツを角丸40pxのグリッドで配置。
- * 3. 整理: モバイルでの操作性を最優先し、アクションボタンを「親指ゾーン」に集約。
- * 4. 規則: 影なし (No Shadow)、境界線 border-border/40。
- */
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ScoreProvider, useScore } from "@/contexts/ScoreContext";
 import { Scoreboard } from "@/components/score/Scoreboard";
 import { ControlPanel } from "@/components/score/ControlPanel";
 import { PlayArea } from "@/components/score/PlayArea";
 import { PlayLog } from "@/components/score/PlayLog";
 import { AIAssistant } from "@/components/score/AIAssistant";
-import { Loader2, AlertCircle, ShieldCheck } from "lucide-react";
+import { Loader2, AlertCircle, ChevronLeft, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 function ScorePageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const matchId = searchParams.get("id");
   const { initMatch, isLoading, state } = useScore();
@@ -32,13 +26,14 @@ function ScorePageContent() {
   if (!matchId) {
     return (
       <div className="flex min-h-[80vh] items-center justify-center p-6">
-        <Card className="max-w-md w-full border-red-500/20 bg-red-500/5 rounded-[40px] shadow-none backdrop-blur-xl">
+        <Card className="max-w-md w-full border-2 border-dashed border-border/40 bg-card/50 rounded-[40px] shadow-none">
           <CardContent className="pt-10 flex flex-col items-center text-center space-y-4">
-            <AlertCircle className="h-16 w-16 text-red-500/50" />
-            <h2 className="text-2xl font-black text-foreground italic uppercase tracking-tighter">Match ID Missing</h2>
-            <p className="text-sm text-muted-foreground font-bold leading-relaxed">
-              正しい試合データを選択してください。<br />ダッシュボードへ戻り、試合を再開してください。
+            <AlertCircle className="h-16 w-16 text-rose-500/50" />
+            <h2 className="text-2xl font-black italic uppercase tracking-tighter">Match ID Missing</h2>
+            <p className="text-xs font-bold text-muted-foreground leading-relaxed uppercase tracking-widest">
+              正しい試合データが見つかりません。<br />ダッシュボードからやり直してください。
             </p>
+            <Button onClick={() => router.push('/dashboard')} className="rounded-full px-8 font-black">BACK TO DASHBOARD</Button>
           </CardContent>
         </Card>
       </div>
@@ -57,55 +52,55 @@ function ScorePageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent space-y-8 animate-in fade-in duration-1000 pb-20 md:pb-10">
+    <div className="h-screen w-full bg-transparent flex flex-col overflow-hidden animate-in fade-in duration-700">
 
-      {/* 🏟 ステータスヘッダー */}
-      <div className="flex items-center justify-between px-4 sm:px-2 border-b border-border/20 pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 rounded-full px-3 py-0.5 text-[9px] font-black tracking-widest uppercase">
-              Live Scoring
-            </Badge>
-            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 flex items-center gap-1">
-              <ShieldCheck className="h-3 w-3" /> Encrypted Link
-            </span>
+      {/* 🏟 ミニマル・ヘッダー */}
+      <header className="px-6 pt-4 flex justify-between items-center shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+        <div className="flex flex-col items-center">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/60">Live Operations</span>
           </div>
-          <h2 className="text-3xl font-black italic tracking-tighter text-foreground uppercase leading-none">
-            Field <span className="text-primary">Operations</span>
-          </h2>
         </div>
-      </div>
+        <Button variant="ghost" size="icon" className="rounded-full">
+          <Settings className="h-5 w-5 text-muted-foreground" />
+        </Button>
+      </header>
 
-      {/* 1. 究極のスコアボードセクション */}
-      <section className="animate-in slide-in-from-top-4 duration-700">
+      {/* 1. スコアボード (BSOランプ込み) */}
+      <section className="px-4 py-2 shrink-0">
         <Scoreboard />
       </section>
 
-      {/* 2. AI アシスタント：戦術アドバイス */}
-      <AIAssistant />
+      {/* 2. フィールド & AIアシスタント */}
+      <main className="flex-1 relative flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute top-0 w-full px-6 z-10">
+          <AIAssistant />
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* 3. プレイエリア：ダイヤモンド表示 (7カラム) */}
-        <div className="lg:col-span-7">
+        <div className="w-full max-w-sm aspect-square p-4 flex items-center justify-center">
           <PlayArea />
         </div>
 
-        {/* 4. 実況ログ：履歴表示 (5カラム) */}
-        <div className="lg:col-span-5">
-          <PlayLog />
+        {/* プレイログ（直近1件のみ表示して空間を稼ぐ） */}
+        <div className="w-full px-8 opacity-40">
+          <PlayLog limit={1} />
         </div>
-      </div>
+      </main>
 
-      {/* 5. 究極のアクションコントロール (最下部固定または末尾) */}
-      <div className="sticky bottom-6 z-30 md:relative md:bottom-0">
+      {/* 3. 究極のアクションコントロール (黄金の親指ゾーン) */}
+      <footer className="px-4 pb-10 pt-4 bg-gradient-to-t from-background via-background/95 to-transparent shrink-0">
         <ControlPanel />
-      </div>
-
-      <footer className="pt-10 text-center opacity-20">
-        <p className="text-[10px] font-black tracking-[0.8em] text-muted-foreground uppercase">
-          Tactical Edge • iScore System
-        </p>
+        <div className="mt-6 flex justify-center items-center gap-4 opacity-10">
+          <span className="h-px w-8 bg-foreground" />
+          <p className="text-[8px] font-black tracking-[0.8em] uppercase italic">iScore Tactics</p>
+          <span className="h-px w-8 bg-foreground" />
+        </div>
       </footer>
+
     </div>
   );
 }
