@@ -3,19 +3,19 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  ChevronRight, 
-  Activity, 
-  Clock, 
-  CloudSun, 
-  Navigation, 
-  Wind, 
+import {
+  ChevronRight,
+  Activity,
+  Clock,
+  CloudSun,
+  Navigation,
+  Wind,
   MapPin,
   CalendarDays
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatchList } from "@/components/matches/match-list";
-import { ScoreTypeSelector } from "@/components/features/dashboard/ScoreTypeSelector"; 
+import { ScoreTypeSelector } from "@/components/features/dashboard/ScoreTypeSelector";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { toast } from "sonner";
@@ -198,9 +198,9 @@ export default function DashboardPage() {
             <div className="hidden sm:block h-10 w-px bg-border/50" />
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-2.5 bg-blue-500/10 rounded-xl text-blue-500 shrink-0">
-                <Navigation 
-                  className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-700" 
-                  style={{ transform: `rotate(${weather ? weather.windDir : 45}deg)` }} 
+                <Navigation
+                  className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-700"
+                  style={{ transform: `rotate(${weather ? weather.windDir : 45}deg)` }}
                 />
               </div>
               <div>
@@ -227,26 +227,26 @@ export default function DashboardPage() {
         <section className="space-y-6">
           <SectionHeader title="チーム成績" subtitle="Season Standings" showPulse />
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div className="sm:col-span-1 bg-primary text-primary-foreground rounded-3xl p-6 flex flex-col items-center justify-center shadow-lg shadow-primary/20">
+            <div className="sm:col-span-1 bg-primary text-primary-foreground rounded-3xl p-6 flex flex-col items-center justify-center shadow-sm shadow-primary/20">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Win Rate</p>
               <p className="text-4xl font-black tabular-nums mt-1">{stats.rate}</p>
             </div>
             <div className="sm:col-span-3 grid grid-cols-3 gap-4">
-              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-xs">
+              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-sm">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 bg-blue-500 rounded-full" />
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Wins</p>
                 </div>
                 <p className="text-3xl font-black text-blue-600 tabular-nums">{stats.win}</p>
               </div>
-              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-xs">
+              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-sm">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 bg-rose-500 rounded-full" />
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Losses</p>
                 </div>
                 <p className="text-3xl font-black text-rose-600 tabular-nums">{stats.loss}</p>
               </div>
-              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-xs">
+              <div className="bg-card/50 border-2 border-border/40 rounded-3xl p-6 flex flex-col items-center justify-center shadow-sm">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 bg-zinc-400 rounded-full" />
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Draws</p>
@@ -256,16 +256,16 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex justify-center">
-             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-               Total: {stats.total} Games Played
-             </p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
+              Total: {stats.total} Games Played
+            </p>
           </div>
         </section>
 
         {/* --- 5. 試合予定 (UPCOMING MATCHES) --- */}
         <section className="space-y-10">
           <SectionHeader title="試合予定" subtitle="Upcoming Matches" showPulse />
-          <EmptyState 
+          <EmptyState
             icon={CalendarDays}
             title="現在、予定されている試合はありません"
             description="Next match scheduling coming soon"

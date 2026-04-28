@@ -75,7 +75,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
   // 2. 💡 統一された EmptyState への対応
   if (!matches || matches.length === 0) {
     return (
-      <EmptyState 
+      <EmptyState
         icon={Swords}
         title="試合データがありません"
         description="No match data recorded yet"
@@ -181,7 +181,7 @@ export function MatchList({ matches, isLoading, onDelete }: MatchListProps) {
               className={cn(
                 "relative z-10 rounded-2xl border transition-all duration-300 ease-out",
                 isExpanded
-                  ? "bg-primary/10 border-primary shadow-md shadow-primary/5"
+                  ? "bg-primary/10 border-primary shadow-sm shadow-primary/5"
                   : "bg-card border-border/50 shadow-sm"
               )}
             >
