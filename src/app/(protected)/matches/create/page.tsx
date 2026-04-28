@@ -202,7 +202,7 @@ export default function CreateMatchPage() {
             </div>
           </div>
 
-          <Button type="submit" disabled={isLoading} className="w-full h-16 rounded-full text-lg font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
+          <Button type="submit" disabled={isLoading} className="w-full h-16 rounded-full text-lg font-black uppercase tracking-[0.2em] shadow-sm shadow-primary/20">
             {isLoading ? "保存中..." : (mode === "real" ? "スタメン設定へ" : "試合結果を保存")}
             <PlayCircle className="ml-2 h-6 w-6" />
           </Button>

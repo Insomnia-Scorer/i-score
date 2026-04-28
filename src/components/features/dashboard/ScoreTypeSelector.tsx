@@ -20,7 +20,7 @@ export const ScoreTypeSelector = () => {
         onClick={() => router.push('/matches/create?mode=real')}
         className={cn(
           "relative group overflow-hidden flex flex-col items-center justify-center p-5 sm:p-8 transition-all active:scale-[0.96]",
-          "bg-primary text-primary-foreground shadow-xl shadow-primary/20 border border-white/10",
+          "bg-primary text-primary-foreground shadow-sm shadow-primary/20 border border-white/10",
           cardStyle
         )}
       >
@@ -55,6 +55,9 @@ export const ScoreTypeSelector = () => {
           cardStyle
         )}
       >
+        <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform duration-500">
+          <Zap className="w-24 h-24 sm:w-28 sm:h-28 rotate-12" />
+        </div>
         <div className="relative z-10 flex flex-col items-center text-center gap-3 sm:gap-4">
           <div className="p-3 sm:p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20">
             <Zap className="h-7 w-7 sm:h-9 sm:w-9 text-amber-600" />

@@ -1,3 +1,4 @@
+// filepath: src/app/(protected)/matches/lineup/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -178,7 +179,7 @@ export default function LineupPage() {
         <div className="pt-8">
           <Button
             onClick={() => router.push(`/matches/play?id=${matchId}`)}
-            className="w-full h-20 rounded-full text-xl font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/30 active:scale-95 transition-all"
+            className="w-full h-20 rounded-full text-xl font-black uppercase tracking-[0.3em] shadow-sm shadow-primary/30 active:scale-95 transition-all"
           >
             PLAYBALL
             <ChevronRight className="ml-2 h-8 w-8" />
