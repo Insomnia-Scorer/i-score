@@ -1,93 +1,88 @@
-// filepath: `src/app/(protected)/matches/score/page.tsx`
+// filepath: `src/components/score/TestDataGenerator.tsx`
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { ScoreProvider, useScore } from "@/contexts/ScoreContext";
-import { Scoreboard } from "@/components/score/Scoreboard";
-import { ControlPanel } from "@/components/score/ControlPanel";
-import { PlayArea } from "@/components/score/PlayArea";
-import { PlayLog } from "@/components/score/PlayLog";
-import { TestDataGenerator } from "@/components/score/TestDataGenerator"; // 💡 インポート
+import { useScore } from "@/contexts/ScoreContext";
+import { Button } from "@/components/ui/button";
+import { DatabaseZap, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation"; // 💡 追加
+import { toast } from "sonner";
 
-function ScorePageContent() {
+export function TestDataGenerator() {
+  const { updateScore } = useScore();
+  const [isGenerating, setIsGenerating] = useState(false);
   const searchParams = useSearchParams();
-  const matchId = searchParams.get("id");
-  const { initMatch } = useScore();
-  
-  // 💡 アニメーション発火用のステート
-  const [isReady, setIsReady] = useState(false);
+  const matchId = searchParams.get("id"); // 💡 URLから直接取得
 
-  useEffect(() => {
-    if (matchId) initMatch(matchId);
-    
-    // Pixel 10 Pro の没入感を出すためスクロールをロック
-    document.body.style.overflow = 'hidden';
-    
-    // マウント後、一瞬待ってからアニメーションを開始
-    const timer = setTimeout(() => setIsReady(true), 50);
-    
-    return () => { 
-      document.body.style.overflow = 'unset';
-      clearTimeout(timer);
-    };
-  }, [matchId, initMatch]);
+  const generateScenario = async () => {
+    // 💡 state.matchId の代わりに URL の ID をチェック
+    if (!matchId) {
+      toast.error("URLに試合IDが含まれていません");
+      return;
+    }
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-background h-[100dvh] w-full flex flex-col overflow-hidden select-none">
+    setIsGenerating(true);
+    const loadingToast = toast.loading("熱戦のデータを注入中...");
+
+    try {
+      /**
+       * 💡 7回裏 2死満塁シナリオ
+       */
+      await updateScore({
+        matchId: matchId, // 💡 IDを明示的に指定
+        inning: 7,
+        isTop: false,
+        myScore: 3,
+        opponentScore: 5,
+        myInningScores: [0, 1, 0, 0, 2, 0, 0],
+        opponentInningScores: [2, 0, 0, 3, 0, 0, 0],
+        runners: {
+          base1: { id: "p1", name: "鈴木" },
+          base2: { id: "p2", name: "佐藤" },
+          base3: { id: "p3", name: "田中" },
+        },
+        balls: 3,
+        strikes: 2,
+        outs: 2
+      });
+
+      // ログの生成
+      await fetch(`/api/matches/${matchId}/logs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inningText: "7回裏",
+          resultType: "info",
+          description: "🔥 2死満塁！一打逆転の絶好機！",
+        }),
+      });
+
+      toast.dismiss(loadingToast);
+      toast.success("ドラマチックな展開を生成しました！");
       
-      {/* 💡 掲示板：上からスライドダウン */}
-      <header className={`
-        h-[22%] shrink-0 z-30 transition-transform duration-700 ease-[0.22,1,0.36,1]
-        ${isReady ? "translate-y-0" : "-translate-y-full"}
-      `}>
-        <Scoreboard />
-      </header>
+      // 💡 確実に反映させるため、少し待ってからリロード
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      
+    } catch (e) {
+      console.error(e);
+      toast.dismiss(loadingToast);
+      toast.error("データ生成に失敗しました");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-      {/* 💡 フィールド：中央でふわっと登場 */}
-      <main className={`
-        flex-1 relative flex flex-col items-center justify-center z-10 transition-all duration-1000 delay-300
-        ${isReady ? "opacity-100 scale-110" : "opacity-0 scale-95"}
-      `}>
-        {/* 背景の芝生イメージ（ライト/ダーク両対応） */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0%,transparent_70%)] pointer-events-none" />
-        
-        <div className="w-full max-w-[300px] aspect-square">
-          <PlayArea />
-        </div>
-
-        {/* ログをダイヤモンド直下に配置 */}
-        <div className="absolute bottom-4 w-full px-12 opacity-50">
-          <PlayLog limit={1} />
-        </div>
-      </main>
-
-      {/* 💡 コントロール：下からせり上がる */}
-      <footer className={`
-        h-[25%] shrink-0 z-30 bg-card/80 backdrop-blur-3xl border-t border-border/40 px-4 pt-3 pb-8 shadow-[0_-20px_50px_rgba(0,0,0,0.1)]
-        transition-transform duration-700 ease-[0.22,1,0.36,1]
-        ${isReady ? "translate-y-0" : "translate-y-full"}
-      `}>
-        <div className="max-w-md mx-auto h-full relative">
-          <ControlPanel />
-          
-          {/* 💡 テストデータ生成ボタンをここに配置（操作パネルのすぐ上） */}
-          <div className="absolute -top-20 right-0">
-            <TestDataGenerator />
-          </div>
-        </div>
-      </footer>
-
-    </div>
-  );
-}
-
-export default function ScorePage() {
   return (
-    <Suspense fallback={<div className="h-screen bg-background" />}>
-      <ScoreProvider>
-        <ScorePageContent />
-      </ScoreProvider>
-    </Suspense>
+    <Button 
+      onClick={generateScenario}
+      disabled={isGenerating}
+      variant="destructive"
+      className="h-12 px-6 rounded-xl shadow-lg border border-white/20 bg-red-600 hover:bg-red-500 text-white font-black italic gap-2 animate-pulse active:scale-90 transition-all"
+    >
+      {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <DatabaseZap className="h-4 w-4" />}
+      FILL DATA
+    </Button>
   );
 }
