@@ -33,7 +33,7 @@ export default function TermsPage() {
         </div>
 
         {/* 💡 規約のテキストを美しいカード内に収める */}
-        <div className="p-6 md:p-10 rounded-[32px] bg-card/40 backdrop-blur-xl border border-border/50 shadow-md space-y-10 leading-relaxed">
+        <div className="p-6 md:p-10 rounded-[32px] bg-card/40 backdrop-blur-xl border border-border/50 shadow-sm space-y-10 leading-relaxed">
 
           <section className="space-y-4">
             <p className="text-muted-foreground">
