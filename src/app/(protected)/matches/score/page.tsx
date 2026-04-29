@@ -8,23 +8,26 @@ import { Scoreboard } from "@/components/score/Scoreboard";
 import { ControlPanel } from "@/components/score/ControlPanel";
 import { PlayArea } from "@/components/score/PlayArea";
 import { PlayLog } from "@/components/score/PlayLog";
+import { TestDataGenerator } from "@/components/score/TestDataGenerator"; // 💡 インポート
 
 function ScorePageContent() {
   const searchParams = useSearchParams();
   const matchId = searchParams.get("id");
   const { initMatch } = useScore();
-
+  
   // 💡 アニメーション発火用のステート
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (matchId) initMatch(matchId);
+    
+    // Pixel 10 Pro の没入感を出すためスクロールをロック
     document.body.style.overflow = 'hidden';
-
-    // 💡 マウント後、一瞬待ってからアニメーションを開始（ブラウザに確実に描画させる）
+    
+    // マウント後、一瞬待ってからアニメーションを開始
     const timer = setTimeout(() => setIsReady(true), 50);
-
-    return () => {
+    
+    return () => { 
       document.body.style.overflow = 'unset';
       clearTimeout(timer);
     };
@@ -32,8 +35,8 @@ function ScorePageContent() {
 
   return (
     <div className="fixed inset-0 z-[100] bg-background h-[100dvh] w-full flex flex-col overflow-hidden select-none">
-
-      {/* 💡 掲示板：isReadyがtrueになると -translate-y-full から 0 へ動く */}
+      
+      {/* 💡 掲示板：上からスライドダウン */}
       <header className={`
         h-[22%] shrink-0 z-30 transition-transform duration-700 ease-[0.22,1,0.36,1]
         ${isReady ? "translate-y-0" : "-translate-y-full"}
@@ -41,29 +44,40 @@ function ScorePageContent() {
         <Scoreboard />
       </header>
 
-      {/* 💡 フィールド：ふわっと浮き上がる演出 */}
+      {/* 💡 フィールド：中央でふわっと登場 */}
       <main className={`
         flex-1 relative flex flex-col items-center justify-center z-10 transition-all duration-1000 delay-300
         ${isReady ? "opacity-100 scale-110" : "opacity-0 scale-95"}
       `}>
+        {/* 背景の芝生イメージ（ライト/ダーク両対応） */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0%,transparent_70%)] pointer-events-none" />
+        
         <div className="w-full max-w-[300px] aspect-square">
           <PlayArea />
         </div>
-        <div className="absolute bottom-4 w-full px-12 opacity-40">
+
+        {/* ログをダイヤモンド直下に配置 */}
+        <div className="absolute bottom-4 w-full px-12 opacity-50">
           <PlayLog limit={1} />
         </div>
       </main>
 
       {/* 💡 コントロール：下からせり上がる */}
       <footer className={`
-        h-[25%] shrink-0 z-30 bg-card/80 backdrop-blur-3xl border-t border-border/40 px-4 pt-3 pb-8 
+        h-[25%] shrink-0 z-30 bg-card/80 backdrop-blur-3xl border-t border-border/40 px-4 pt-3 pb-8 shadow-[0_-20px_50px_rgba(0,0,0,0.1)]
         transition-transform duration-700 ease-[0.22,1,0.36,1]
         ${isReady ? "translate-y-0" : "translate-y-full"}
       `}>
-        <div className="max-w-md mx-auto h-full">
+        <div className="max-w-md mx-auto h-full relative">
           <ControlPanel />
+          
+          {/* 💡 テストデータ生成ボタンをここに配置（操作パネルのすぐ上） */}
+          <div className="absolute -top-20 right-0">
+            <TestDataGenerator />
+          </div>
         </div>
       </footer>
+
     </div>
   );
 }
