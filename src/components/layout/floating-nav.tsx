@@ -10,23 +10,23 @@ import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（半径100px超凝縮・ソーラーエフェクト版）
- * 半径を100px、角度を-175度~-45度に設定。
- * 片手操作時の親指の可動域を最小化し、爆速での画面遷移を実現。
+ * 💡 フローティング・マキシマム・ナビ（半径100px・超広角220度アーク）
+ * 半径100px、角度 -175度〜45度の広角配置。
+ * ボタンサイズは w-18 (72px) で統一し、ソーラーエフェクトで視認性を確保。
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // 💡 規約: 画面遷移が発生したら自動でクローズ。現場でのコンテキスト保護。
+  // 💡 規約: 画面遷移（パス変更）が発生したら自動でクローズ。現場でのコンテキスト保護。
   useEffect(() => setIsOpen(false), [pathname]);
 
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -175 }, // 左端
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -142.5 },
-    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -110 },
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -77.5 },
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -45 }, // 右端
+    { icon: Users, label: "TEAM", href: "/team", angle: -175 },
+    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -120 },
+    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -65 },
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -10 },
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 45 }, // 💡 45度まで回り込む
   ];
 
   return (
@@ -48,7 +48,7 @@ export function FloatingNav() {
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 サブボタン：全項目 w-18 固定・半径100px凝縮配置 */}
+        {/* 🌟 サブボタン：全項目 w-18 固定・半径100px・広角配置 */}
         <AnimatePresence>
           {isOpen &&
             menuItems.map((item, index) => {
@@ -69,7 +69,7 @@ export function FloatingNav() {
                 >
                   <Link href={item.href} className="relative flex items-center justify-center group active:scale-90 transition-transform">
                     
-                    {/* 💡 ソーラーエフェクト：凝縮された配置でも「選択中」を明確にする光の波紋 */}
+                    {/* 💡 ソーラーエフェクト：サイズを変えず、背後で光を拡散させる */}
                     {isActive && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <motion.div
