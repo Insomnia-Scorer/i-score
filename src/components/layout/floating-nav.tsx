@@ -10,8 +10,9 @@ import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（配置最適化エディション）
- * 5項目をバランスよく配置。半径を広げて視認性と美しさを向上。
+ * 💡 フローティング・マキシマム・ナビ（ALL-SAME-SIZE エディション）
+ * ボタンサイズを w-18 で統一し、選択中は光るようなアニメーションで表現。
+ * 配置半径は 130px、角度は -150度〜-30度。
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,75 +22,85 @@ export function FloatingNav() {
   useEffect(() => setIsOpen(false), [pathname]);
 
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -155 }, // 💡 team へ修正
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -122.5 },
+    { icon: Users, label: "TEAM", href: "/team", angle: -150 },
+    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -120 },
     { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -57.5 },
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -25 }, // 💡 MENU 確定
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -60 }, // 💡 パスを再確認
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -30 },
   ];
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
       
-      {/* 🌟 背景オーバーレイ（監督直伝の真円防衛仕様） */}
+      {/* 🌟 背景オーバーレイ（漆黒に近いソリッド背景で視認性死守） */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.1 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-zinc-950/98 z-[-1] rounded-full shadow-2xl" 
+            className="fixed inset-0 bg-zinc-950/98 z-[-1] rounded-full" 
           />
         )}
       </AnimatePresence>
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 5つのサブボタン：距離を 140px に広げてバランスを改善 */}
+        {/* 🌟 サブボタン：全項目 w-18 で統一 */}
         <AnimatePresence>
           {isOpen &&
-            menuItems.map((item, index) => (
-              <motion.div
-                key={item.href}
-                initial={{ scale: 0, x: 0, y: 0 }}
-                animate={{
-                  scale: 1,
-                  // 💡 半径を 140px に拡大して「くっつきすぎ」を解消
-                  x: Math.cos((item.angle * Math.PI) / 180) * 140,
-                  y: Math.sin((item.angle * Math.PI) / 180) * 140,
-                }}
-                exit={{ scale: 0, x: 0, y: 0 }}
-                transition={{ type: "spring", stiffness: 600, damping: 35, delay: index * 0.01 }}
-                className="absolute"
-              >
-                <Link href={item.href} className="active:scale-90 transition-transform">
-                  <div className={cn(
-                    "w-18 h-18 rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl border-[3px]",
-                    pathname === item.href 
-                      ? "bg-primary border-primary text-primary-foreground scale-110 ring-4 ring-primary/30" 
-                      : "bg-white border-zinc-200 text-zinc-900" 
-                  )}>
-                    <item.icon className="w-7 h-7 stroke-[2.5]" />
-                    <span className="text-[9px] font-black tracking-tighter leading-none uppercase">
-                      {item.label}
-                    </span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+            menuItems.map((item, index) => {
+              const isActive = pathname === item.href;
+              return (
+                <motion.div
+                  key={item.href}
+                  initial={{ scale: 0, x: 0, y: 0 }}
+                  animate={{
+                    scale: 1,
+                    x: Math.cos((item.angle * Math.PI) / 180) * 130, // 💡 半径 130px で中央寄せ
+                    y: Math.sin((item.angle * Math.PI) / 180) * 130,
+                  }}
+                  exit={{ scale: 0, x: 0, y: 0 }}
+                  transition={{ type: "spring", stiffness: 600, damping: 35, delay: index * 0.01 }}
+                  className="absolute"
+                >
+                  <Link href={item.href} className="relative group flex items-center justify-center">
+                    {/* 💡 アクティブ時のアニメーションリング */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-glow"
+                        className="absolute inset-[-4px] rounded-full border-2 border-primary"
+                        animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0.8, 0.5] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                      />
+                    )}
+                    
+                    <div className={cn(
+                      "w-18 h-18 rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl border-[3px] transition-all relative z-10",
+                      isActive 
+                        ? "bg-primary border-primary text-primary-foreground" 
+                        : "bg-white border-zinc-200 text-zinc-900" 
+                    )}>
+                      <item.icon className="w-7 h-7 stroke-[2.5]" />
+                      <span className="text-[8px] font-black tracking-tighter leading-none uppercase">
+                        {item.label}
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
         </AnimatePresence>
 
-        {/* ⚾️ センターボタン（w-24 / 96px / 常時真円・爆速アイコン） */}
+        {/* ⚾️ センターボタン：w-24 (96px) ＋ 爆速ハンドリング */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             "relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 z-50 overflow-hidden",
             "shadow-[0_25px_60px_rgba(0,0,0,0.5),0_10px_25px_rgba(var(--primary),0.3)]",
-            isOpen 
-              ? "bg-white ring-[8px] ring-primary/60" 
-              : "bg-primary"
+            isOpen ? "bg-white ring-[8px] ring-primary/60" : "bg-primary"
           )}
         >
           <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
@@ -114,13 +125,7 @@ export function FloatingNav() {
                   transition={{ duration: 0.1, ease: "circOut" }}
                   className="relative w-full h-full rounded-full"
                 >
-                  <Image
-                    src="/logo.webp"
-                    alt="iScore"
-                    fill
-                    className="object-contain p-0.5 rounded-full" 
-                    priority
-                  />
+                  <Image src="/logo.webp" alt="iScore" fill className="object-contain p-0.5 rounded-full" priority />
                 </motion.div>
               )}
             </AnimatePresence>
