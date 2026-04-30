@@ -10,8 +10,8 @@ import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（究極視認性エディション）
- * 屋外の太陽光下でも迷わないハイコントラスト設計と、爆速レスポンスを両立。
+ * 💡 フローティング・マキシマム・ナビ（究極視認性・中央凝縮・パス修正版）
+ * 5つのボタンを中央に寄せ、操作効率と視認性を最大化した i-Score の司令塔
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,17 +21,17 @@ export function FloatingNav() {
   useEffect(() => setIsOpen(false), [pathname]);
 
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/teams", angle: -160 },
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -125 },
+    { icon: Users, label: "TEAM", href: "/team", angle: -150 }, // 💡 チーム編成（/team）へ
+    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -120 },
     { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -55 },
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -20 },
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -60 }, // 💡 大会ページパス修正
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -30 }, // 💡 MENU実装準備
   ];
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
       
-      {/* 🌟 背景オーバーレイ：脱・グラスモーフィズム。ソリッドな濃色でコントラストを稼ぐ */}
+      {/* 🌟 背景オーバーレイ：脱・グラスモーフィズム。極限まで濃くし視認性を死守 */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -40,14 +40,14 @@ export function FloatingNav() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-zinc-950/95 z-[-1] rounded-full" 
+            className="fixed inset-0 bg-zinc-950/98 z-[-1] rounded-full shadow-2xl" 
           />
         )}
       </AnimatePresence>
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 5つのサブボタン：ハイコントラスト設計 */}
+        {/* 🌟 5つのサブボタン：中央凝縮配置（半径125px / 角度-150~-30） */}
         <AnimatePresence>
           {isOpen &&
             menuItems.map((item, index) => (
@@ -56,8 +56,8 @@ export function FloatingNav() {
                 initial={{ scale: 0, x: 0, y: 0 }}
                 animate={{
                   scale: 1,
-                  x: Math.cos((item.angle * Math.PI) / 180) * 135,
-                  y: Math.sin((item.angle * Math.PI) / 180) * 135,
+                  x: Math.cos((item.angle * Math.PI) / 180) * 125,
+                  y: Math.sin((item.angle * Math.PI) / 180) * 125,
                 }}
                 exit={{ scale: 0, x: 0, y: 0 }}
                 transition={{ type: "spring", stiffness: 600, damping: 35, delay: index * 0.01 }}
@@ -67,11 +67,11 @@ export function FloatingNav() {
                   <div className={cn(
                     "w-18 h-18 rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl border-[3px]",
                     pathname === item.href 
-                      ? "bg-primary border-primary text-primary-foreground scale-110 ring-4 ring-primary/20" 
-                      : "bg-white border-zinc-200 text-zinc-900" // 💡 白背景に黒文字の絶対的視認性
+                      ? "bg-primary border-primary text-primary-foreground scale-110 ring-4 ring-primary/30" 
+                      : "bg-white border-zinc-200 text-zinc-900" 
                   )}>
                     <item.icon className="w-7 h-7 stroke-[2.5]" />
-                    <span className="text-[9px] font-black tracking-tighter leading-none">
+                    <span className="text-[9px] font-black tracking-tighter leading-none uppercase">
                       {item.label}
                     </span>
                   </div>
@@ -80,14 +80,14 @@ export function FloatingNav() {
             ))}
         </AnimatePresence>
 
-        {/* ⚾️ センターボタン：w-24 / 96px / 常時真円・爆速アイコン */}
+        {/* ⚾️ センターボタン：w-24（96px）＋ 多層シャドウ ＋ 爆速アイコン */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             "relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 z-50 overflow-hidden",
             "shadow-[0_25px_60px_rgba(0,0,0,0.5),0_10px_25px_rgba(var(--primary),0.3)]",
             isOpen 
-              ? "bg-white ring-[8px] ring-primary/60" // 💡 展開時は白ボタンに太いブランドカラーのリング
+              ? "bg-white ring-[8px] ring-primary/60" 
               : "bg-primary"
           )}
         >
