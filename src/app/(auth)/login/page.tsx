@@ -4,38 +4,43 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+/** 💡 Better-Auth のクライアントをインポート */
+import { authClient } from "@/lib/auth-client"; 
 
-/**
- * 💡 ログインページ：公式ソーシャル特化型ゲート
- * 現場での誤操作を防ぐため、入力を排除した2ボタン・フルアクセス設計
- */
 export default function LoginPage() {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
   /**
-   * 💡 ソーシャルログイン実行
-   * Cloudflare Workers 側で実装された OAuth 開始エンドポイントへリダイレクトします
+   * 💡 ソーシャルログイン実行 (Better-Auth 仕様)
+   * signIn.social を使用して、各プロバイダーの承認ページへ安全に遷移します。
    */
-  const handleSocialLogin = (provider: "line" | "google") => {
+  const handleSocialLogin = async (provider: "line" | "google") => {
     setLoadingProvider(provider);
     
-    // 💡 Workers 側の認証開始 URL[cite: 1]
-    const authUrl = `/api/auth/${provider}`;
-    
-    toast.loading(`${provider.toUpperCase()} 認証を開始します...`);
-    
-    // 🚀 擬似動作（router.push）ではなく、ブラウザを直接承認ページへ飛ばします
-    window.location.href = authUrl;
+    try {
+      toast.loading(`${provider.toUpperCase()} 認証を開始します...`);
+      
+      // 🚀 Better-Auth の機能で承認ページへ飛ばす
+      // callbackURL は環境に合わせて調整してください
+      await authClient.signIn.social({
+        provider: provider,
+        callbackURL: "/dashboard", 
+      });
+
+    } catch (error) {
+      console.error(`${provider} login error:`, error);
+      toast.error("承認ページへの移動に失敗しました。");
+      setLoadingProvider(null);
+    }
   };
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-background p-6 relative overflow-hidden">
       
-      {/* 🏟 背景演出（ナイター照明をイメージしたソリッド寄りな配置）[cite: 1] */}
+      {/* 🏟 背景演出（屋外視認性を考慮したソリッドなグロー）[cite: 1] */}
       <div className="absolute top-[-20%] right-[-10%] w-[60%] aspect-square bg-primary/15 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-20%] left-[-10%] w-[60%] aspect-square bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
 
@@ -62,7 +67,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* 🔓 ログインアクション（公式ロゴ採用 & 左揃え）[cite: 1] */}
+        {/* 🔓 ログインアクション（公式ロゴ・左揃え）[cite: 1] */}
         <div className="space-y-6">
           <p className="text-center text-[11px] font-black text-muted-foreground/60 uppercase tracking-widest select-none">
             Welcome to the Stadium
@@ -70,13 +75,13 @@ export default function LoginPage() {
           
           <div className="grid gap-5">
             {/* LINE ログイン */}
-            <button 
+            <Button 
               onClick={() => handleSocialLogin("line")}
               disabled={!!loadingProvider}
-              className="h-16 w-full rounded-[24px] bg-[#06C755] hover:bg-[#05b34c] text-white font-black text-lg shadow-xl shadow-emerald-900/10 active:scale-[0.98] transition-all flex items-center justify-start px-6 relative disabled:opacity-50"
+              className="h-16 w-full rounded-[24px] bg-[#06C755] hover:bg-[#05b34c] text-white font-black text-lg shadow-xl shadow-emerald-900/10 active:scale-[0.98] transition-all border-none flex items-center justify-start px-6 relative"
             >
               {loadingProvider === "line" ? (
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-white" />
+                <Loader2 className="h-8 w-8 animate-spin mx-auto" />
               ) : (
                 <>
                   <div className="relative h-9 w-9 shrink-0">
@@ -85,13 +90,14 @@ export default function LoginPage() {
                   <span className="w-full text-center pr-9">LINEで入場</span>
                 </>
               )}
-            </button>
+            </Button>
 
             {/* Google ログイン */}
-            <button 
+            <Button 
               onClick={() => handleSocialLogin("google")}
               disabled={!!loadingProvider}
-              className="h-16 w-full rounded-[24px] bg-white text-black hover:bg-zinc-100 font-black text-lg shadow-xl shadow-black/5 active:scale-[0.98] transition-all border border-zinc-200 flex items-center justify-start px-6 relative disabled:opacity-50"
+              variant="secondary"
+              className="h-16 w-full rounded-[24px] bg-white text-black hover:bg-zinc-100 font-black text-lg shadow-xl shadow-black/5 active:scale-[0.98] transition-all border border-zinc-200 flex items-center justify-start px-6 relative"
             >
               {loadingProvider === "google" ? (
                 <Loader2 className="h-8 w-8 animate-spin text-zinc-400 mx-auto" />
@@ -103,7 +109,7 @@ export default function LoginPage() {
                   <span className="w-full text-center pr-8">Googleで入場</span>
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -114,7 +120,7 @@ export default function LoginPage() {
           <Link href="/terms" className="text-[10px] font-black text-muted-foreground/40 hover:text-primary tracking-widest uppercase transition-colors">Terms</Link>
           <Link href="/privacy" className="text-[10px] font-black text-muted-foreground/40 hover:text-primary tracking-widest uppercase transition-colors">Privacy</Link>
         </div>
-        <p className="text-[9px] font-medium text-muted-foreground/10 tracking-tighter select-none">© 2026 iScoreCloud / iS Baseball Lab</p>
+        <p className="text-[9px] font-medium text-muted-foreground/10 tracking-tighter">© 2026 iScoreCloud / iS Baseball Lab</p>
       </footer>
     </div>
   );
