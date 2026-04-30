@@ -9,24 +9,30 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-/**
- * 💡 ログインページ：公式ソーシャル特化型ゲート（アイコン強調版）
- * 現場での視認性と押しやすさを最大化した2ボタン・フルアクセス設計
- */
 export default function LoginPage() {
   const router = useRouter();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
+  /**
+   * 💡 ソーシャルログイン実行
+   * 実際のOAuth認証を開始するため、Cloudflare Workersのエンドポイントへリダイレクトします
+   */
   const handleSocialLogin = async (provider: "line" | "google") => {
     setLoadingProvider(provider);
     
     try {
-      // 💡 認証エンドポイントへ誘導。Cloudflare Workers 側で処理
-      await new Promise(resolve => setTimeout(resolve, 1000)); 
-      toast.success(`${provider.toUpperCase()} でスタジアムに入場しました！`);
-      router.push("/dashboard");
+      // 💡 重要: Cloudflare Workers で実装した認証開始URLへ飛ばします
+      // 環境変数などでベースURLを管理している場合はそれを使用してください
+      const authUrl = `/api/auth/${provider}`; 
+      
+      toast.loading(`${provider.toUpperCase()} 認証を開始します...`);
+      
+      // 🚀 ここで実際の承認ページ（LINE/Google）へ遷移します
+      window.location.href = authUrl;
+
     } catch (error) {
-      toast.error("サインが合いません（認証エラー）");
+      console.error("Auth redirect error:", error);
+      toast.error("接続に失敗しました。電波状況を確認してください。");
       setLoadingProvider(null);
     }
   };
@@ -42,7 +48,7 @@ export default function LoginPage() {
         
         {/* ⚾️ センターロゴ */}
         <div className="flex flex-col items-center space-y-6 pt-8">
-          <div className="relative w-28 h-28 drop-shadow-[0_0_20px_rgba(var(--primary),0.4)]">
+          <div className="relative w-28 h-28 drop-shadow-[0_0_20px_rgba(var(--primary),0.4)] transition-transform duration-700 hover:scale-110">
             <Image
               src="/logo.webp"
               alt="iScore Logo"
@@ -61,7 +67,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* 🔓 ログインアクション（アイコン左揃え・大型化） */}
+        {/* 🔓 ログインアクション */}
         <div className="space-y-6">
           <p className="text-center text-[11px] font-black text-muted-foreground/60 uppercase tracking-widest select-none">
             Welcome to the Stadium
@@ -81,7 +87,7 @@ export default function LoginPage() {
                   <div className="relative h-9 w-9 shrink-0">
                     <Image src="/line-logo.png" alt="LINE Logo" fill className="object-contain" />
                   </div>
-                  <span className="w-full text-center pr-9">LINEで入場</span>
+                  <span className="w-full text-center pr-9 text-white">LINEで入場</span>
                 </>
               )}
             </Button>
@@ -108,7 +114,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* 💡 フッター */}
+      {/* 💡 規約・ポリシーリンク */}
       <footer className="absolute bottom-10 w-full flex flex-col items-center gap-4">
         <div className="flex gap-6">
           <Link href="/terms" className="text-[10px] font-black text-muted-foreground/40 hover:text-primary tracking-widest uppercase transition-colors">Terms</Link>
