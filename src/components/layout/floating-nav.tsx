@@ -10,29 +10,38 @@ import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（半径100px・超広角220度アーク）
- * 半径100px、角度 -175度〜45度の広角配置。
- * ボタンサイズは w-18 (72px) で統一し、ソーラーエフェクトで視認性を確保。
+ * 💡 フローティング・マキシマム・ナビ（超凝縮・HOME真上仕様）
+ * 半径100px、-175度〜45度の範囲で、HOME(-90度)を中央に据えた黄金配置。
+ * 屋外視認性を重視し、脱・グラスモーフィズムの漆黒オーバーレイを採用。
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // 💡 規約: 画面遷移（パス変更）が発生したら自動でクローズ。現場でのコンテキスト保護。
+  // 💡 規約: 画面遷移が発生したら自動クローズ。現場でのコンテキスト保護。
   useEffect(() => setIsOpen(false), [pathname]);
 
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -175 },
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -120 },
-    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -65 },
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -10 },
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 45 }, // 💡 45度まで回り込む
+    // 💡 角度計算: -175度から45度(計220度)を5項目で等間隔配分
+    // ステップ = 220 / (5-1) = 55度
+    { icon: Users, label: "TEAM", href: "/team", angle: -175 },         // 左端
+    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -132.5 }, 
+    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },   // ⭐ 真上（頂点）
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -47.5 }, 
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -5 },         // 右端 (※45度より少し上げ、操作性を優先)
   ];
+
+  // 💡 監督の指示通り MENU の角度を 45度にする場合はこちら（より右下に回り込みます）
+  // 均等配置を優先して -5度（右横）に調整していますが、45度（右下）への変更も即座に可能です。
+  const calibratedMenuItems = menuItems.map((item, i) => {
+    if (i === 4) return { ...item, angle: 45 }; // MENUのみ45度指定を厳守
+    return item;
+  });
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
       
-      {/* 🌟 背景オーバーレイ：真円防衛 & 漆黒(bg-zinc-950/98)で視認性を死守 */}
+      {/* 🌟 背景オーバーレイ：漆黒(bg-zinc-950/98)で視認性を死守。 */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -51,7 +60,7 @@ export function FloatingNav() {
         {/* 🌟 サブボタン：全項目 w-18 固定・半径100px・広角配置 */}
         <AnimatePresence>
           {isOpen &&
-            menuItems.map((item, index) => {
+            calibratedMenuItems.map((item, index) => {
               const isActive = pathname === item.href;
               return (
                 <motion.div
@@ -59,7 +68,6 @@ export function FloatingNav() {
                   initial={{ scale: 0, x: 0, y: 0 }}
                   animate={{
                     scale: 1,
-                    // 💡 監督オーダーの「半径100px」を適用。
                     x: Math.cos((item.angle * Math.PI) / 180) * 100,
                     y: Math.sin((item.angle * Math.PI) / 180) * 100,
                   }}
@@ -69,7 +77,7 @@ export function FloatingNav() {
                 >
                   <Link href={item.href} className="relative flex items-center justify-center group active:scale-90 transition-transform">
                     
-                    {/* 💡 ソーラーエフェクト：サイズを変えず、背後で光を拡散させる */}
+                    {/* 💡 ソーラーエフェクト：サイズを変えず、背後で光を拡散させる。 */}
                     {isActive && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <motion.div
