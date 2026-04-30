@@ -3,14 +3,14 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link"; // 💡 これが抜けていたためエラーが出ていました
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Chrome, Loader2, Trophy, ShieldCheck } from "lucide-react";
+import { MessageCircle, Chrome, Loader2, Trophy, ShieldCheck, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 /**
  * 💡 ログインページ：ソーシャル特化型ゲート
- * 現場での誤操作を防ぐため、入力を排除した2ボタン・フルアクセス設計
  */
 export default function LoginPage() {
   const router = useRouter();
@@ -19,9 +19,9 @@ export default function LoginPage() {
   const handleSocialLogin = async (provider: "line" | "google") => {
     setLoadingProvider(provider);
     
-    // 💡 Cloudflare Workers 側の認証エンドポイントへ誘導[cite: 1]
     try {
-      await new Promise(resolve => setTimeout(resolve, 1200)); // 通信擬似待ち
+      // 実際にはここで各プロバイダーのOAuthエンドポイントへリダイレクトします
+      await new Promise(resolve => setTimeout(resolve, 1000)); 
       toast.success(`${provider.toUpperCase()} でスタジアムに入場しました！`);
       router.push("/dashboard");
     } catch (error) {
@@ -33,7 +33,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-background p-6 relative overflow-hidden">
       
-      {/* 🏟 背景演出：ナイターの照明と芝生をイメージしたオーロラ */}
+      {/* 🏟 背景演出 */}
       <div className="absolute top-[-20%] right-[-10%] w-[60%] aspect-square bg-primary/15 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-20%] left-[-10%] w-[60%] aspect-square bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
 
@@ -46,7 +46,7 @@ export default function LoginPage() {
               src="/logo.webp"
               alt="iScore Logo"
               fill
-              className="object-contain text-transparent" // webp対応
+              className="object-contain"
               priority
             />
           </div>
@@ -64,7 +64,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* 🔓 ログインアクション：脱・透過で最強の視認性[cite: 1] */}
+        {/* 🔓 ログインアクション */}
         <div className="space-y-4">
           <p className="text-center text-[11px] font-black text-muted-foreground/60 uppercase tracking-widest mb-6">
             Quick Entry to Stadium
@@ -108,16 +108,18 @@ export default function LoginPage() {
 
         {/* 🏆 ベネフィット */}
         <div className="grid grid-cols-3 gap-2 py-4 border-y border-border/40">
-          {[
-            { icon: Trophy, label: "本格スコア" },
-            { icon: ShieldCheck, label: "安全管理" },
-            { icon: Image, label: "画像出力" }
-          ].map((item, i) => (
-            <div key={i} className="flex flex-col items-center gap-1.5">
-              <item.icon className="h-4 w-4 text-muted-foreground/50" />
-              <span className="text-[9px] font-black text-muted-foreground uppercase">{item.label}</span>
-            </div>
-          ))}
+          <div className="flex flex-col items-center gap-1.5">
+            <Trophy className="h-4 w-4 text-muted-foreground/50" />
+            <span className="text-[9px] font-black text-muted-foreground uppercase">本格スコア</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground/50" />
+            <span className="text-[9px] font-black text-muted-foreground uppercase">安全管理</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <ImageIcon className="h-4 w-4 text-muted-foreground/50" />
+            <span className="text-[9px] font-black text-muted-foreground uppercase">画像出力</span>
+          </div>
         </div>
       </div>
 
