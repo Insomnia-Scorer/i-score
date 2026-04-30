@@ -5,34 +5,47 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+/** 
+ * 💡 Motion v12 規約: 
+ * React 向けには 'motion/react' からインポートを行う。
+ * これにより Motion One 統合済みの高速エンジンの性能を最大化。
+ */
+import { motion, AnimatePresence } from "motion/react";
 import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（超凝縮・HOME頂点・広域アーク修正版）
- * HOMEを真上(-90度)に固定し、指示された範囲(-175度〜45度)を美しく埋める。
+ * 💡 フローティング・マキシマム・ナビ（Motion v12 & 100px 超広角）
+ * 半径100px、-175度〜45度の範囲を使い、HOMEを真上に固定。
+ * 幾何学的に配置を最適化し、現場での片手操作効率を最大化。
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // 💡 規約: 画面遷移が発生したら自動クローズ。現場でのコンテキスト保護。
+  // 💡 規約: 画面遷移が発生したら、バグ防止のためオーバーレイを自動クローズ。
   useEffect(() => setIsOpen(false), [pathname]);
 
-  // 💡 監督の指示に基づく完全な角度再配分
+  /**
+   * 💡 精密角度計算 (HOME を基準とした扇形配置)
+   * 1. TEAM (左端): -175度
+   * 2. PLAYER (左中間): -132.5度 ((-175 + -90) / 2)
+   * 3. HOME (頂点): -90度 (真上固定)
+   * 4. EVENT (右中間): -22.5度 ((-90 + 45) / 2)
+   * 5. MENU (右端): 45度 (斜め下)
+   */
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -175 },         // 左端（真横より少し下）
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -132.5 }, // 左中間
-    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },   // ⭐ 真上（頂点）
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -22.5 }, // 右中間（-90と45の等分）
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 45 },          // 右端（斜め下）
+    { icon: Users, label: "TEAM", href: "/team", angle: -175 },
+    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -132.5 },
+    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -22.5 },
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 45 },
   ];
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
-      
-      {/* 🌟 背景オーバーレイ：脱・グラスモーフィズム。ソリッドな漆黒(bg-zinc-950/98)で視認性最大化。 */}
+
+      {/* 🌟 背景オーバーレイ：脱・グラスモーフィズム仕様（漆黒ソリッド背景） */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -41,14 +54,14 @@ export function FloatingNav() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.1 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-zinc-950/98 z-[-1] rounded-full shadow-2xl" 
+            className="fixed inset-0 bg-zinc-950/98 z-[-1] rounded-full shadow-2xl"
           />
         )}
       </AnimatePresence>
 
       <div className="relative flex items-center justify-center">
-        
-        {/* 🌟 5つのサブボタン：全項目 w-18 (72px) 固定・半径 100px */}
+
+        {/* 🌟 サブボタン：半径100px、全 w-18 固定 */}
         <AnimatePresence>
           {isOpen &&
             menuItems.map((item, index) => {
@@ -59,17 +72,21 @@ export function FloatingNav() {
                   initial={{ scale: 0, x: 0, y: 0 }}
                   animate={{
                     scale: 1,
-                    // 💡 半径 100px 凝縮配置。親指を伸ばさず「転がす」操作感。
                     x: Math.cos((item.angle * Math.PI) / 180) * 100,
                     y: Math.sin((item.angle * Math.PI) / 180) * 100,
                   }}
                   exit={{ scale: 0, x: 0, y: 0 }}
-                  transition={{ type: "spring", stiffness: 600, damping: 35, delay: index * 0.01 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 600,
+                    damping: 35,
+                    delay: index * 0.01
+                  }}
                   className="absolute"
                 >
-                  <Link href={item.href} className="relative flex items-center justify-center group active:scale-90 transition-transform">
-                    
-                    {/* 💡 ソーラーエフェクト：サイズを変えず、背後で光を拡散させる。 */}
+                  <Link href={item.href} className="relative flex items-center justify-center group active:scale-95 transition-transform">
+
+                    {/* 💡 ソーラーエフェクト（Solar Ripple）：背面から波紋が広がる */}
                     {isActive && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <motion.div
@@ -80,12 +97,12 @@ export function FloatingNav() {
                         <div className="absolute inset-[-4px] rounded-full border-2 border-primary/60" />
                       </div>
                     )}
-                    
+
                     <div className={cn(
                       "w-18 h-18 rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl border-[3px] transition-colors relative z-10",
-                      isActive 
-                        ? "bg-primary border-primary text-primary-foreground" 
-                        : "bg-white border-zinc-200 text-zinc-900" 
+                      isActive
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "bg-white border-zinc-200 text-zinc-900"
                     )}>
                       <item.icon className="w-7 h-7 stroke-[2.5]" />
                       <span className="text-[8px] font-black tracking-tighter leading-none uppercase">
@@ -98,13 +115,15 @@ export function FloatingNav() {
             })}
         </AnimatePresence>
 
-        {/* ⚾️ センターボタン：w-24 (96px) ＋ 爆速アイコン */}
+        {/* ⚾️ センターボタン：w-24（96px）＋ 爆速ハンドリング */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             "relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 z-50 overflow-hidden",
             "shadow-[0_25px_60px_rgba(0,0,0,0.5),0_10px_25px_rgba(var(--primary),0.3)]",
-            isOpen ? "bg-white ring-[8px] ring-primary/60" : "bg-primary"
+            isOpen
+              ? "bg-white ring-[8px] ring-primary/60"
+              : "bg-primary"
           )}
         >
           <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
@@ -133,7 +152,7 @@ export function FloatingNav() {
                     src="/logo.webp"
                     alt="iScore"
                     fill
-                    className="object-contain p-0.5 rounded-full" 
+                    className="object-contain p-0.5 rounded-full"
                     priority
                   />
                 </motion.div>
