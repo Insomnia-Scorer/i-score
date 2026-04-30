@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
-import { FloatingNavigation } from "@/components/floating-nav";
+import { FloatingNavigation } from "@/components/layout/floating-nav";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
