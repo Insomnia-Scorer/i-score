@@ -10,8 +10,8 @@ import { LayoutDashboard, Users, Trophy, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（真円死守・巨大アイコン・半透明枠）
- * どんな状態でも rounded-full を維持し、現場でのブランドアイデンティティを保つ。
+ * 💡 フローティング・マキシマム・ナビ（真円絶対固定エディション）
+ * どんな状態変化が起きても、物理的に「円」であり続けるための二重構造設計
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,7 +47,7 @@ export function FloatingNav() {
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 扇状メニュー（距離130pxで余裕のある配置） */}
+        {/* 🌟 扇状メニュー（距離130px） */}
         <AnimatePresence>
           {isOpen &&
             menuItems.map((item, index) => (
@@ -80,47 +80,50 @@ export function FloatingNav() {
             ))}
         </AnimatePresence>
 
-        {/* ⚾️ センターボタン：w-24（96px）＋ 強力シャドウ ＋ 真円絶対固定 */}
+        {/* ⚾️ センターボタン：w-24（96px）＋ 3Dシャドウ ＋ 真円絶対固定コンテナ */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            // 💡 真円（rounded-full）と 影（shadow）をベースクラスに固定
+            // 💡 どんな時も rounded-full を最優先に。overflow-hidden で四角を許さない
             "relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 z-50 overflow-hidden",
             "shadow-[0_25px_50px_rgba(0,0,0,0.4),0_10px_20px_rgba(var(--primary),0.3)]",
             isOpen 
-              ? "bg-background/40 ring-[6px] ring-primary/50 backdrop-blur-md" // 💡 展開時の半透明枠
+              ? "bg-background/40 ring-[6px] ring-primary/50 backdrop-blur-md" 
               : "bg-primary ring-[0px] ring-transparent"
           )}
         >
-          <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.div
-                key="close"
-                initial={{ opacity: 0, scale: 0.5, rotate: -180 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ opacity: 0, scale: 0.5, rotate: 180 }}
-                className="flex items-center justify-center w-full h-full rounded-full" // ここにも rounded-full
-              >
-                <X className="w-14 h-14 text-primary stroke-[4]" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="logo"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="relative w-full h-full rounded-full" // ここにも rounded-full
-              >
-                <Image
-                  src="/logo.webp"
-                  alt="iScore"
-                  fill
-                  className="object-contain p-0.5 rounded-full" // 💡 画像レベルでも真円を意識
-                  priority
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* 💡 ボタン内部にも真円のマスク層を設けることで、描画エラーを完全に封じる */}
+          <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              {isOpen ? (
+                <motion.div
+                  key="close"
+                  initial={{ opacity: 0, scale: 0.5, rotate: -180 }}
+                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                  exit={{ opacity: 0, scale: 0.5, rotate: 180 }}
+                  className="flex items-center justify-center w-full h-full rounded-full"
+                >
+                  <X className="w-14 h-14 text-primary stroke-[4]" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="logo"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="relative w-full h-full rounded-full flex items-center justify-center"
+                >
+                  <Image
+                    src="/logo.webp"
+                    alt="iScore"
+                    fill
+                    className="object-contain p-0.5 rounded-full" 
+                    priority
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </button>
       </div>
     </div>
