@@ -10,9 +10,8 @@ import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（5項目・HOME仕様）
- * 中央ボタン(HOME)を中心に、チーム・選手・大会・その他を扇状に配置。
- * 爆速レスポンスと真円絶対死守構造を搭載。
+ * 💡 フローティング・マキシマム・ナビ（5項目・インボタンラベル仕様）
+ * アイコンとテキストをボタン内に凝縮し、デザインの純度と現場視認性を最大化。
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,11 +20,10 @@ export function FloatingNav() {
   // 💡 規約: ナビゲーションが発生したら自動で閉じる
   useEffect(() => setIsOpen(false), [pathname]);
 
-  // 💡 5項目のバランス配置（角度を -160度から -20度まで均等に配分）
   const menuItems = [
     { icon: Users, label: "TEAM", href: "/teams", angle: -160 },
     { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -125 },
-    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 }, // 中央上
+    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },
     { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -55 },
     { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -20 },
   ];
@@ -33,7 +31,7 @@ export function FloatingNav() {
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
       
-      {/* 🌟 背景オーバーレイ（監督直伝の真円防衛仕様） */}
+      {/* 🌟 背景オーバーレイ（監督直伝・真円防衛） */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -42,14 +40,14 @@ export function FloatingNav() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-background/90 z-[-1] rounded-full shadow-md" 
+            className="fixed inset-0 bg-background/90 z-[-1] rounded-full" 
           />
         )}
       </AnimatePresence>
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 5つのナビ項目（距離130pxで干渉を防止） */}
+        {/* 🌟 5つのナビ項目（インボタンラベル） */}
         <AnimatePresence>
           {isOpen &&
             menuItems.map((item, index) => (
@@ -58,25 +56,25 @@ export function FloatingNav() {
                 initial={{ scale: 0, x: 0, y: 0 }}
                 animate={{
                   scale: 1,
-                  x: Math.cos((item.angle * Math.PI) / 180) * 130,
-                  y: Math.sin((item.angle * Math.PI) / 180) * 130,
+                  x: Math.cos((item.angle * Math.PI) / 180) * 135, // 距離を微調整
+                  y: Math.sin((item.angle * Math.PI) / 180) * 135,
                 }}
                 exit={{ scale: 0, x: 0, y: 0 }}
                 transition={{ type: "spring", stiffness: 600, damping: 35, delay: index * 0.01 }}
                 className="absolute"
               >
-                <Link href={item.href} className="group flex flex-col items-center gap-2 transition-transform active:scale-90">
+                <Link href={item.href} className="active:scale-90 transition-transform">
                   <div className={cn(
-                    "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl border-2",
+                    "w-18 h-18 rounded-full flex flex-col items-center justify-center shadow-2xl border-2 gap-1",
                     pathname === item.href 
-                      ? "bg-primary border-primary text-primary-foreground scale-110" 
+                      ? "bg-primary border-primary text-primary-foreground scale-110 shadow-primary/20" 
                       : "bg-background border-border text-foreground"
                   )}>
-                    <item.icon className="w-8 h-8" />
+                    <item.icon className="w-7 h-7" />
+                    <span className="text-[8px] font-black tracking-tighter leading-none">
+                      {item.label}
+                    </span>
                   </div>
-                  <span className="text-[9px] font-black tracking-widest text-foreground bg-background px-2.5 py-1 rounded-full border border-border shadow-sm uppercase">
-                    {item.label}
-                  </span>
                 </Link>
               </motion.div>
             ))}
@@ -90,7 +88,7 @@ export function FloatingNav() {
             "shadow-[0_20px_50px_rgba(0,0,0,0.4),0_8px_20px_rgba(var(--primary),0.3)]",
             isOpen 
               ? "bg-background/20 ring-[6px] ring-primary/40 backdrop-blur-md" 
-              : "bg-primary ring-[0px] ring-transparent"
+              : "bg-primary"
           )}
         >
           <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
