@@ -10,8 +10,8 @@ import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（究極視認性・中央凝縮・パス修正版）
- * 5つのボタンを中央に寄せ、操作効率と視認性を最大化した i-Score の司令塔
+ * 💡 フローティング・マキシマム・ナビ（配置最適化エディション）
+ * 5項目をバランスよく配置。半径を広げて視認性と美しさを向上。
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,17 +21,17 @@ export function FloatingNav() {
   useEffect(() => setIsOpen(false), [pathname]);
 
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -150 }, // 💡 チーム編成（/team）へ
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -120 },
+    { icon: Users, label: "TEAM", href: "/team", angle: -155 }, // 💡 team へ修正
+    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -122.5 },
     { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -60 }, // 💡 大会ページパス修正
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -30 }, // 💡 MENU実装準備
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -57.5 },
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -25 }, // 💡 MENU 確定
   ];
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
       
-      {/* 🌟 背景オーバーレイ：脱・グラスモーフィズム。極限まで濃くし視認性を死守 */}
+      {/* 🌟 背景オーバーレイ（監督直伝の真円防衛仕様） */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -47,7 +47,7 @@ export function FloatingNav() {
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 5つのサブボタン：中央凝縮配置（半径125px / 角度-150~-30） */}
+        {/* 🌟 5つのサブボタン：距離を 140px に広げてバランスを改善 */}
         <AnimatePresence>
           {isOpen &&
             menuItems.map((item, index) => (
@@ -56,8 +56,9 @@ export function FloatingNav() {
                 initial={{ scale: 0, x: 0, y: 0 }}
                 animate={{
                   scale: 1,
-                  x: Math.cos((item.angle * Math.PI) / 180) * 125,
-                  y: Math.sin((item.angle * Math.PI) / 180) * 125,
+                  // 💡 半径を 140px に拡大して「くっつきすぎ」を解消
+                  x: Math.cos((item.angle * Math.PI) / 180) * 140,
+                  y: Math.sin((item.angle * Math.PI) / 180) * 140,
                 }}
                 exit={{ scale: 0, x: 0, y: 0 }}
                 transition={{ type: "spring", stiffness: 600, damping: 35, delay: index * 0.01 }}
@@ -80,7 +81,7 @@ export function FloatingNav() {
             ))}
         </AnimatePresence>
 
-        {/* ⚾️ センターボタン：w-24（96px）＋ 多層シャドウ ＋ 爆速アイコン */}
+        {/* ⚾️ センターボタン（w-24 / 96px / 常時真円・爆速アイコン） */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
