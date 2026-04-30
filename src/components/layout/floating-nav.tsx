@@ -10,28 +10,29 @@ import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（半径120px凝縮・ソーラーエフェクト版）
- * 全ボタン w-18 (72px) 固定。半径を120pxに絞り、片手操作の機動性を最大化。
+ * 💡 フローティング・マキシマム・ナビ（半径100px超凝縮・ソーラーエフェクト版）
+ * 半径を100px、角度を-175度~-45度に設定。
+ * 片手操作時の親指の可動域を最小化し、爆速での画面遷移を実現。
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // 💡 規約: 画面遷移（パス変更）が発生したら自動でオーバーレイを閉じる
+  // 💡 規約: 画面遷移が発生したら自動でクローズ。現場でのコンテキスト保護。
   useEffect(() => setIsOpen(false), [pathname]);
 
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -155 }, // 💡 角度を微調整して中央寄せ
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -122.5 },
-    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -57.5 },
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -25 },
+    { icon: Users, label: "TEAM", href: "/team", angle: -175 }, // 左端
+    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -142.5 },
+    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -110 },
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -77.5 },
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: -45 }, // 右端
   ];
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
       
-      {/* 🌟 背景オーバーレイ：監督直伝の真円防衛 & 漆黒(bg-zinc-950/98)で視認性死守 */}
+      {/* 🌟 背景オーバーレイ：真円防衛 & 漆黒(bg-zinc-950/98)で視認性を死守 */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -47,7 +48,7 @@ export function FloatingNav() {
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 サブボタン：全項目 w-18 固定・半径120px凝縮配置 */}
+        {/* 🌟 サブボタン：全項目 w-18 固定・半径100px凝縮配置 */}
         <AnimatePresence>
           {isOpen &&
             menuItems.map((item, index) => {
@@ -58,9 +59,9 @@ export function FloatingNav() {
                   initial={{ scale: 0, x: 0, y: 0 }}
                   animate={{
                     scale: 1,
-                    // 💡 監督オーダーの「半径120px」を適用。より親指に近い位置へ。
-                    x: Math.cos((item.angle * Math.PI) / 180) * 120,
-                    y: Math.sin((item.angle * Math.PI) / 180) * 120,
+                    // 💡 監督オーダーの「半径100px」を適用。
+                    x: Math.cos((item.angle * Math.PI) / 180) * 100,
+                    y: Math.sin((item.angle * Math.PI) / 180) * 100,
                   }}
                   exit={{ scale: 0, x: 0, y: 0 }}
                   transition={{ type: "spring", stiffness: 600, damping: 35, delay: index * 0.01 }}
@@ -68,7 +69,7 @@ export function FloatingNav() {
                 >
                   <Link href={item.href} className="relative flex items-center justify-center group active:scale-90 transition-transform">
                     
-                    {/* 💡 ソーラーエフェクト：ボタンサイズを変えず、背後で波紋を拡散させる */}
+                    {/* 💡 ソーラーエフェクト：凝縮された配置でも「選択中」を明確にする光の波紋 */}
                     {isActive && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <motion.div
