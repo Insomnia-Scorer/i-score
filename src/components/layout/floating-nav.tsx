@@ -10,42 +10,30 @@ import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "
 import { cn } from "@/lib/utils";
 
 /**
- * 💡 フローティング・マキシマム・ナビ（超凝縮・HOME頂点エディション）
- * 頂点をHOME(-90度)に固定し、左右に55度ずつ配分。
- * 半径100pxにより、親指の付け根を起点とした「最小アーク」を実現。
+ * 💡 フローティング・マキシマム・ナビ（超凝縮・HOME頂点・広域アーク仕様）
+ * 半径100px、角度 -175度 〜 45度の可動域の中で、HOMEを真上に配置。
+ * 屋外視認性を考慮した漆黒ソリッド背景と、ボタンサイズ w-18 固定。
  */
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // 💡 規約: 画面遷移（パス変更）が発生したら自動でクローズ
-  useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
+  // 💡 規約: 画面遷移が発生したら自動クローズ。
+  useEffect(() => setIsOpen(false), [pathname]);
 
-  // 💡 黄金の5角配置：-175°から45°までの220度を4等分(55度ステップ)
-  // 計算値: -175, -120, -65, -10, 45 ですが、HOMEを-90度にするためオフセット調整
+  // 💡 HOME(-90)を頂点にし、左端(-175)と右端(45)を繋ぐバランス配置
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -200 },         // 左下へ回り込み
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -145 }, 
-    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },   // ⭐ 真上（頂点）固定
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -35 }, 
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 20 },         // 右下へ
-  ];
-
-  // 監督の「-175度〜45度」指示をベースに、HOME(-90度)を中心に据えた再配分案
-  const calibratedMenuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -175 },         // 左端開始
-    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -132.5 }, 
-    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },   // ⭐ 真上
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -47.5 }, 
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 45 },          // 右端終了(45度)
+    { icon: Users, label: "TEAM", href: "/team", angle: -175 },         // 左：真横よりわずかに下
+    { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -132.5 }, // 左中間
+    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },   // ⭐ 真上（頂点）
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -22.5 }, // 右中間
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 45 },          // 右：斜め下まで回り込み
   ];
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
       
-      {/* 🌟 背景オーバーレイ：監督直伝の真円防衛 & 漆黒(bg-zinc-950/98)で視認性死守 */}
+      {/* 🌟 背景オーバーレイ：脱・グラスモーフィズム。ソリッドな漆黒で視認性最大化。 */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -61,10 +49,10 @@ export function FloatingNav() {
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 サブボタン：全項目 w-18 固定・半径100px・完全対称配置 */}
+        {/* 🌟 5つのサブボタン：全項目 w-18 (72px) 固定・半径 100px */}
         <AnimatePresence>
           {isOpen &&
-            calibratedMenuItems.map((item, index) => {
+            menuItems.map((item, index) => {
               const isActive = pathname === item.href;
               return (
                 <motion.div
@@ -72,7 +60,8 @@ export function FloatingNav() {
                   initial={{ scale: 0, x: 0, y: 0 }}
                   animate={{
                     scale: 1,
-                    x: Math.cos((item.angle * Math.PI) / 180) * 100, // 半径100px
+                    // 💡 半径 100px 凝縮配置
+                    x: Math.cos((item.angle * Math.PI) / 180) * 100,
                     y: Math.sin((item.angle * Math.PI) / 180) * 100,
                   }}
                   exit={{ scale: 0, x: 0, y: 0 }}
@@ -81,7 +70,7 @@ export function FloatingNav() {
                 >
                   <Link href={item.href} className="relative flex items-center justify-center group active:scale-90 transition-transform">
                     
-                    {/* 💡 ソーラーエフェクト：サイズを変えず、背後で光を拡散させる */}
+                    {/* 💡 ソーラーエフェクト：サイズを変えず、背後で光を拡散させる。 */}
                     {isActive && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <motion.div
@@ -110,7 +99,7 @@ export function FloatingNav() {
             })}
         </AnimatePresence>
 
-        {/* ⚾️ センターボタン：w-24（96px）＋ 爆速ハンドリング */}
+        {/* ⚾️ センターボタン：w-24 (96px) ＋ 爆速ハンドリング ＋ 真円絶対固定 */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
