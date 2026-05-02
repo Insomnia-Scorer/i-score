@@ -34,7 +34,7 @@ export function FloatingNav() {
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
-      
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -43,13 +43,13 @@ export function FloatingNav() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.1 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-zinc-950/98 z-[-1] rounded-full" 
+            className="fixed inset-0 bg-zinc-950/98 z-[-1] rounded-full"
           />
         )}
       </AnimatePresence>
 
       <div className="relative flex items-center justify-center">
-        
+
         {/* 🌟 センター・リング（結界エフェクト）：ボタンサイズ w-18 に合わせて調整 */}
         <AnimatePresence>
           {isOpen && (
@@ -113,10 +113,10 @@ export function FloatingNav() {
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
-              <motion.div 
-                key="close" 
-                initial={{ opacity: 0, scale: 0.5, rotate: -90 }} 
-                animate={{ opacity: 1, scale: 1, rotate: 0 }} 
+              <motion.div
+                key="close"
+                initial={{ opacity: 0, scale: 0.5, rotate: -90 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
                 exit={{ opacity: 0, scale: 0.5, rotate: 90 }}
                 transition={{ type: "spring", stiffness: 600, damping: 25 }}
                 className="flex items-center justify-center"
@@ -125,10 +125,10 @@ export function FloatingNav() {
                 <X className="w-9 h-9 text-primary stroke-[5]" />
               </motion.div>
             ) : (
-              <motion.div 
-                key="logo" 
-                initial={{ opacity: 0, scale: 0.8 }} 
-                animate={{ opacity: 1, scale: 1 }} 
+              <motion.div
+                key="logo"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="relative w-full h-full"
               >
