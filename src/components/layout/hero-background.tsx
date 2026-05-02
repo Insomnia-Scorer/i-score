@@ -1,4 +1,5 @@
 // filepath: src/components/layout/hero-background.tsx
+/* 💡 現場視認性ルール: グリッドを「確実に見える」レベルまでコントラスト強化。脱・グラスモーフィズム。 */
 "use client";
 
 import React from "react";
@@ -7,53 +8,57 @@ import React from "react";
  */
 import { motion } from "motion/react";
 
-/**
- * 💡 i-score Data-Viz Stadium 背景
- * 屋外視認性を考慮し、背景を漆黒(bg-zinc-950)に固定しつつ、
- * スコアブックの幾何学グリッドを「見える」レベルまでコントラスト強化
- */
 export function HeroBackground() {
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden bg-zinc-950">
-      
-      {/* 🌟 究極のダイヤモンド・グリッド
-          opacity を 0.1 → 0.3 に引き上げ、線の色をグレー(slate-500)系で明示 */}
-      <div 
-        className="absolute inset-0 opacity-[0.25]" 
-        style={{ 
-          backgroundImage: `
-            linear-gradient(30deg, #64748b 1.5px, transparent 1.5px), 
-            linear-gradient(150deg, #64748b 1.5px, transparent 1.5px)
-          `,
-          backgroundSize: '100px 173.2px',
-          backgroundPosition: 'center'
-        }} 
-      />
+    <div className="fixed inset-0 -z-10 overflow-hidden bg-[#09090b]">
+      {/* 🌟 究極のダイヤモンド・グリッド (SVG Pattern)
+          CSSの細い線ではなく、SVGで「1pxの明示的な線」を描画。
+          透過度を 0.15 に設定し、黒背景に対して確実なコントラストを確保。 */}
+      <svg className="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern 
+            id="diamond-grid" 
+            width="100" 
+            height="173.2" 
+            patternUnits="userSpaceOnUse"
+            patternTransform="scale(0.8)"
+          >
+            {/* スコアブックのマス目を形作るダイヤモンド・パス */}
+            <path 
+              d="M 50 0 L 100 86.6 L 50 173.2 L 0 86.6 Z" 
+              fill="none" 
+              stroke="#ffffff" 
+              strokeWidth="1.5"
+            />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#diamond-grid)" />
+      </svg>
 
-      {/* 🌟 データのパルス（動く光のライン）
-          線の太さを 2px にし、発光感(blur)を追加して「真っ黒」を回避 */}
+      {/* 🌟 データのパルス (Motion v12): 
+          光の帯を太く(4px)、明るく(primary/60)し、アニメーションを強調。 */}
       {[...Array(3)].map((_, i) => (
         <motion.div
           key={i}
           initial={{ x: "-100%", opacity: 0 }}
-          animate={{ x: "200%", opacity: [0, 0.7, 0] }}
+          animate={{ x: "200%", opacity: [0, 0.8, 0] }}
           transition={{ 
-            duration: 15 + i * 5, 
+            duration: 12 + i * 4, 
             repeat: Infinity, 
             ease: "linear", 
             delay: i * 2 
           }}
-          className="absolute h-[2px] w-full bg-gradient-to-r from-transparent via-primary/60 to-transparent blur-[1px]"
-          style={{ top: `${25 + i * 30}%` }}
+          className="absolute h-[4px] w-full bg-gradient-to-r from-transparent via-primary/60 to-transparent blur-[2px]"
+          style={{ top: `${25 + i * 25}%` }}
         />
       ))}
 
-      {/* 🌟 中央のマウンド・ライト
-          ロゴ周辺に Primary カラーの柔らかな光を敷き、奥行きを演出 */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(var(--primary),0.1)_0%,transparent_70%)]" />
+      {/* 🌟 センター・スポットライト: 
+          マウンドを照らすカクテル光線のように、中央のロゴエリアを強調。 */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary),0.2)_0%,transparent_70%)]" />
 
-      {/* 🌟 画面端の「絞り」エフェクト */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_40%,rgba(9,9,11,0.8)_85%,rgba(9,9,11,1)_100%)]" />
+      {/* 🌟 ヴィネットエフェクト: 四隅を落として奥行きを演出 */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_20%,rgba(0,0,0,0.8)_90%)]" />
     </div>
   );
 }
