@@ -5,6 +5,9 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+/** 
+ * 💡 Motion v12 規約: React 向けには 'motion/react' を使用。
+ */
 import { motion, AnimatePresence } from "motion/react";
 import { LayoutDashboard, Users, Trophy, MoreHorizontal, UserSquare2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,18 +16,15 @@ export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
+  // 💡 規約: 背景コンテキスト変化（ページ遷移）時にオーバーレイを自動クローズ
   useEffect(() => setIsOpen(false), [pathname]);
 
-  /**
-   * 🏟️ 監督オーダー：TEAMをさらに下げ、HOMEを頂点に、MENUを正常位置へ。
-   * 半径100pxを維持しつつ、角度を調整（TEAM: -210度まで下げ、MENU: 30度）
-   */
   const menuItems = [
-    { icon: Users, label: "TEAM", href: "/team", angle: -210 },         // 💡 さらに下げて親指に寄せる
+    { icon: Users, label: "TEAM", href: "/team", angle: -210 },
     { icon: UserSquare2, label: "PLAYER", href: "/players", angle: -150 },
-    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 }, // ⭐ 真上
-    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -30 }, 
-    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 30 },          // 💡 ジョークにならない位置
+    { icon: LayoutDashboard, label: "HOME", href: "/dashboard", angle: -90 },
+    { icon: Trophy, label: "EVENT", href: "/tournaments", angle: -30 },
+    { icon: MoreHorizontal, label: "MENU", href: "/menu", angle: 30 },
   ];
 
   return (
@@ -45,7 +45,7 @@ export function FloatingNav() {
 
       <div className="relative flex items-center justify-center">
         
-        {/* 🌟 中央の半透明リング（結界）：展開時にロゴを優しく包む */}
+        {/* 🌟 センター・リング（結界エフェクト） */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -76,7 +76,6 @@ export function FloatingNav() {
                   className="absolute"
                 >
                   <Link href={item.href} className="relative flex items-center justify-center active:scale-95 transition-transform">
-                    {/* ソーラー波紋 */}
                     {isActive && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <motion.div
@@ -91,7 +90,7 @@ export function FloatingNav() {
                       isActive ? "bg-primary border-primary text-primary-foreground" : "bg-white border-zinc-200 text-zinc-900"
                     )}>
                       <item.icon className="w-7 h-7 stroke-[2.5]" />
-                      <span className="text-[8px] font-black uppercase">{item.label}</span>
+                      <span className="text-[8px] font-black uppercase tracking-tighter">{item.label}</span>
                     </div>
                   </Link>
                 </motion.div>
@@ -99,6 +98,7 @@ export function FloatingNav() {
             })}
         </AnimatePresence>
 
+        {/* ⚾️ センターボタン：×アイコンのサイズを最適化 */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
@@ -108,11 +108,25 @@ export function FloatingNav() {
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
-              <motion.div key="close" initial={{ opacity: 0, rotate: -45 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 45 }}>
-                <X className="w-14 h-14 text-primary stroke-[5]" />
+              <motion.div 
+                key="close" 
+                initial={{ opacity: 0, scale: 0.5, rotate: -90 }} 
+                animate={{ opacity: 1, scale: 1, rotate: 0 }} 
+                exit={{ opacity: 0, scale: 0.5, rotate: 90 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="flex items-center justify-center"
+              >
+                {/* 💡 修正ポイント: w-14 -> w-10 に縮小し、視覚的なバランスを調整 */}
+                <X className="w-10 h-10 text-primary stroke-[4]" />
               </motion.div>
             ) : (
-              <motion.div key="logo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative w-full h-full">
+              <motion.div 
+                key="logo" 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="relative w-full h-full"
+              >
                 <Image src="/logo.webp" alt="iScore" fill className="object-contain p-0.5" priority />
               </motion.div>
             )}
