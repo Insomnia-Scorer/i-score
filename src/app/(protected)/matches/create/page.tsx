@@ -87,7 +87,7 @@ export default function CreateMatchPage() {
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
             <ChevronLeft className="h-6 w-6" />
           </Button>
-          <SectionHeader title={mode === "real" ? "本格記録" : "結果入力"} subtitle={mode === "real" ? "Lineup & Play-by-play" : "Quick Entry"} showPulse />
+          <SectionHeader title={mode === "real" ? "LIVE SCORE" : "QUICK SCORE"} subtitle={mode === "real" ? "Lineup & Play-by-play" : "Quick Entry"} showPulse />
           <div className="w-10" />
         </div>
 
