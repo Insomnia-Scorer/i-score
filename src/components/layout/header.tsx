@@ -81,12 +81,12 @@ export function Header() {
           <div className="flex flex-col justify-center">
             {/* 🔥 ホバー時に文字色がプライマリーカラーに変化するエフェクトを追加 */}
             <h1 className="text-xl sm:text-3xl font-black italic tracking-tighter text-foreground leading-none group-hover:text-primary transition-colors duration-300">
-              iScore
+              iScoreCloud
             </h1>
             <div className="flex items-center gap-1 mt-0.5 opacity-60 md:hidden">
               <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary fill-primary hidden sm:block" />
               <span className="text-[8px] sm:text-[10px] font-bold tracking-widest text-muted-foreground whitespace-nowrap hidden min-[380px]:block">
-                野球の今を、次世代へ。
+                野球の「今」を次世代へ
               </span>
             </div>
           </div>
