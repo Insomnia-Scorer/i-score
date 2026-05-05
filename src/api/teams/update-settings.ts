@@ -1,43 +1,59 @@
 // filepath: src/api/teams/update-settings.ts
 /* 💡 iScoreCloud 規約: 
-   1. Cloudflare Workers + D1 + Drizzle で実装。
-   2. 型キャストを明示し、レスポンスインターフェースを定義。 */
+   1. Cloudflare Workers + Drizzle ORM で実装。
+   2. チーム設定（lineGroupId, isAutoReportEnabled）を D1 に保存。
+   3. API ユニットの責務分離規約に基づき、更新（Write）に特化する。 */
 
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { teams } from '@/db/schema/teams';
+import { teams } from '@/db/schema/team';
 import { eq } from 'drizzle-orm';
 import type { WorkerEnv } from '@/types/api';
 
-const teamsSettings = new Hono<{ Bindings: WorkerEnv }>();
+const teamsUpdateSettings = new Hono<{ Bindings: WorkerEnv }>();
 
-export interface TeamSettingsUpdate {
+/** 💡 リクエストペイロードの型定義 */
+export interface TeamSettingsUpdatePayload {
   teamId: string;
   lineGroupId: string;
   isAutoReportEnabled: boolean;
 }
 
-teamsSettings.post('/update', async (c) => {
+/** 💡 レスポンスの型定義 */
+export interface TeamSettingsUpdateResponse {
+  success: boolean;
+  data?: { updatedId: string };
+  error?: string;
+}
+
+// 🌟 POST /api/teams/update-line へのマウントを想定
+teamsUpdateSettings.post('/update-line', async (c) => {
   const db = drizzle(c.env.DB);
   
   try {
-    // 💡 規約: 明示的な型キャスト
-    const body = (await c.req.json()) as TeamSettingsUpdate;
+    const body = (await c.req.json()) as TeamSettingsUpdatePayload;
     const { teamId, lineGroupId, isAutoReportEnabled } = body;
 
+    // 💡 現場対応：空文字は null として保存し、連携解除を可能にする
     await db.update(teams)
       .set({ 
-        lineGroupId, 
-        isAutoReportEnabled: isAutoReportEnabled ? 1 : 0,
-        updatedAt: new Date()
+        lineGroupId: lineGroupId.trim() || null, 
+        isAutoReportEnabled: isAutoReportEnabled,
       })
       .where(eq(teams.id, teamId));
 
-    return c.json({ success: true });
+    const res: TeamSettingsUpdateResponse = { 
+      success: true, 
+      data: { updatedId: teamId } 
+    };
+    return c.json(res);
+
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Update failed";
-    return c.json({ success: false, error: msg }, 500);
+    const errorMsg = err instanceof Error ? err.message : "D1 Update Failed";
+    console.error(`[D1 Error]: ${errorMsg}`);
+    const res: TeamSettingsUpdateResponse = { success: false, error: errorMsg };
+    return c.json(res, 500);
   }
 });
 
-export default teamsSettings;
+export default teamsUpdateSettings;
