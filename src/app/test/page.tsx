@@ -66,9 +66,9 @@ export default function LineIntegrationTestPage() {
 
       <main className="space-y-6">
         {/* 現場視認性重視のカード */}
-        <LineSettingsCard 
+        <LineSettingsCard
           teamId={testTeamId}
-          initialGroupId="" 
+          initialGroupId=""
           initialIsEnabled={false}
           // @ts-ignore: テスト用。LineSettingsCard側のonSave型定義に合わせて調整
           onSave={handleSave}
