@@ -1,31 +1,52 @@
 // filepath: src/api/matches/webhook.ts
-/* 💡 iScoreCloud 規約: Cloudflare Workers で実行。
-   グループ招待時や特定のメッセージに反応して groupId を抽出する。 */
+/* 💡 iScoreCloud 規約: 
+   1. Cloudflare Workers で実行。
+   2. Messaging API Webhook を受け取り、groupId を安全に抽出する。
+   3. パス（pathname）判定を行い、404エラーを回避する。 */
 
-import { LineWebhookRequest, LinePostResponse } from "@/types/match";
+import { LineWebhookRequest } from "@/types/match";
 
 export interface Env {
-  LINE_CHANNEL_ACCESS_TOKEN: string; // 💡 wrangler secret 設定済み
+  LINE_CHANNEL_ACCESS_TOKEN: string; // 💡 Cloudflare Secrets に設定済み
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method !== "POST") return new Response("OK", { status: 200 });
+    const url = new URL(request.url);
+
+    // 💡 404回避ロジック: リクエストのパスが正しいか厳密にチェック
+    if (url.pathname !== "/api/matches/webhook") {
+      return new Response("Not Found", { status: 404 });
+    }
+
+    // 💡 Webhook は LINE 側からの POST リクエストのみ受け付ける
+    if (request.method !== "POST") {
+      return new Response("Method Not Allowed", { status: 405 });
+    }
 
     try {
-      // 💡 規約: Interface を定義し、明示的な型キャストを行う
+      // 💡 規約: src/types/match.ts の型定義を使用して明示的にキャスト
       const body = (await request.json()) as LineWebhookRequest;
 
+      // LINE側からの「検証（Verification）」リクエストを考慮
+      if (!body.events || body.events.length === 0) {
+        return new Response("OK", { status: 200 });
+      }
+
       for (const event of body.events) {
-        // 1. グループに招待された場合、またはメッセージが来た場合
+        // 🌟 グループ内でのイベント（メッセージや招待）から groupId を抽出
         if (event.source.type === 'group' && event.source.groupId) {
-          const targetId = event.source.groupId;
+          const capturedGroupId = event.source.groupId;
+          
+          // 現場デバッグ用ログ（wrangler tail で確認）
+          console.log(`[iScoreCloud] Target Group ID: ${capturedGroupId}`);
 
-          // 💡 現場デバッグ用: ログに出力（wrangler tail で確認可能）
-          console.log(`🔥 Captured Group ID: ${targetId}`);
-
-          // 2. 「ID」というメッセージに反応して、その場でIDを返信する（確認用）
-          if (event.type === 'message' && event.message?.text === 'ID') {
+          // 🧪 「ID」というメッセージに反応して返信するデバッグ機能
+          if (
+            event.type === 'message' && 
+            event.message?.type === 'text' && 
+            event.message.text === 'ID'
+          ) {
             await fetch("https://api.line.me/v2/bot/message/reply", {
               method: "POST",
               headers: {
@@ -34,7 +55,12 @@ export default {
               },
               body: JSON.stringify({
                 replyToken: event.replyToken,
-                messages: [{ type: "text", text: `このグループのIDは:\n${targetId}` }],
+                messages: [
+                  {
+                    type: "text",
+                    text: `【iScoreCloud システム通知】\nCaptured Group ID:\n${capturedGroupId}`
+                  }
+                ],
               }),
             });
           }
@@ -42,8 +68,10 @@ export default {
       }
 
       return new Response("OK", { status: 200 });
+
     } catch (err: unknown) {
-      console.error("Webhook Error:", err);
+      const errorMsg = err instanceof Error ? err.message : "Webhook processing failed";
+      console.error("[iScoreCloud Webhook Error]:", errorMsg);
       return new Response("Internal Error", { status: 500 });
     }
   },
