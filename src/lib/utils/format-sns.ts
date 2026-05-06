@@ -1,48 +1,65 @@
 // filepath: src/lib/utils/format-sns.ts
 /* 💡 iScoreCloud 規約: 
-   1. サヨナラ勝ち(x)や未消化(-)の厳格な表示。
-   2. Messaging API 直送用に生の文字列を返し、URL用は別途用意する。 */
+   1. サヨナラ勝ちの判定ロジックを内包し、野球の不文律（x表示）を自動化する。
+   2. 9回以降（または設定された最終回）の裏で勝ち越した瞬間に「x」を付与する。 */
 
 /**
- * 💡 現場仕様スコアフォーマット
+ * 💡 サヨナラ判定付きスコアフォーマット
  */
-export function formatScoreDisplay(score: number | null | undefined, isWalkOff: boolean = false): string {
-  // スコアが確定していない、あるいは回が回ってきていない場合は「-」
-  if (score === null || score === undefined) return "-";
-  // サヨナラ勝ちは「x」を付与。野球界の不文律。
-  return isWalkOff ? `${score}x` : `${score}`;
+export function formatScoreWithX(
+  homeScore: number,
+  awayScore: number,
+  inning: number,
+  isBottom: boolean,
+  status: 'live' | 'finished',
+  config: { scheduledInnings: number } = { scheduledInnings: 9 }
+): { home: string; away: string } {
+  
+  // 🌟 サヨナラ勝ちの条件チェック
+  // 1. 試合終了している or 現在進行中の最終回裏
+  // 2. 最終回以降の裏の攻撃である
+  // 3. ホームチーム（後攻）がリードしている
+  const isWalkOff = 
+    (status === 'finished' || (status === 'live' && inning >= config.scheduledInnings && isBottom)) &&
+    isBottom && 
+    homeScore > awayScore;
+
+  return {
+    home: isWalkOff ? `${homeScore}x` : `${homeScore}`,
+    away: `${awayScore}`
+  };
 }
 
 /**
- * 💡 LINE Messaging API 用テキスト生成
- * 現場の興奮をそのままグループへ届けます。
+ * 💡 実戦用 LINE レポート生成（アップグレード版）
  */
 export function formatMatchLineReport(
   homeTeamName: string,
   awayTeamName: string,
   scores: { home: number; away: number },
-  inning: string, // 例: "5回裏", "9回裏(サヨナラ)"
-  action: string, // 例: "佐藤選手のタイムリーで逆転！"
-  status: 'live' | 'finished',
-  isWalkOff: boolean = false
+  inningDetail: { number: number; isBottom: boolean }, // 例: { number: 9, isBottom: true }
+  action: string,
+  status: 'live' | 'finished'
 ): string {
-  const homeScoreStr = formatScoreDisplay(scores.home, isWalkOff);
-  const awayScoreStr = formatScoreDisplay(scores.away);
+  // 🌟 自動でサヨナラ判定を実行
+  const scoreStr = formatScoreWithX(
+    scores.home,
+    scores.away,
+    inningDetail.number,
+    inningDetail.isBottom,
+    status
+  );
   
-  // 試合終了時は「終了」、進行中は「速報」と銘打つ
   const title = status === 'finished' ? "【iScoreCloud 試合終了】" : "【iScoreCloud 速報】";
-  
-  // 勝敗に応じたエモジの投げ分け
-  const emoji = scores.home > scores.away ? "🏆" : (status === 'finished' ? "⏹️" : "⚾️");
+  const emoji = status === 'finished' ? "⏹️" : "⚾️";
+  const inningText = `${inningDetail.number}回${inningDetail.isBottom ? '裏' : '表'}`;
 
-  // メッセージの組み立て（LINE上での視認性を考慮した改行）
-  const text = 
+  return (
     `${title}\n` +
-    `${emoji} ${homeTeamName} ${homeScoreStr} - ${awayScoreStr} ${awayTeamName}\n` +
+    `${emoji} ${homeTeamName} ${scoreStr.home} - ${scoreStr.away} ${awayTeamName}\n` +
     `------------------\n` +
-    `状況: ${inning}\n` +
+    `状況: ${inningText}\n` +
     `${action}\n\n` +
-    `#iScoreCloud #Matches`;
-
-  return text; // Messaging API に送るため、デコード済みの生文字列
+    `#iScoreCloud #Matches`
+  );
 }
