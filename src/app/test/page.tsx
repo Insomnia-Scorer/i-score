@@ -1,29 +1,24 @@
 // filepath: src/app/test/page.tsx
 /* 💡 iScoreCloud 規約: 
-   1. 他のAPIと足並みを揃え、リソースID (teamId) はPOSTボディで送信する。
-   2. 脱・グラスモーフィズム。現場視認性を最優先したソリッドUI。
-   3. APIユニットの責務分離規約に基づき、更新専用エンドポイント /update-line を使用。 */
+   1. 現場での最終確認用として、実際の LINE Push 送信をトリガーするボタンを配置。
+   2. 成功/失敗のステータスを即座にフィードバックする。 */
 
 "use client";
 
 import React, { useState } from "react";
 import { LineSettingsCard } from "@/components/features/teams/line-settings-card";
 import { TeamSettingsUpdatePayload, TeamSettingsUpdateResponse } from "@/api/teams/update-settings";
+import { Button } from "@/components/ui/button"; // 🌟 ボタンをインポート
+import { SendHorizontal } from "lucide-react"; // 🌟 アイコン追加
 
 export default function LineIntegrationTestPage() {
   const [status, setStatus] = useState<string | null>(null);
-
-  // 💡 テスト用 ID (DBに存在するチームIDを指定してください)
+  const [isPushing, setIsPushing] = useState(false);
   const testTeamId = "test-team-001";
 
-  /**
-   * 🌟 保存処理ハンドラ
-   * URLパラメータではなく、ボディに全ての情報を詰め込む「iScoreCloud標準プロトコル」
-   */
+  // --- 既存の保存処理 ---
   const handleSave = async (settings: { lineGroupId: string; isAutoReportEnabled: boolean }) => {
     setStatus("⏳ D1へ送信中...");
-
-    // 💡 規約: Payload型に基づきボディを作成
     const payload: TeamSettingsUpdatePayload = {
       teamId: testTeamId,
       lineGroupId: settings.lineGroupId,
@@ -31,25 +26,44 @@ export default function LineIntegrationTestPage() {
     };
 
     try {
-      // 💡 規約: パスは固定 (/api/teams/update-line)
       const res = await fetch("/api/teams/update-line", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      // 💡 規約: レスポンスを明示的に型キャスト
       const data = (await res.json()) as TeamSettingsUpdateResponse;
-
       if (data.success) {
-        setStatus(`✅ 保存完了! (Updated: ${data.data?.updatedId})`);
+        setStatus(`✅ 保存完了! (ID: ${data.data?.updatedId})`);
       } else {
-        // API側で「no such column」ヒントを出すようにしているので、そのまま表示
         setStatus(`❌ エラー: ${data.error}`);
       }
     } catch (err) {
-      setStatus("❌ ネットワークエラー: Workerの起動またはエンドポイントを確認してください");
-      console.error(err);
+      setStatus("❌ ネットワークエラーが発生しました");
+    }
+  };
+
+  // --- 🌟 追加：LINE送信テスト処理 ---
+  const handleTestPush = async () => {
+    setIsPushing(true);
+    setStatus("🚀 LINEへ速報を射出中...");
+
+    try {
+      const res = await fetch("/api/teams/test-push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: testTeamId }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setStatus("🎉 LINE着弾成功！スマホを確認してください！");
+      } else {
+        setStatus(`❌ 送信失敗: ${data.error}`);
+      }
+    } catch (err) {
+      setStatus("❌ 送信エラー: Workerのルーティングを確認してください");
+    } finally {
+      setIsPushing(false);
     }
   };
 
@@ -60,21 +74,33 @@ export default function LineIntegrationTestPage() {
           LINE Integration
         </h1>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full border border-primary/20 inline-block">
-          D1 POST Body Protocol
+          Messaging API / Push Test
         </p>
       </header>
 
       <main className="space-y-6">
-        {/* 現場視認性重視のカード */}
-        <LineSettingsCard
+        {/* 設定カード */}
+        <LineSettingsCard 
           teamId={testTeamId}
-          initialGroupId=""
+          initialGroupId="" 
           initialIsEnabled={false}
-          // @ts-ignore: テスト用。LineSettingsCard側のonSave型定義に合わせて調整
           onSave={handleSave}
         />
 
-        {/* 実行結果のソリッド表示エリア */}
+        {/* 🌟 速報テスト送信ボタン */}
+        <div className="pt-4">
+          <Button 
+            onClick={handleTestPush}
+            disabled={isPushing}
+            variant="outline"
+            className="w-full h-16 rounded-[25px] border-2 border-primary text-primary font-black italic gap-3 hover:bg-primary/5 transition-all"
+          >
+            <SendHorizontal className={`w-6 h-6 ${isPushing ? "animate-ping" : ""}`} />
+            {isPushing ? "SENDING..." : "LINE速報テスト送信"}
+          </Button>
+        </div>
+
+        {/* ステータス表示 */}
         {status && (
           <div className="bg-secondary p-5 rounded-[30px] border-2 border-border animate-in fade-in slide-in-from-bottom-2 shadow-sm">
             <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">System Status</p>
