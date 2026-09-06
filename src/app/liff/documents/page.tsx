@@ -425,6 +425,7 @@ export default function LiffDocumentsPage() {
 
   const categories = [
     { id: "all", label: "すべて" },
+    { id: "match", label: "大会・試合" },
     { id: "rules", label: "規約・会則" },
     { id: "manual", label: "配車・当番" },
     { id: "equipment", label: "用具・服装" },
@@ -980,6 +981,7 @@ export default function LiffDocumentsPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="rules">規約・会則</option>
+                    <option value="match">大会・試合</option>
                     <option value="manual">配車・当番</option>
                     <option value="equipment">用具・服装</option>
                     <option value="trip">遠征・合宿</option>
@@ -1161,6 +1163,7 @@ export default function LiffDocumentsPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="rules">規約・会則</option>
+                    <option value="match">大会・試合</option>
                     <option value="manual">配車・当番</option>
                     <option value="equipment">用具・服装</option>
                     <option value="trip">遠征・合宿</option>

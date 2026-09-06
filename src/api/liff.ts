@@ -1659,6 +1659,19 @@ app.get("/documents", async (c) => {
       scope: "organization",
       scopeLabel: "チーム全体",
     },
+    {
+      id: "demo-doc-8",
+      title: "2026年度 連盟春季大会 トーナメント組み合わせ表・大会要項",
+      category: "match",
+      categoryLabel: "大会・試合",
+      fileType: "PDF",
+      fileSize: "1.4 MB",
+      updatedAt: "2026/04/15",
+      description: "市少年野球連盟主催 春季公式戦トーナメント組み合わせ、試合会場・審判割当および大会規定です。",
+      fileUrl: "https://example.com/demo-tournament.pdf",
+      scope: "organization",
+      scopeLabel: "チーム全体",
+    },
   ];
 
   try {
@@ -1699,6 +1712,8 @@ app.get("/documents", async (c) => {
       .all();
 
     const categoryLabels: Record<string, string> = {
+      match: "大会・試合",
+      tournament: "大会・試合",
       rules: "規約・会則",
       manual: "配車・当番",
       equipment: "用具・服装",
