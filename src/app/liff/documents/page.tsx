@@ -24,6 +24,7 @@ import {
   Eye,
   ImageIcon,
   Download,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface TeamDocument {
@@ -46,6 +47,7 @@ export default function LiffDocumentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedScope, setSelectedScope] = useState<"all" | "organization" | "team">("all");
+  const [selectedFileType, setSelectedFileType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // 新規登録モーダル用ステート
@@ -118,9 +120,23 @@ export default function LiffDocumentsPage() {
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    if (["xls", "xlsx", "csv"].includes(ext)) setNewFileType("XLSX");
-    else if (["doc", "docx"].includes(ext)) setNewFileType("DOCX");
-    else if (["png", "jpg", "jpeg", "webp"].includes(ext)) setNewFileType("IMG");
+    const isExcel =
+      ["xls", "xlsx", "csv", "xlsm"].includes(ext) ||
+      file.type.includes("sheet") ||
+      file.type.includes("excel") ||
+      file.type.includes("csv");
+    const isWord =
+      ["doc", "docx"].includes(ext) || file.type.includes("word");
+    const isImg =
+      ["png", "jpg", "jpeg", "webp", "gif"].includes(ext) ||
+      file.type.startsWith("image/");
+    const isPpt =
+      ["ppt", "pptx"].includes(ext) || file.type.includes("presentation");
+
+    if (isExcel) setNewFileType("XLSX");
+    else if (isWord) setNewFileType("DOCX");
+    else if (isImg) setNewFileType("IMG");
+    else if (isPpt) setNewFileType("PPTX");
     else setNewFileType("PDF");
   };
 
@@ -131,9 +147,23 @@ export default function LiffDocumentsPage() {
     setEditSelectedFile(file);
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    if (["xls", "xlsx", "csv"].includes(ext)) setEditFileType("XLSX");
-    else if (["doc", "docx"].includes(ext)) setEditFileType("DOCX");
-    else if (["png", "jpg", "jpeg", "webp"].includes(ext)) setEditFileType("IMG");
+    const isExcel =
+      ["xls", "xlsx", "csv", "xlsm"].includes(ext) ||
+      file.type.includes("sheet") ||
+      file.type.includes("excel") ||
+      file.type.includes("csv");
+    const isWord =
+      ["doc", "docx"].includes(ext) || file.type.includes("word");
+    const isImg =
+      ["png", "jpg", "jpeg", "webp", "gif"].includes(ext) ||
+      file.type.startsWith("image/");
+    const isPpt =
+      ["ppt", "pptx"].includes(ext) || file.type.includes("presentation");
+
+    if (isExcel) setEditFileType("XLSX");
+    else if (isWord) setEditFileType("DOCX");
+    else if (isImg) setEditFileType("IMG");
+    else if (isPpt) setEditFileType("PPTX");
     else setEditFileType("PDF");
   };
 
@@ -144,7 +174,10 @@ export default function LiffDocumentsPage() {
     setEditCategory(doc.category);
     setEditScope(doc.scope);
     setEditFileUrl(doc.fileUrl);
-    setEditFileType(doc.fileType);
+    const isExcelDoc = doc.fileType === "XLSX" || Boolean(doc.fileUrl.match(/\.(xlsx?|csv|xlsm)($|\?)/i));
+    const isDocxDoc = doc.fileType === "DOCX" || Boolean(doc.fileUrl.match(/\.docx?($|\?)/i));
+    const isImgDoc = doc.fileType === "IMG" || Boolean(doc.fileUrl.match(/\.(png|jpe?g|webp|gif)($|\?)/i));
+    setEditFileType(isExcelDoc ? "XLSX" : isDocxDoc ? "DOCX" : isImgDoc ? "IMG" : (doc.fileType || "PDF"));
     setEditFileSize(doc.fileSize);
     setEditDescription(doc.description || "");
     setEditUploadMode("current");
@@ -404,10 +437,22 @@ export default function LiffDocumentsPage() {
   const filteredDocs = documents.filter((doc) => {
     const matchesCategory = selectedCategory === "all" || doc.category === selectedCategory;
     const matchesScope = selectedScope === "all" || doc.scope === selectedScope;
+    const isExcelDoc = doc.fileType === "XLSX" || Boolean(doc.fileUrl.match(/\.(xlsx?|csv|xlsm)($|\?)/i));
+    const isPdfDoc = doc.fileType === "PDF" || Boolean(doc.fileUrl.match(/\.pdf($|\?)/i));
+    const isWordDoc = doc.fileType === "DOCX" || Boolean(doc.fileUrl.match(/\.docx?($|\?)/i));
+    const isImgDoc = doc.fileType === "IMG" || Boolean(doc.fileUrl.match(/\.(png|jpe?g|webp|gif)($|\?)/i));
+
+    const matchesFileType =
+      selectedFileType === "all" ||
+      (selectedFileType === "XLSX" && isExcelDoc) ||
+      (selectedFileType === "PDF" && isPdfDoc) ||
+      (selectedFileType === "DOCX" && isWordDoc) ||
+      (selectedFileType === "IMG" && isImgDoc);
+
     const matchesSearch =
       doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesScope && matchesSearch;
+    return matchesCategory && matchesScope && matchesFileType && matchesSearch;
   });
 
   return (
@@ -507,6 +552,35 @@ export default function LiffDocumentsPage() {
           </button>
         </div>
 
+        {/* 形式フィルター (すべて / Excel / PDF / Word / 画像) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-4 px-4 scrollbar-none">
+          {[
+            { id: "all", label: "すべての形式", icon: FileText },
+            { id: "XLSX", label: "Excel (表計算)", icon: FileSpreadsheet, activeCls: "bg-emerald-600 text-white shadow-xs" },
+            { id: "PDF", label: "PDF", icon: FileText, activeCls: "bg-rose-600 text-white shadow-xs" },
+            { id: "DOCX", label: "Word (文書)", icon: FileText, activeCls: "bg-blue-600 text-white shadow-xs" },
+            { id: "IMG", label: "画像", icon: ImageIcon, activeCls: "bg-purple-600 text-white shadow-xs" },
+          ].map((type) => {
+            const Icon = type.icon;
+            const isSelected = selectedFileType === type.id;
+            return (
+              <button
+                key={type.id}
+                type="button"
+                onClick={() => setSelectedFileType(type.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? (type.activeCls || "bg-foreground text-background shadow-xs")
+                    : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{type.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* カテゴリフィルター */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
           {categories.map((cat) => (
@@ -514,7 +588,7 @@ export default function LiffDocumentsPage() {
               key={cat.id}
               type="button"
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer ${
                 selectedCategory === cat.id
                   ? "bg-primary text-primary-foreground shadow-xs"
                   : "bg-card border border-border text-muted-foreground hover:text-foreground"
@@ -539,56 +613,87 @@ export default function LiffDocumentsPage() {
             <div className="space-y-1">
               <h4 className="text-sm font-black text-foreground">登録されている資料はありません</h4>
               <p className="text-xs font-bold text-muted-foreground">
-                上の「資料を追加」ボタンからPDFや遠征のしおりを直接アップロードできます。
+                上の「資料を追加」ボタンからExcel・PDF・写真を直接アップロードできます。
               </p>
             </div>
           </div>
         ) : (
           /* 資料カード一覧 */
           <div className="space-y-3">
-            {filteredDocs.map((doc) => (
-              <div
-                key={doc.id}
-                className="bg-card border border-border rounded-3xl p-4 shadow-xs space-y-3 hover:border-primary/40 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <span className="w-9 h-9 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 font-black text-xs">
-                      <FileText className="w-4 h-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* スコープバッジ */}
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 ${
-                            doc.scope === "organization"
-                              ? "bg-primary/10 text-primary border border-primary/20"
-                              : "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-                          }`}
-                        >
-                          {doc.scope === "organization" ? (
-                            <Building2 className="w-3 h-3" />
-                          ) : (
-                            <Users2 className="w-3 h-3" />
-                          )}
-                          <span>{doc.scopeLabel}</span>
-                        </span>
+            {filteredDocs.map((doc) => {
+              const isExcel = doc.fileType === "XLSX" || Boolean(doc.fileUrl.match(/\.(xlsx?|csv|xlsm)($|\?)/i));
+              const isWord = doc.fileType === "DOCX" || Boolean(doc.fileUrl.match(/\.docx?($|\?)/i));
+              const isImg = doc.fileType === "IMG" || Boolean(doc.fileUrl.match(/\.(png|jpe?g|webp|gif)($|\?)/i));
 
-                        <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-black">
-                          {doc.categoryLabel}
-                        </span>
+              return (
+                <div
+                  key={doc.id}
+                  className="bg-card border border-border rounded-3xl p-4 shadow-xs space-y-3 hover:border-primary/40 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <span
+                        className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 font-black text-xs ${
+                          isExcel
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : isWord
+                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                            : isImg
+                            ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                        }`}
+                      >
+                        {isExcel ? (
+                          <FileSpreadsheet className="w-4 h-4" />
+                        ) : isImg ? (
+                          <ImageIcon className="w-4 h-4" />
+                        ) : (
+                          <FileText className="w-4 h-4" />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* スコープバッジ */}
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 ${
+                              doc.scope === "organization"
+                                ? "bg-primary/10 text-primary border border-primary/20"
+                                : "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                            }`}
+                          >
+                            {doc.scope === "organization" ? (
+                              <Building2 className="w-3 h-3" />
+                            ) : (
+                              <Users2 className="w-3 h-3" />
+                            )}
+                            <span>{doc.scopeLabel}</span>
+                          </span>
+
+                          <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-black">
+                            {doc.categoryLabel}
+                          </span>
+                        </div>
+
+                        <h3 className="text-sm font-black text-foreground mt-1.5 tracking-tight leading-snug">
+                          {doc.title}
+                        </h3>
                       </div>
-
-                      <h3 className="text-sm font-black text-foreground mt-1.5 tracking-tight leading-snug">
-                        {doc.title}
-                      </h3>
                     </div>
-                  </div>
 
-                  <span className="px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[10px] font-black shrink-0 border border-rose-500/20">
-                    {doc.fileType}
-                  </span>
-                </div>
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-black shrink-0 border ${
+                        isExcel
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          : isWord
+                          ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                          : isImg
+                          ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/20"
+                          : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                      }`}
+                    >
+                      {isExcel ? "Excel" : isWord ? "Word" : isImg ? "画像" : doc.fileType}
+                    </span>
+                  </div>
 
                 {doc.description && (
                   <p className="text-xs text-muted-foreground font-medium leading-relaxed">
@@ -625,7 +730,8 @@ export default function LiffDocumentsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>
@@ -752,7 +858,7 @@ export default function LiffDocumentsPage() {
                       id="create-doc-file-input"
                       ref={fileInputRef}
                       onChange={handleFileChange}
-                      accept="application/pdf,image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp"
+                      accept=".xlsx,.xls,.xlsm,.csv,.pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel.sheet.binary.macroEnabled.12,text/csv,application/csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*"
                       className="sr-only"
                     />
 
@@ -775,7 +881,7 @@ export default function LiffDocumentsPage() {
                             setSelectedFile(null);
                             if (fileInputRef.current) fileInputRef.current.value = "";
                           }}
-                          className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
+                          className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -789,10 +895,10 @@ export default function LiffDocumentsPage() {
                           <UploadCloud className="w-5 h-5" />
                         </div>
                         <span className="text-xs font-bold text-foreground">
-                          ここをタップしてPDF・写真を選択
+                          ここをタップしてExcel・PDF・写真を選択
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          PDF, Word, Excel, 画像ファイルに対応
+                          Excel (.xlsx, .xls), PDF, Word, 画像に対応
                         </span>
                       </label>
                     )}
@@ -815,6 +921,40 @@ export default function LiffDocumentsPage() {
                     </div>
                   </div>
                 )}
+
+                {/* ファイル形式 / 種別選択 */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-foreground">
+                    ファイル形式 / 種類 <span className="text-destructive">*</span>
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { id: "XLSX", label: "Excel", sub: "表計算", icon: FileSpreadsheet, color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/40" },
+                      { id: "PDF", label: "PDF", sub: "文書", icon: FileText, color: "text-rose-600 bg-rose-500/10 border-rose-500/40" },
+                      { id: "DOCX", label: "Word", sub: "書類", icon: FileText, color: "text-blue-600 bg-blue-500/10 border-blue-500/40" },
+                      { id: "IMG", label: "画像", sub: "写真", icon: ImageIcon, color: "text-purple-600 bg-purple-500/10 border-purple-500/40" },
+                    ].map((fmt) => {
+                      const isSelected = newFileType === fmt.id;
+                      const Icon = fmt.icon;
+                      return (
+                        <button
+                          key={fmt.id}
+                          type="button"
+                          onClick={() => setNewFileType(fmt.id)}
+                          className={`p-2 rounded-2xl border text-center transition-all flex flex-col items-center gap-0.5 cursor-pointer ${
+                            isSelected
+                              ? `${fmt.color} border-current ring-2 ring-current/25 shadow-xs font-black`
+                              : "bg-background border-border text-muted-foreground hover:text-foreground font-bold"
+                          }`}
+                        >
+                          <Icon className="w-4 h-4 mb-0.5" />
+                          <span className="text-xs leading-none">{fmt.label}</span>
+                          <span className="text-[9px] opacity-70 leading-none">{fmt.sub}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 {/* 資料タイトル */}
                 <div className="space-y-1.5">
@@ -964,6 +1104,40 @@ export default function LiffDocumentsPage() {
                   </div>
                 </div>
 
+                {/* ファイル形式 / 種別選択 (編集) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-foreground">
+                    ファイル形式 / 種類 <span className="text-destructive">*</span>
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { id: "XLSX", label: "Excel", sub: "表計算", icon: FileSpreadsheet, color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/40" },
+                      { id: "PDF", label: "PDF", sub: "文書", icon: FileText, color: "text-rose-600 bg-rose-500/10 border-rose-500/40" },
+                      { id: "DOCX", label: "Word", sub: "書類", icon: FileText, color: "text-blue-600 bg-blue-500/10 border-blue-500/40" },
+                      { id: "IMG", label: "画像", sub: "写真", icon: ImageIcon, color: "text-purple-600 bg-purple-500/10 border-purple-500/40" },
+                    ].map((fmt) => {
+                      const isSelected = editFileType === fmt.id;
+                      const Icon = fmt.icon;
+                      return (
+                        <button
+                          key={fmt.id}
+                          type="button"
+                          onClick={() => setEditFileType(fmt.id)}
+                          className={`p-2 rounded-2xl border text-center transition-all flex flex-col items-center gap-0.5 cursor-pointer ${
+                            isSelected
+                              ? `${fmt.color} border-current ring-2 ring-current/25 shadow-xs font-black`
+                              : "bg-background border-border text-muted-foreground hover:text-foreground font-bold"
+                          }`}
+                        >
+                          <Icon className="w-4 h-4 mb-0.5" />
+                          <span className="text-xs leading-none">{fmt.label}</span>
+                          <span className="text-[9px] opacity-70 leading-none">{fmt.sub}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* 資料タイトル */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-black text-foreground">
@@ -1003,7 +1177,7 @@ export default function LiffDocumentsPage() {
                     <button
                       type="button"
                       onClick={() => setEditUploadMode("current")}
-                      className={`py-1.5 rounded-lg text-[11px] font-black transition-all ${
+                      className={`py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
                         editUploadMode === "current"
                           ? "bg-card text-foreground shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
@@ -1014,7 +1188,7 @@ export default function LiffDocumentsPage() {
                     <button
                       type="button"
                       onClick={() => setEditUploadMode("file")}
-                      className={`py-1.5 rounded-lg text-[11px] font-black transition-all ${
+                      className={`py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
                         editUploadMode === "file"
                           ? "bg-card text-foreground shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
@@ -1025,7 +1199,7 @@ export default function LiffDocumentsPage() {
                     <button
                       type="button"
                       onClick={() => setEditUploadMode("url")}
-                      className={`py-1.5 rounded-lg text-[11px] font-black transition-all ${
+                      className={`py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
                         editUploadMode === "url"
                           ? "bg-card text-foreground shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
@@ -1042,7 +1216,7 @@ export default function LiffDocumentsPage() {
                         id="edit-doc-file-input"
                         ref={editFileInputRef}
                         onChange={handleEditFileChange}
-                        accept="application/pdf,image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp"
+                        accept=".xlsx,.xls,.xlsm,.csv,.pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel.sheet.binary.macroEnabled.12,text/csv,application/csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*"
                         className="sr-only"
                       />
                       {editSelectedFile ? (
@@ -1059,7 +1233,7 @@ export default function LiffDocumentsPage() {
                               setEditSelectedFile(null);
                               if (editFileInputRef.current) editFileInputRef.current.value = "";
                             }}
-                            className="p-1 text-muted-foreground hover:text-foreground"
+                            className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -1071,7 +1245,7 @@ export default function LiffDocumentsPage() {
                         >
                           <UploadCloud className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                           <span className="text-xs font-bold text-foreground">
-                            新しいファイルを選択
+                            新しいExcel・PDF・写真を選択
                           </span>
                         </label>
                       )}
@@ -1157,8 +1331,18 @@ export default function LiffDocumentsPage() {
               {/* モーダルヘッダー */}
               <div className="flex items-center justify-between p-4 border-b border-border/50 bg-card">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    {previewDoc.fileType === "IMG" || previewDoc.fileUrl.startsWith("data:image/") ? (
+                  <span
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      previewDoc.fileType === "XLSX" || previewDoc.fileUrl.match(/\.(xlsx?|csv|xlsm)($|\?)/i)
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : previewDoc.fileType === "IMG" || previewDoc.fileUrl.startsWith("data:image/")
+                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                        : "bg-primary/10 text-primary"
+                    }`}
+                  >
+                    {previewDoc.fileType === "XLSX" || previewDoc.fileUrl.match(/\.(xlsx?|csv|xlsm)($|\?)/i) ? (
+                      <FileSpreadsheet className="w-4 h-4" />
+                    ) : previewDoc.fileType === "IMG" || previewDoc.fileUrl.startsWith("data:image/") ? (
                       <ImageIcon className="w-4 h-4" />
                     ) : (
                       <FileText className="w-4 h-4" />
@@ -1191,7 +1375,7 @@ export default function LiffDocumentsPage() {
                   <button
                     type="button"
                     onClick={() => setPreviewDoc(null)}
-                    className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                    className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1220,6 +1404,56 @@ export default function LiffDocumentsPage() {
                       title={previewDoc.title}
                       className="w-full h-full rounded-2xl border border-border shadow-xs bg-card"
                     />
+                  </div>
+                ) : previewDoc.fileType === "XLSX" || previewDoc.fileUrl.match(/\.(xlsx?|csv|xlsm)($|\?)/i) ? (
+                  <div className="flex flex-col items-center justify-center py-8 px-4 text-center space-y-4 max-w-sm w-full">
+                    <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner border border-emerald-500/20">
+                      <FileSpreadsheet className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-500/20 inline-block">
+                        Excel スプレッドシート
+                      </span>
+                      <h4 className="text-sm font-black text-foreground">{previewDoc.title}</h4>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {previewDoc.description || "表計算テンプレート資料"}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-muted/60 border border-border/80 text-[11px] font-bold text-muted-foreground text-left w-full space-y-1">
+                      <p className="flex items-center gap-1.5 text-foreground">
+                        <span>💡</span>
+                        <span>ご利用方法</span>
+                      </p>
+                      <p className="text-[10px] leading-relaxed">
+                        ダウンロード後、スマートフォンやPCのExcel・Numbers・Googleスプレッドシートアプリ等で開いて閲覧・編集できます。
+                      </p>
+                    </div>
+
+                    {previewDoc.fileUrl.startsWith("http") && !previewDoc.fileUrl.includes("/api/liff/documents/files") && !previewDoc.fileUrl.includes("/api/documents/files") ? (
+                      <a
+                        href={previewDoc.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>外部スプレッドシートで開く</span>
+                      </a>
+                    ) : (
+                      <a
+                        href={previewDoc.fileUrl}
+                        download={
+                          previewDoc.title.match(/\.(xlsx?|csv|xlsm)$/i)
+                            ? previewDoc.title
+                            : `${previewDoc.title}.xlsx`
+                        }
+                        className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Excelファイルをダウンロード</span>
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">

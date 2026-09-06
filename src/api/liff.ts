@@ -1633,6 +1633,32 @@ app.get("/documents", async (c) => {
       scope: "organization",
       scopeLabel: "チーム全体",
     },
+    {
+      id: "demo-doc-6",
+      title: "2026年度 部費・合宿会計収支報告書（Excel雛形）",
+      category: "rules",
+      categoryLabel: "規約・会則",
+      fileType: "XLSX",
+      fileSize: "48 KB",
+      updatedAt: "2026/04/10",
+      description: "期ごとの部費徴収、遠征費、備品購入の収支を管理・報告するための標準エクセルテンプレートです。",
+      fileUrl: "https://example.com/demo-accounting.xlsx",
+      scope: "organization",
+      scopeLabel: "チーム全体",
+    },
+    {
+      id: "demo-doc-7",
+      title: "遠征・練習試合 配車管理・交通費精算シート（Excel）",
+      category: "manual",
+      categoryLabel: "配車・当番",
+      fileType: "XLSX",
+      fileSize: "64 KB",
+      updatedAt: "2026/05/20",
+      description: "配車当番、同乗児童、高速道路料金・ガソリン代の割り勘精算を自動計算するエクセルシートです。",
+      fileUrl: "https://example.com/demo-carpool-calc.xlsx",
+      scope: "organization",
+      scopeLabel: "チーム全体",
+    },
   ];
 
   try {
