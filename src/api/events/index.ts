@@ -126,9 +126,10 @@ app.patch('/:teamId/:eventId', async (c) => {
     if (needsLunch !== undefined) updateFields.needsLunch = Boolean(needsLunch);
     if (needsSnack !== undefined) updateFields.needsSnack = Boolean(needsSnack);
     if (status !== undefined) updateFields.status = status;
+    if (amType !== undefined) updateFields.amType = amType;
 
     // 時間のスマート計算
-    if (amTime && typeof amTime === "string") {
+    if (amTime && typeof amTime === "string" && amType !== "off") {
       const times = amTime.match(/\d{1,2}:\d{2}/g);
       if (times && times.length >= 2) {
         updateFields.startAt = new Date(`${baseDateStr}T${times[0].padStart(5, "0")}:00`);
@@ -136,12 +137,24 @@ app.patch('/:teamId/:eventId', async (c) => {
       } else if (times && times.length === 1) {
         updateFields.startAt = new Date(`${baseDateStr}T${times[0].padStart(5, "0")}:00`);
       }
+    } else if (amType === "off") {
+      updateFields.endAt = null;
+      if (pmTime && typeof pmTime === "string") {
+        const pTimes = pmTime.match(/\d{1,2}:\d{2}/g);
+        if (pTimes && pTimes.length >= 1) {
+          updateFields.startAt = new Date(`${baseDateStr}T${pTimes[0].padStart(5, "0")}:00`);
+        }
+      }
     } else if (startAt !== undefined) {
       updateFields.startAt = new Date(startAt);
       if (endAt !== undefined) updateFields.endAt = endAt ? new Date(endAt) : null;
     }
 
-    if (pmTime && typeof pmTime === "string") {
+    if (pmType === "off") {
+      updateFields.pmStartAt = null;
+      updateFields.pmEndAt = null;
+      updateFields.pmLocation = null;
+    } else if (pmTime && typeof pmTime === "string") {
       const times = pmTime.match(/\d{1,2}:\d{2}/g);
       if (times && times.length >= 2) {
         updateFields.pmStartAt = new Date(`${baseDateStr}T${times[0].padStart(5, "0")}:00`);
@@ -152,10 +165,6 @@ app.patch('/:teamId/:eventId', async (c) => {
     } else if (pmStartAt !== undefined) {
       updateFields.pmStartAt = pmStartAt ? new Date(pmStartAt) : null;
       if (pmEndAt !== undefined) updateFields.pmEndAt = pmEndAt ? new Date(pmEndAt) : null;
-    } else if (pmType === "off") {
-      updateFields.pmStartAt = null;
-      updateFields.pmEndAt = null;
-      updateFields.pmLocation = null;
     }
 
     if (pmLocation !== undefined) updateFields.pmLocation = pmLocation;

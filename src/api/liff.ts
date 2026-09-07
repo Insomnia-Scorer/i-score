@@ -847,11 +847,14 @@ app.get("/schedule", async (c) => {
         const dateStr = `${y}-${m}-${d}`;
         const wStr = ["日", "月", "火", "水", "木", "金", "土"][startDate.getDay()];
 
+        const isAmOff = ev.amType === "off";
+        const hasAm = !isAmOff;
+
         const startTimeStr = startDate.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
         const endTimeStr = ev.endAt ? new Date(ev.endAt).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }) : "";
-        const formattedTime = endTimeStr ? `${startTimeStr} 〜 ${endTimeStr}` : `${startTimeStr} 集合`;
+        const formattedAmTime = isAmOff ? "" : (endTimeStr ? `${startTimeStr} 〜 ${endTimeStr}` : `${startTimeStr} 集合`);
 
-        const hasPm = !!ev.pmStartAt || !!ev.pmLocation;
+        const hasPm = (!!ev.pmStartAt || !!ev.pmLocation);
         let pmTime = "";
         if (ev.pmStartAt) {
           const pmStartDate = new Date(ev.pmStartAt);
@@ -866,7 +869,16 @@ app.get("/schedule", async (c) => {
         const displayPmLocation = venueMap.get(rawPmLocation.trim()) || rawPmLocation;
 
         const extractedTarget = ev.targetGroup || (ev.title?.match(/\[(.*?)\]/)?.[1] || null);
-        const isMatch = ev.eventType === "match";
+        const isMatch = ev.eventType === "match" || ev.amType === "match";
+
+        let overallTime = formattedAmTime;
+        if (isAmOff && hasPm && pmTime) {
+          overallTime = pmTime;
+        } else if (hasAm && hasPm && pmTime) {
+          overallTime = `${formattedAmTime} / ${pmTime}`;
+        } else if (!overallTime) {
+          overallTime = "時間調整中";
+        }
 
         return {
           id: ev.id,
@@ -874,18 +886,19 @@ app.get("/schedule", async (c) => {
           targetGroup: extractedTarget,
           date: `${startDate.getMonth() + 1}/${startDate.getDate()}(${wStr})`,
           dateStr,
-          time: formattedTime,
+          time: overallTime,
           startAt: ev.startAt,
           endAt: ev.endAt,
-          location: displayLocation,
+          location: isAmOff ? displayPmLocation : displayLocation,
           rawLocation,
-          amTime: formattedTime,
-          amLocation: displayLocation,
+          hasAm,
+          amTime: formattedAmTime,
+          amLocation: isAmOff ? "" : displayLocation,
           pmTime,
           pmLocation: displayPmLocation,
           hasPm,
           eventType: ev.eventType || "practice",
-          amType: ev.eventType || "practice",
+          amType: isAmOff ? "off" : (ev.amType || ev.eventType || "practice"),
           pmType: hasPm ? (ev.eventType || "practice") : "off",
           dutyGroup: ev.dutyGroup || undefined,
           needsLunch: toBoolean(ev.needsLunch, isMatch || hasPm),

@@ -365,11 +365,16 @@ export default function LiffSchedulePage() {
       if (res.ok) {
         const data = await res.json() as { success: boolean; events?: ScheduleEvent[] };
         if (data.events) {
-          const normalizedEvents = data.events.map(ev => ({
-            ...ev,
-            needsLunch: ev.needsLunch === true || (ev.needsLunch as any) === 1 || (ev.needsLunch as any) === "1" || (ev.needsLunch as any) === "true",
-            needsSnack: ev.needsSnack === true || (ev.needsSnack as any) === 1 || (ev.needsSnack as any) === "1" || (ev.needsSnack as any) === "true",
-          }));
+          const normalizedEvents = data.events.map(ev => {
+            const isAmOff = ev.hasAm === false || ev.amType === "off";
+            return {
+              ...ev,
+              hasAm: !isAmOff,
+              amType: isAmOff ? ("off" as const) : (ev.amType || ev.eventType || "practice"),
+              needsLunch: ev.needsLunch === true || (ev.needsLunch as any) === 1 || (ev.needsLunch as any) === "1" || (ev.needsLunch as any) === "true",
+              needsSnack: ev.needsSnack === true || (ev.needsSnack as any) === 1 || (ev.needsSnack as any) === "1" || (ev.needsSnack as any) === "true",
+            };
+          });
 
           const map: Record<string, "present" | "absent" | "pending" | "late"> = {};
           const pGrpMap: Record<string, string> = {};
@@ -970,16 +975,18 @@ export default function LiffSchedulePage() {
                             setActiveEditGroupId("main");
                           }
 
+                          const isAmOff = ev.hasAm === false || ev.amType === "off";
+
                           setEditingEvent({ 
                             ...ev, 
                             title: (ev.title && ev.title.trim()) ? ev.title : "通常練習",
                             needsLunch: Boolean(ev.needsLunch), 
                             needsSnack: Boolean(ev.needsSnack),
                             memo: ev.memo || "",
-                            hasAm: ev.hasAm !== false && ev.amType !== "off",
-                            amType: ev.amType || ev.eventType || "practice",
-                            amTime: ev.amTime || ev.time || "08:00〜12:00",
-                            amLocation: ev.amLocation || ev.location || "",
+                            hasAm: !isAmOff,
+                            amType: isAmOff ? "off" : (ev.amType || ev.eventType || "practice"),
+                            amTime: isAmOff ? "" : (ev.amTime || ev.time || "08:00〜12:00"),
+                            amLocation: isAmOff ? "" : (ev.amLocation || ev.location || ""),
                             pmType: ev.pmType || "practice",
                             pmTime: ev.pmTime || "13:00〜17:00",
                             pmLocation: ev.pmLocation || ev.amLocation || ev.location || "",
@@ -1043,31 +1050,39 @@ export default function LiffSchedulePage() {
 
                       {/* 選択中グループの 午前・午後 スケジュール */}
                       {currentGroup && (
-                        (currentGroup.hasPm && currentGroup.pmTime) || (currentGroup.hasAm && currentGroup.hasPm) ? (
+                        (currentGroup.hasPm && currentGroup.pmTime) || (currentGroup.hasAm && currentGroup.hasPm) || currentGroup.hasPm || currentGroup.amType === "off" || currentGroup.hasAm === false ? (
                           <div className="grid grid-cols-2 gap-2">
                             {/* ☀️ 午前 */}
-                            <div className="p-2.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 flex flex-col justify-between space-y-2">
+                            <div className={`p-2.5 rounded-2xl border flex flex-col justify-between space-y-2 ${
+                              currentGroup.hasAm !== false && currentGroup.amType !== "off"
+                                ? "bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/20"
+                                : "bg-muted/30 border-border/60 opacity-75"
+                            }`}>
                               <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-black text-amber-700 dark:text-amber-300 flex items-center gap-1">
                                   <Sun className="w-3 h-3 text-amber-500" />
                                   <span>午前</span>
                                 </span>
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                                  currentGroup.amType === "match"
+                                  currentGroup.hasAm === false || currentGroup.amType === "off"
+                                    ? "bg-muted text-muted-foreground border border-border"
+                                    : currentGroup.amType === "match"
                                     ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
                                     : "bg-primary/15 text-primary border border-primary/30"
                                 }`}>
-                                  {currentGroup.amType === "match" ? "⚾ 試合" : "🏃 練習"}
+                                  {currentGroup.hasAm === false || currentGroup.amType === "off"
+                                    ? "🏖️ なし"
+                                    : currentGroup.amType === "match" ? "⚾ 試合" : "🏃 練習"}
                                 </span>
                               </div>
                               <div className="space-y-0.5">
                                 <div className="flex items-center gap-1 text-xs font-black text-foreground">
                                   <Clock className="w-3 h-3 text-amber-500 shrink-0" />
-                                  <span>{currentGroup.amTime || currentGroup.time || "08:00〜12:00"}</span>
+                                  <span>{currentGroup.hasAm === false || currentGroup.amType === "off" ? "なし (午後集合)" : (currentGroup.amTime || currentGroup.time || "08:00〜12:00")}</span>
                                 </div>
                                 <div className="flex items-center gap-1 text-[11px] font-bold text-foreground/90 truncate">
                                   <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
-                                  <span className="truncate">{currentGroup.amLocation || currentGroup.location || "グラウンド"}</span>
+                                  <span className="truncate">{currentGroup.hasAm === false || currentGroup.amType === "off" ? "—" : (currentGroup.amLocation || currentGroup.location || "グラウンド")}</span>
                                 </div>
                               </div>
                             </div>
@@ -1138,31 +1153,37 @@ export default function LiffSchedulePage() {
                     </div>
                   ) : (
                     /* ☀️🌙 午前/午後分割スケジュール（全体） */
-                    (ev.hasPm && ev.pmTime) || (ev.hasAm && ev.hasPm) ? (
+                    (ev.hasPm && ev.pmTime) || (ev.hasAm && ev.hasPm) || ev.hasPm || ev.amType === "off" || ev.hasAm === false ? (
                       <div className="grid grid-cols-2 gap-2">
                         {/* ☀️ 【午前】 */}
-                        <div className="p-2.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 flex flex-col justify-between space-y-2">
+                        <div className={`p-2.5 rounded-2xl border flex flex-col justify-between space-y-2 ${
+                          ev.hasAm !== false && ev.amType !== "off"
+                            ? "bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/20"
+                            : "bg-muted/30 border-border/60 opacity-75"
+                        }`}>
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] font-black text-amber-700 dark:text-amber-300 flex items-center gap-1">
                               <Sun className="w-3 h-3 text-amber-500" />
                               <span>午前</span>
                             </span>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                              ev.amType === "match"
+                              ev.hasAm === false || ev.amType === "off"
+                                ? "bg-muted text-muted-foreground border border-border"
+                                : ev.amType === "match"
                                 ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
                                 : "bg-primary/15 text-primary border border-primary/30"
                             }`}>
-                              {ev.amType === "match" ? "⚾ 試合" : "🏃 練習"}
+                              {ev.hasAm === false || ev.amType === "off" ? "🏖️ なし" : ev.amType === "match" ? "⚾ 試合" : "🏃 練習"}
                             </span>
                           </div>
                           <div className="space-y-0.5">
                             <div className="flex items-center gap-1 text-xs font-black text-foreground">
                               <Clock className="w-3 h-3 text-amber-500 shrink-0" />
-                              <span>{ev.amTime || ev.time || "08:00〜12:00"}</span>
+                              <span>{ev.hasAm === false || ev.amType === "off" ? "なし (午後集合)" : (ev.amTime || ev.time || "08:00〜12:00")}</span>
                             </div>
                             <div className="flex items-center gap-1 text-[11px] font-bold text-foreground/90 truncate">
                               <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
-                              <span className="truncate">{ev.amLocation || ev.location || "グラウンド"}</span>
+                              <span className="truncate">{ev.hasAm === false || ev.amType === "off" ? "—" : (ev.amLocation || ev.location || "グラウンド")}</span>
                             </div>
                           </div>
                         </div>

@@ -50,6 +50,11 @@ export async function ensureEventColumns(d1?: any) {
   } catch {}
 
   try {
+    // am_type カラムの追加（午前の活動種別、または 'off'）
+    await d1.prepare("ALTER TABLE events ADD COLUMN am_type text").run().catch(() => {});
+  } catch {}
+
+  try {
     // selected_group_id カラムの追加（出欠回答時のグループ選択）
     await d1.prepare("ALTER TABLE attendances ADD COLUMN selected_group_id text").run().catch(() => {});
   } catch {}
