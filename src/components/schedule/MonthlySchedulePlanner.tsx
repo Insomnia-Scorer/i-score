@@ -14,6 +14,7 @@ import {
   Layers, 
   X,
   Check,
+  RotateCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -276,6 +277,65 @@ export function MonthlySchedulePlanner({
     showToast(`🗑️ ${currentMonth + 1}月の選択を解除しました`);
   };
 
+  // 📋 お当番変更ハンドラー
+  const handleUpdateDuty = (dateStr: string, duty: string) => {
+    setSelectedDayItems(prev => prev.map(item => {
+      if (item.dateStr === dateStr) {
+        return { ...item, dutyGroup: duty };
+      }
+      return item;
+    }));
+  };
+
+  // 🍱 お弁当変更ハンドラー
+  const handleToggleLunch = (dateStr: string) => {
+    setSelectedDayItems(prev => prev.map(item => {
+      if (item.dateStr === dateStr) {
+        return { ...item, needsLunch: !item.needsLunch };
+      }
+      return item;
+    }));
+  };
+
+  // ⚾ 予定種別変更ハンドラー
+  const handleUpdateEventType = (dateStr: string, type: "practice" | "match" | "camp") => {
+    const titleMap: Record<string, string> = {
+      practice: "通常練習",
+      match: "公式戦・試合",
+      camp: "合宿・遠征",
+    };
+    setSelectedDayItems(prev => prev.map(item => {
+      if (item.dateStr === dateStr) {
+        return { 
+          ...item, 
+          eventType: type,
+          amType: type,
+          title: (!item.title || ["通常練習", "公式戦・試合", "合宿・遠征"].includes(item.title)) 
+            ? titleMap[type] 
+            : item.title,
+        };
+      }
+      return item;
+    }));
+  };
+
+  // 🔄 当番自動ローテーション（1班〜4班を日付順に順番に割り当て）
+  const handleAutoRotateDuties = () => {
+    const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`;
+    const dutyRotation = ["1班", "2班", "3班", "4班"];
+    let rotationIndex = 0;
+
+    setSelectedDayItems(prev => prev.map(item => {
+      if (item.dateStr.startsWith(monthPrefix)) {
+        const assignedDuty = dutyRotation[rotationIndex % dutyRotation.length];
+        rotationIndex++;
+        return { ...item, dutyGroup: assignedDuty };
+      }
+      return item;
+    }));
+    showToast(`🔄 ${currentMonth + 1}月の当番を1班〜4班のローテーションで自動割り当てしました`);
+  };
+
   // トースト表示
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -487,58 +547,212 @@ export function MonthlySchedulePlanner({
         </div>
       </div>
 
-      {/* 🌟 3. 現在表示中の月の活動日一覧（シンプル表示） */}
+      {/* 🌟 3. 現在表示中の月の活動日 ＆ 当番一覧リスト */}
       {(() => {
         const currentMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`;
         const currentMonthItems = selectedDayItems.filter(it => it.dateStr.startsWith(currentMonthPrefix));
 
         return (
-          <div className="p-4 rounded-3xl bg-card border border-border/80 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="p-4 rounded-3xl bg-card border border-border/80 shadow-xs space-y-4">
+            {/* ヘッダー */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-border/60">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
                   <Layers className="w-4 h-4 text-primary" />
-                  <span>{currentMonth + 1}月の活動日一覧</span>
+                  <span>{currentMonth + 1}月の活動日 & 当番一覧</span>
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-black">
                   {currentMonthItems.length}日
                 </span>
               </div>
 
-              <Link
-                href="/liff/schedule"
-                className="text-xs font-black text-primary hover:underline flex items-center gap-0.5"
-              >
-                <span>予定 & 出欠表へ</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
+              <div className="flex items-center gap-2 flex-wrap">
+                {currentMonthItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleAutoRotateDuties}
+                    className="py-1 px-2.5 rounded-xl bg-muted/60 hover:bg-muted text-foreground text-xs font-black border border-border/80 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                    title="1班〜4班を日付順に均等に割り当てます"
+                  >
+                    <RotateCw className="w-3 h-3 text-primary" />
+                    <span>当番を1〜4班で順繰り割当</span>
+                  </button>
+                )}
+
+                <Link
+                  href="/liff/schedule"
+                  className="text-xs font-black text-primary hover:underline flex items-center gap-0.5 ml-auto sm:ml-0"
+                >
+                  <span>予定 & 出欠表へ</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
 
             {currentMonthItems.length === 0 ? (
-              <p className="text-xs font-bold text-muted-foreground text-center py-4">
-                {currentMonth + 1}月のカレンダーの日付をタップして活動日を選択してください
-              </p>
+              <div className="py-8 text-center space-y-2">
+                <p className="text-xs font-bold text-muted-foreground">
+                  {currentMonth + 1}月のカレンダーの日付をタップして活動日を選択してください。
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSelectAllWeekends}
+                  className="py-1.5 px-3 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-black border border-primary/25 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>今月の土日を全選択</span>
+                </button>
+              </div>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {currentMonthItems.map((it) => (
-                  <div
-                    key={it.id}
-                    className="px-2.5 py-1.5 rounded-xl bg-muted/60 border border-border/80 text-xs font-black text-foreground flex items-center gap-1.5"
-                  >
-                    <span>📅 {it.dayLabel}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const [y, m, d] = it.dateStr.split("-").map(Number);
-                        handleToggleDate(new Date(y, m - 1, d));
-                      }}
-                      className="text-muted-foreground hover:text-rose-500 cursor-pointer transition-all ml-0.5"
-                      title="解除"
+              <div className="space-y-2">
+                {currentMonthItems.map((it) => {
+                  const [y, m, d] = it.dateStr.split("-").map(Number);
+                  const dObj = new Date(y, m - 1, d);
+                  const isSun = dObj.getDay() === 0;
+                  const isSat = dObj.getDay() === 6;
+
+                  return (
+                    <div
+                      key={it.id}
+                      className="p-3 sm:p-3.5 rounded-2xl bg-muted/20 hover:bg-muted/40 border border-border/80 shadow-2xs hover:border-primary/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
+                      {/* 上段 / 左側: 日付 ＆ 予定情報 */}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* 日付バッジ */}
+                        <div
+                          className={cn(
+                            "w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 font-black leading-tight border shadow-2xs",
+                            isSun
+                              ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                              : isSat
+                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                              : "bg-muted text-foreground border-border"
+                          )}
+                        >
+                          <span className="text-[10px] opacity-75">{m}/{d}</span>
+                          <span className="text-xs font-black">{weekDays[dObj.getDay()]}</span>
+                        </div>
+
+                        {/* 予定詳細 */}
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-black text-foreground">
+                              {it.title || "通常練習"}
+                            </span>
+
+                            {/* 予定タイプ切替 */}
+                            <select
+                              value={it.eventType || "practice"}
+                              onChange={(e) => handleUpdateEventType(it.dateStr, e.target.value as any)}
+                              className="text-[10.5px] font-bold px-2 py-0.5 rounded-lg bg-card border border-border/70 text-foreground cursor-pointer focus:outline-hidden"
+                            >
+                              <option value="practice">⚾ 通常練習</option>
+                              <option value="match">🏆 公式戦・試合</option>
+                              <option value="camp">🏕️ 合宿・遠征</option>
+                            </select>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-[10.5px] font-bold text-muted-foreground flex-wrap">
+                            {/* お弁当トグル */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleLunch(it.dateStr)}
+                              className={cn(
+                                "px-2 py-0.5 rounded-md text-[10px] font-black transition-all flex items-center gap-1 cursor-pointer",
+                                it.needsLunch
+                                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                                  : "bg-muted/50 text-muted-foreground hover:text-foreground line-through opacity-60"
+                              )}
+                            >
+                              <span>🍱</span>
+                              <span>{it.needsLunch ? "弁当あり" : "弁当なし"}</span>
+                            </button>
+
+                            <span>•</span>
+                            <span className="truncate max-w-[140px] text-[10px]">
+                              📍 {it.location || "球場確認中"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* モバイル時の削除ボタン */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleDate(dObj)}
+                          className="md:hidden p-1.5 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer shrink-0 ml-auto"
+                          title="活動日を解除"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* 下段 / 右側: 当番選択ボタン群 */}
+                      <div className="flex items-center justify-between md:justify-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border/50">
+                        <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60 overflow-x-auto scrollbar-none">
+                          <span className="text-[10px] font-black text-muted-foreground pl-1.5 pr-0.5 shrink-0 flex items-center gap-0.5">
+                            <span>📋</span>
+                            <span>当番:</span>
+                          </span>
+
+                          {["1班", "2班", "3班", "4班", "なし"].map((dg) => {
+                            const isCurDuty = (it.dutyGroup === dg) || (!it.dutyGroup && dg === "なし");
+                            return (
+                              <button
+                                key={dg}
+                                type="button"
+                                onClick={() => handleUpdateDuty(it.dateStr, dg)}
+                                className={cn(
+                                  "px-2.5 py-1 rounded-lg text-xs font-black transition-all active:scale-95 shrink-0 cursor-pointer",
+                                  isCurDuty
+                                    ? "bg-primary text-primary-foreground shadow-xs font-black"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                                )}
+                              >
+                                {dg}
+                              </button>
+                            );
+                          })}
+
+                          {/* その他（5班・A班など）の場合の選択表示 */}
+                          {it.dutyGroup && !["1班", "2班", "3班", "4班", "なし"].includes(it.dutyGroup) && (
+                            <span className="px-2 py-1 rounded-lg text-xs font-black bg-primary text-primary-foreground shadow-xs shrink-0">
+                              {it.dutyGroup}
+                            </span>
+                          )}
+
+                          <select
+                            value={["1班", "2班", "3班", "4班", "なし"].includes(it.dutyGroup) ? "" : it.dutyGroup}
+                            onChange={(e) => {
+                              if (e.target.value) handleUpdateDuty(it.dateStr, e.target.value);
+                            }}
+                            className="text-[10px] font-bold px-1.5 py-1 rounded-lg bg-card border border-border/80 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-hidden shrink-0"
+                            title="その他の当番を選択"
+                          >
+                            <option value="" disabled>他</option>
+                            <option value="5班">5班</option>
+                            <option value="6班">6班</option>
+                            <option value="A班">A班</option>
+                            <option value="B班">B班</option>
+                            <option value="C班">C班</option>
+                            <option value="役員当番">役員当番</option>
+                            <option value="鍵当番">鍵当番</option>
+                            <option value="救急当番">救急当番</option>
+                          </select>
+                        </div>
+
+                        {/* PC時の削除ボタン */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleDate(dObj)}
+                          className="hidden md:flex p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
+                          title="活動日を解除"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -549,10 +763,10 @@ export function MonthlySchedulePlanner({
                   type="button"
                   onClick={handleSaveAll}
                   disabled={isSaving}
-                  className="py-2.5 px-6 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-black shadow-md active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  className="py-2.5 px-6 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-black shadow-md active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
-                  <span>{isSaving ? "保存中..." : `${currentMonth + 1}月の活動日（${currentMonthItems.length}日）を一括保存`}</span>
+                  <span>{isSaving ? "保存中..." : `${currentMonth + 1}月の活動日 & 当番（${currentMonthItems.length}日）を一括保存`}</span>
                 </button>
               </div>
             )}
