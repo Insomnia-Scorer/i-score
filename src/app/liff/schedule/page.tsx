@@ -52,6 +52,7 @@ const EVENT_TYPES = [
 export interface ActivityGroup {
   id: string;
   name: string;
+  targetGroup?: string;
   hasAm?: boolean;
   amType?: "match" | "practice" | "meeting" | "camp" | "off";
   amTime?: string;
@@ -408,10 +409,14 @@ export default function LiffSchedulePage() {
       const teamId = currentTeam?.id || "demo-team";
 
       let finalEvent = { ...editingEvent };
+      finalEvent.title = (editingEvent.title && editingEvent.title.trim()) || "通常練習";
 
       // グループがある場合の親データ同期
       if (finalEvent.activityGroups && finalEvent.activityGroups.length > 0) {
         const firstGrp = finalEvent.activityGroups[0];
+        if (firstGrp.targetGroup) {
+          finalEvent.targetGroup = firstGrp.targetGroup;
+        }
         finalEvent.hasAm = firstGrp.hasAm !== false && firstGrp.amType !== "off";
         finalEvent.amType = firstGrp.amType || "practice";
         finalEvent.amTime = firstGrp.amTime || "08:00〜12:00";
@@ -881,6 +886,7 @@ export default function LiffSchedulePage() {
               const isMatch = ev.eventType === "match" || ev.amType === "match" || ev.pmType === "match" || activityGroups.some(g => g.eventType === "match");
               const displayDutyGroup = (hasActivityGroups && currentGroup?.dutyGroup) ? currentGroup.dutyGroup : ev.dutyGroup;
               const displayCarInfo = (hasActivityGroups && currentGroup?.carInfo) ? currentGroup.carInfo : ev.carInfo;
+              const displayTargetGroup = (hasActivityGroups && currentGroup?.targetGroup) ? currentGroup.targetGroup : ev.targetGroup;
               const isAttendanceOpen = !collapsedAttendance[ev.id];
               const pStatus = getEventAttendance(ev.id, ev.myStatus);
 
@@ -897,9 +903,9 @@ export default function LiffSchedulePage() {
                       </span>
 
                       {/* 🎯 対象チーム・グループバッジ（Aチーム/Bチーム/全体など） */}
-                      {ev.targetGroup && ev.targetGroup !== "全体" && (
+                      {displayTargetGroup && displayTargetGroup !== "全体" && (
                         <span className="px-2 py-0.5 rounded-lg bg-primary/15 text-primary text-[10.5px] font-black border border-primary/30 shrink-0">
-                          🏷️ {ev.targetGroup}
+                          🏷️ {displayTargetGroup}
                         </span>
                       )}
 
@@ -946,6 +952,7 @@ export default function LiffSchedulePage() {
 
                           setEditingEvent({ 
                             ...ev, 
+                            title: (ev.title && ev.title.trim()) ? ev.title : "通常練習",
                             needsLunch: Boolean(ev.needsLunch), 
                             needsSnack: Boolean(ev.needsSnack),
                             memo: ev.memo || "",
@@ -971,7 +978,7 @@ export default function LiffSchedulePage() {
 
                   {/* ② タイトル */}
                   <h3 className="text-sm font-black text-foreground tracking-tight line-clamp-1">
-                    {ev.title}
+                    {ev.title || "通常練習"}
                   </h3>
 
                   {/* ③ 活動スケジュール表示（午前・午後 ＆ グループ切り替え） */}
@@ -995,6 +1002,13 @@ export default function LiffSchedulePage() {
                             >
                               <span>{grp.amType === "match" || grp.eventType === "match" ? "⚾" : "🏃"}</span>
                               <span>{grp.name}</span>
+                              {grp.targetGroup && grp.targetGroup !== "全体" && (
+                                <span className={`px-1.5 py-0.2 rounded-md text-[9.5px] font-bold ${
+                                  isSel ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                                }`}>
+                                  {grp.targetGroup}
+                                </span>
+                              )}
                               {gCount > 0 && (
                                 <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
                                   isSel ? "bg-white/25 text-white" : "bg-muted text-foreground"
@@ -1611,9 +1625,11 @@ export default function LiffSchedulePage() {
         const curPmLocation = currentEditGroup ? (currentEditGroup.pmLocation || currentEditGroup.amLocation || "") : (editingEvent.pmLocation || editingEvent.amLocation || "");
         const curDutyGroup = currentEditGroup ? (currentEditGroup.dutyGroup || "1班") : (editingEvent.dutyGroup || "1班");
         const curCarInfo = currentEditGroup ? (currentEditGroup.carInfo || "") : (editingEvent.carInfo || "");
+        const curTargetGroup = currentEditGroup ? (currentEditGroup.targetGroup || "全体") : (editingEvent.targetGroup || "全体");
 
         // 編集ハンドラー（グループまたはメインを更新）
         const updateCurrentActivity = (updates: Partial<{
+          targetGroup: string;
           hasAm: boolean;
           amType: any;
           amTime: string;
@@ -1630,6 +1646,7 @@ export default function LiffSchedulePage() {
             setEditingEvent({
               ...editingEvent,
               activityGroups: updatedGroups,
+              ...(updates.targetGroup && currentEditGroup.id === groups[0].id ? { targetGroup: updates.targetGroup } : {}),
             });
           } else {
             setEditingEvent({
@@ -1666,45 +1683,44 @@ export default function LiffSchedulePage() {
 
               {/* モーダル本文 */}
               <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs">
-                {/* 1. タイトル & 対象チーム */}
-                <div className="space-y-3 p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs">
+                {/* 1. 予定タイトル（デフォルト: 通常練習 ＆ クイック選択） */}
+                <div className="space-y-2.5 p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-black text-foreground">予定タイトル</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-black text-foreground">予定タイトル</label>
+                      <span className="text-[10px] text-muted-foreground font-bold">デフォルト: 通常練習</span>
+                    </div>
                     <input
                       type="text"
                       value={editingEvent.title}
                       onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })}
-                      placeholder="予定タイトル（例: 秋季大会 2回戦 ＆ 午後練習）"
+                      placeholder="通常練習"
                       className="w-full px-3 py-2 rounded-xl bg-muted/30 border border-border/80 text-xs font-black text-foreground focus:outline-hidden focus:border-primary"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10.5px] font-bold text-muted-foreground">対象チーム・グループ</label>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {TARGET_GROUPS.map((tg) => {
-                        const isSel = (editingEvent.targetGroup || "全体") === tg;
-                        return (
-                          <button
-                            key={tg}
-                            type="button"
-                            onClick={() => setEditingEvent({ ...editingEvent, targetGroup: tg })}
-                            className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer ${
-                              isSel
-                                ? "bg-primary text-primary-foreground border-primary font-black shadow-xs"
-                                : "bg-card hover:bg-muted text-muted-foreground hover:text-foreground border-border/80"
-                            }`}
-                          >
-                            {tg}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  {/* タイトルの定型プリセットボタン */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                    <span className="text-[10px] font-bold text-muted-foreground shrink-0">定型:</span>
+                    {["通常練習", "公式戦・大会", "練習試合", "合宿・遠征", "ミーティング", "グラウンド整備"].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setEditingEvent({ ...editingEvent, title: preset })}
+                        className={`px-2 py-0.5 rounded-lg text-[10.5px] font-black border transition-all active:scale-95 cursor-pointer ${
+                          (editingEvent.title || "通常練習") === preset
+                            ? "bg-primary text-primary-foreground border-primary shadow-2xs"
+                            : "bg-muted/40 text-muted-foreground border-border/60 hover:text-foreground"
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* 🌟 2. グループ分けタブ ＆ グループ追加（グループ1, グループ2...で生成） */}
-                <div className="space-y-2.5 p-3.5 rounded-2xl bg-muted/40 border border-border/80">
+                {/* 🌟 2. グループ分けタブ ＆ グループ追加 ＆ 活動グループ内での対象チーム選択 */}
+                <div className="space-y-3 p-3.5 rounded-2xl bg-muted/40 border border-border/80">
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-[11px] font-black text-foreground flex items-center gap-1">
@@ -1712,7 +1728,7 @@ export default function LiffSchedulePage() {
                         <span>活動グループ（班分け）</span>
                       </label>
                       <p className="text-[10px] font-bold text-muted-foreground">
-                        別動隊がある場合はグループを追加し、タブで切り替えて午前午後を設定
+                        別動隊がある場合はグループを追加し、タブで切り替えて対象チーム・午前午後を設定
                       </p>
                     </div>
 
@@ -1725,6 +1741,7 @@ export default function LiffSchedulePage() {
                           const grp1: ActivityGroup = {
                             id: `grp_${Date.now()}_1`,
                             name: "グループ1",
+                            targetGroup: editingEvent.targetGroup || "全体",
                             hasAm: editingEvent.hasAm !== false && editingEvent.amType !== "off",
                             amType: editingEvent.amType || "match",
                             amTime: editingEvent.amTime || "08:00〜12:00",
@@ -1739,6 +1756,7 @@ export default function LiffSchedulePage() {
                           const grp2: ActivityGroup = {
                             id: `grp_${Date.now()}_2`,
                             name: "グループ2",
+                            targetGroup: "Bチーム",
                             hasAm: true,
                             amType: "practice",
                             amTime: "09:00〜12:00",
@@ -1761,6 +1779,7 @@ export default function LiffSchedulePage() {
                           const newGrp: ActivityGroup = {
                             id: `grp_${Date.now()}_${nextNum}`,
                             name: `グループ${nextNum}`,
+                            targetGroup: "全体",
                             hasAm: true,
                             amType: "practice",
                             amTime: "09:00〜12:00",
@@ -1789,8 +1808,13 @@ export default function LiffSchedulePage() {
                   {/* グループタブバー */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                     {!hasGroups ? (
-                      <div className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-xs flex items-center gap-1 shrink-0">
-                        <span>🏷️ 全体（単一活動）</span>
+                      <div className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-xs flex items-center gap-1.5 shrink-0">
+                        <span>🏷️ 単一活動（全体）</span>
+                        {curTargetGroup && curTargetGroup !== "全体" && (
+                          <span className="bg-white/20 px-1.5 py-0.2 rounded-md text-[10px]">
+                            {curTargetGroup}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       groups.map((grp) => {
@@ -1811,6 +1835,13 @@ export default function LiffSchedulePage() {
                             >
                               <span>{grp.amType === "match" ? "⚾" : "🏃"}</span>
                               <span>{grp.name}</span>
+                              {grp.targetGroup && grp.targetGroup !== "全体" && (
+                                <span className={`px-1.5 py-0.2 rounded-md text-[9.5px] font-bold ${
+                                  isSel ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                                }`}>
+                                  {grp.targetGroup}
+                                </span>
+                              )}
                             </button>
 
                             {/* グループ削除（2つ以上ある場合） */}
@@ -1842,25 +1873,64 @@ export default function LiffSchedulePage() {
                     )}
                   </div>
 
-                  {/* 選択中グループの名前編集（複数グループ時） */}
-                  {hasGroups && currentEditGroup && (
-                    <div className="pt-2 border-t border-border/60 flex items-center gap-2">
-                      <span className="text-[10.5px] font-bold text-muted-foreground shrink-0">表示名:</span>
-                      <input
-                        type="text"
-                        value={currentEditGroup.name}
-                        onChange={(e) => {
-                          const updated = groups.map(g => g.id === currentEditGroup.id ? { ...g, name: e.target.value } : g);
-                          setEditingEvent({ ...editingEvent, activityGroups: updated });
-                        }}
-                        placeholder="グループ名（例: Aチーム（試合組）/ Bチーム（練習組））"
-                        className="font-black text-xs text-foreground bg-card border border-border/80 px-3 py-1.5 rounded-xl w-full focus:outline-hidden focus:border-primary shadow-2xs"
-                      />
+                  {/* 🎯 対象チーム・グループ選択（活動グループの内側で選択！） */}
+                  <div className="pt-2 border-t border-border/60 space-y-2">
+                    {hasGroups && currentEditGroup && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10.5px] font-bold text-muted-foreground shrink-0">グループ表示名:</span>
+                        <input
+                          type="text"
+                          value={currentEditGroup.name}
+                          onChange={(e) => {
+                            const updated = groups.map(g => g.id === currentEditGroup.id ? { ...g, name: e.target.value } : g);
+                            setEditingEvent({ ...editingEvent, activityGroups: updated });
+                          }}
+                          placeholder="グループ名（例: Aチーム（試合組）/ Bチーム（練習組））"
+                          className="font-black text-xs text-foreground bg-card border border-border/80 px-3 py-1.5 rounded-xl w-full focus:outline-hidden focus:border-primary shadow-2xs"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10.5px] font-bold text-muted-foreground flex items-center gap-1">
+                          <span>🎯</span>
+                          <span>{hasGroups && currentEditGroup ? `「${currentEditGroup.name}」の対象チーム・グループ` : "対象チーム・グループ"}</span>
+                        </label>
+                        <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">
+                          選択中: {curTargetGroup}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {TARGET_GROUPS.map((tg) => {
+                          const isSel = curTargetGroup === tg;
+                          return (
+                            <button
+                              key={tg}
+                              type="button"
+                              onClick={() => {
+                                updateCurrentActivity({ targetGroup: tg });
+                                if (hasGroups && currentEditGroup && currentEditGroup.name.startsWith("グループ")) {
+                                  const updated = groups.map(g => g.id === currentEditGroup.id ? { ...g, targetGroup: tg, name: tg !== "全体" ? `${tg}組` : g.name } : g);
+                                  setEditingEvent({ ...editingEvent, activityGroups: updated });
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer ${
+                                isSel
+                                  ? "bg-primary text-primary-foreground border-primary font-black shadow-xs"
+                                  : "bg-card hover:bg-muted text-muted-foreground hover:text-foreground border-border/80"
+                              }`}
+                            >
+                              {tg}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* 🌟 3. 午前・午後の設定エリア（午前/午後の有無スイッチ ＆ 時間帯と場所の横並び） */}
+                {/* 🌟 3. 午前・午後の設定エリア（タイトルを別行にし、活動種別・時間帯・場所をすっきり配置） */}
                 <div className="space-y-3.5 p-4 rounded-2xl bg-card border border-border/80 shadow-xs">
                   {/* ☀️ 午前ブロック */}
                   <div className={`p-3.5 rounded-2xl border space-y-2.5 transition-all ${
@@ -1868,38 +1938,40 @@ export default function LiffSchedulePage() {
                       ? "bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/25"
                       : "bg-muted/20 border-border/60 opacity-80"
                   }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                          <Sun className="w-3.5 h-3.5 text-amber-500" />
-                          <span>午前の活動</span>
-                        </span>
+                    {/* 1行目: 午前の活動タイトル & ON/OFF 切替スイッチ */}
+                    <div className="flex items-center justify-between pb-2 border-b border-amber-500/20">
+                      <span className="text-xs font-black text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                        <Sun className="w-3.5 h-3.5 text-amber-500" />
+                        <span>午前の活動</span>
+                      </span>
 
-                        {/* 午前の活動 ON/OFF 切替スイッチ */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextHasAm = !curHasAm;
-                            updateCurrentActivity({
-                              hasAm: nextHasAm,
-                              amType: nextHasAm ? (curAmType === "off" ? "practice" : curAmType || "practice") : "off",
-                              amTime: nextHasAm ? (curAmTime || "08:00〜12:00") : "",
-                              amLocation: nextHasAm ? (curAmLocation || "") : "",
-                            });
-                          }}
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border transition-all cursor-pointer ${
-                            curHasAm
-                              ? "bg-amber-500 text-white border-amber-500"
-                              : "bg-muted text-muted-foreground border-border"
-                          }`}
-                        >
-                          {curHasAm ? "✓ 午前あり" : "🏖️ なし (午後集合)"}
-                        </button>
-                      </div>
+                      {/* 午前の活動 ON/OFF 切替スイッチ */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextHasAm = !curHasAm;
+                          updateCurrentActivity({
+                            hasAm: nextHasAm,
+                            amType: nextHasAm ? (curAmType === "off" ? "practice" : curAmType || "practice") : "off",
+                            amTime: nextHasAm ? (curAmTime || "08:00〜12:00") : "",
+                            amLocation: nextHasAm ? (curAmLocation || "") : "",
+                          });
+                        }}
+                        className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black border transition-all cursor-pointer ${
+                          curHasAm
+                            ? "bg-amber-500 text-white border-amber-500 shadow-xs"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {curHasAm ? "✓ 午前あり" : "🏖️ なし (午後集合)"}
+                      </button>
+                    </div>
 
-                      {/* 午前種別 */}
-                      {curHasAm && (
-                        <div className="flex items-center gap-1">
+                    {/* 2行目: 午前活動種別の選択（別行でゆったり選択） */}
+                    {curHasAm && (
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <span className="text-[10.5px] font-bold text-muted-foreground shrink-0">活動種別:</span>
+                        <div className="flex items-center gap-1 flex-wrap">
                           {EVENT_TYPES.slice(0, 3).map((t) => {
                             const isSel = curAmType === t.id;
                             return (
@@ -1907,8 +1979,8 @@ export default function LiffSchedulePage() {
                                 key={t.id}
                                 type="button"
                                 onClick={() => updateCurrentActivity({ amType: t.id as any })}
-                                className={`px-2 py-0.5 rounded-lg text-[10.5px] font-black border transition-all cursor-pointer ${
-                                  isSel ? t.color + " shadow-2xs font-black" : "bg-card border-border/70 text-muted-foreground"
+                                className={`px-2.5 py-1 rounded-xl text-xs font-black border transition-all active:scale-95 cursor-pointer ${
+                                  isSel ? t.color + " shadow-xs font-black" : "bg-card border-border/70 text-muted-foreground hover:text-foreground"
                                 }`}
                               >
                                 {t.icon} {t.label}
@@ -1916,8 +1988,8 @@ export default function LiffSchedulePage() {
                             );
                           })}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {curHasAm ? (
                       <div className="space-y-2">
@@ -1985,38 +2057,40 @@ export default function LiffSchedulePage() {
                       ? "bg-indigo-500/5 dark:bg-indigo-500/10 border-indigo-500/25"
                       : "bg-muted/20 border-border/60 opacity-80"
                   }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
-                          <Moon className="w-3.5 h-3.5 text-indigo-500" />
-                          <span>午後の活動</span>
-                        </span>
+                    {/* 1行目: 午後の活動タイトル & ON/OFF 切替スイッチ */}
+                    <div className="flex items-center justify-between pb-2 border-b border-indigo-500/20">
+                      <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                        <Moon className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>午後の活動</span>
+                      </span>
 
-                        {/* 午後の活動 ON/OFF 切替スイッチ */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextHasPm = !curHasPm || curPmType === "off";
-                            updateCurrentActivity({
-                              hasPm: nextHasPm,
-                              pmType: nextHasPm ? (curPmType === "off" ? "practice" : curPmType || "practice") : "off",
-                              pmTime: nextHasPm ? (curPmTime || "13:00〜17:00") : "",
-                              pmLocation: nextHasPm ? (curPmLocation || curAmLocation || "") : "",
-                            });
-                          }}
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border transition-all cursor-pointer ${
-                            curHasPm && curPmType !== "off"
-                              ? "bg-indigo-500 text-white border-indigo-500"
-                              : "bg-muted text-muted-foreground border-border"
-                          }`}
-                        >
-                          {curHasPm && curPmType !== "off" ? "✓ 午後あり" : "🏖️ なし (午前解散)"}
-                        </button>
-                      </div>
+                      {/* 午後の活動 ON/OFF 切替スイッチ */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextHasPm = !curHasPm || curPmType === "off";
+                          updateCurrentActivity({
+                            hasPm: nextHasPm,
+                            pmType: nextHasPm ? (curPmType === "off" ? "practice" : curPmType || "practice") : "off",
+                            pmTime: nextHasPm ? (curPmTime || "13:00〜17:00") : "",
+                            pmLocation: nextHasPm ? (curPmLocation || curAmLocation || "") : "",
+                          });
+                        }}
+                        className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black border transition-all cursor-pointer ${
+                          curHasPm && curPmType !== "off"
+                            ? "bg-indigo-500 text-white border-indigo-500 shadow-xs"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {curHasPm && curPmType !== "off" ? "✓ 午後あり" : "🏖️ なし (午前解散)"}
+                      </button>
+                    </div>
 
-                      {/* 午後種別 */}
-                      {curHasPm && curPmType !== "off" && (
-                        <div className="flex items-center gap-1">
+                    {/* 2行目: 午後活動種別の選択（別行でゆったり選択） */}
+                    {curHasPm && curPmType !== "off" && (
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <span className="text-[10.5px] font-bold text-muted-foreground shrink-0">活動種別:</span>
+                        <div className="flex items-center gap-1 flex-wrap">
                           {EVENT_TYPES.slice(0, 3).map((t) => {
                             const isSel = curPmType === t.id;
                             return (
@@ -2024,8 +2098,8 @@ export default function LiffSchedulePage() {
                                 key={t.id}
                                 type="button"
                                 onClick={() => updateCurrentActivity({ pmType: t.id as any })}
-                                className={`px-2 py-0.5 rounded-lg text-[10.5px] font-black border transition-all cursor-pointer ${
-                                  isSel ? t.color + " shadow-2xs font-black" : "bg-card border-border/70 text-muted-foreground"
+                                className={`px-2.5 py-1 rounded-xl text-xs font-black border transition-all active:scale-95 cursor-pointer ${
+                                  isSel ? t.color + " shadow-xs font-black" : "bg-card border-border/70 text-muted-foreground hover:text-foreground"
                                 }`}
                               >
                                 {t.icon} {t.label}
@@ -2033,8 +2107,8 @@ export default function LiffSchedulePage() {
                             );
                           })}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {curHasPm && curPmType !== "off" ? (
                       <div className="space-y-2">
