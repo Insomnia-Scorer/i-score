@@ -38,6 +38,7 @@ import {
   ArrowRightLeft,
   Settings2,
   X,
+  RotateCcw,
 } from "lucide-react";
 
 const TARGET_GROUPS = ["全体", "Aチーム", "Bチーム", "高学年", "低学年", "試合組", "練習組"];
@@ -411,8 +412,8 @@ export default function LiffSchedulePage() {
       let finalEvent = { ...editingEvent };
       finalEvent.title = (editingEvent.title && editingEvent.title.trim()) || "通常練習";
 
-      // グループがある場合の親データ同期
-      if (finalEvent.activityGroups && finalEvent.activityGroups.length > 0) {
+      // グループがある場合の親データ同期（2グループ以上で複数グループとして同期・保存）
+      if (finalEvent.activityGroups && finalEvent.activityGroups.length > 1) {
         const firstGrp = finalEvent.activityGroups[0];
         if (firstGrp.targetGroup) {
           finalEvent.targetGroup = firstGrp.targetGroup;
@@ -443,7 +444,23 @@ export default function LiffSchedulePage() {
           finalEvent.time = "時間調整中";
         }
       } else {
-        // 単一グループの場合
+        // 単一グループの場合（1グループだけ残っている場合はその値を親に復元・反映）
+        if (finalEvent.activityGroups && finalEvent.activityGroups.length === 1) {
+          const singleGrp = finalEvent.activityGroups[0];
+          if (singleGrp.targetGroup) finalEvent.targetGroup = singleGrp.targetGroup;
+          finalEvent.hasAm = singleGrp.hasAm !== false && singleGrp.amType !== "off";
+          finalEvent.amType = singleGrp.amType || "practice";
+          finalEvent.amTime = singleGrp.amTime || "08:00〜12:00";
+          finalEvent.amLocation = singleGrp.amLocation || "";
+          finalEvent.hasPm = Boolean(singleGrp.hasPm && singleGrp.pmType !== "off");
+          finalEvent.pmType = singleGrp.pmType || "practice";
+          finalEvent.pmTime = singleGrp.pmTime || "13:00〜17:00";
+          finalEvent.pmLocation = singleGrp.pmLocation || "";
+          finalEvent.dutyGroup = singleGrp.dutyGroup || "1班";
+          finalEvent.carInfo = singleGrp.carInfo || "";
+        }
+        finalEvent.activityGroups = undefined;
+
         const isAmActive = editingEvent.hasAm !== false && editingEvent.amType !== "off";
         const isPmActive = editingEvent.hasPm && editingEvent.pmType !== "off";
 
@@ -488,7 +505,7 @@ export default function LiffSchedulePage() {
           pmType: finalEvent.hasPm ? finalEvent.pmType : "off",
           pmTime: finalEvent.hasPm ? finalEvent.pmTime : null,
           pmLocation: finalEvent.hasPm ? finalEvent.pmLocation : null,
-          activityGroups: finalEvent.activityGroups && finalEvent.activityGroups.length > 0 ? JSON.stringify(finalEvent.activityGroups) : null,
+          activityGroups: finalEvent.activityGroups && finalEvent.activityGroups.length > 1 ? JSON.stringify(finalEvent.activityGroups) : null,
         }),
       });
 
@@ -878,7 +895,7 @@ export default function LiffSchedulePage() {
           /* 🌟 予定カード一覧（トップページの予定カードレイアウトと完全統一 ＆ 出欠欄デフォルト展開） */
           <div className="space-y-4">
             {filteredEvents.map((ev, idx) => {
-              const hasActivityGroups = Boolean(ev.activityGroups && ev.activityGroups.length > 0);
+              const hasActivityGroups = Boolean(ev.activityGroups && ev.activityGroups.length > 1);
               const activityGroups = ev.activityGroups || [];
               const activeGroupId = activeGroupTabMap[ev.id] || (activityGroups[0]?.id || "default");
               const currentGroup = activityGroups.find(g => g.id === activeGroupId) || activityGroups[0];
@@ -936,15 +953,18 @@ export default function LiffSchedulePage() {
                         type="button"
                         onClick={() => {
                           let grps: ActivityGroup[] | undefined = undefined;
-                          if (Array.isArray(ev.activityGroups) && ev.activityGroups.length > 0) {
+                          if (Array.isArray(ev.activityGroups) && ev.activityGroups.length > 1) {
                             grps = ev.activityGroups;
                           } else if (typeof ev.activityGroups === "string") {
                             try {
-                              grps = JSON.parse(ev.activityGroups);
+                              const parsed = JSON.parse(ev.activityGroups);
+                              if (Array.isArray(parsed) && parsed.length > 1) {
+                                grps = parsed;
+                              }
                             } catch {}
                           }
 
-                          if (grps && grps.length > 0) {
+                          if (grps && grps.length > 1) {
                             setActiveEditGroupId(grps[0].id);
                           } else {
                             setActiveEditGroupId("main");
@@ -1732,77 +1752,109 @@ export default function LiffSchedulePage() {
                       </p>
                     </div>
 
-                    {/* ＋ グループ追加ボタン */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!hasGroups) {
-                          // 単一から複数グループへ昇格（グループ1, グループ2）
-                          const grp1: ActivityGroup = {
-                            id: `grp_${Date.now()}_1`,
-                            name: "グループ1",
-                            targetGroup: editingEvent.targetGroup || "全体",
-                            hasAm: editingEvent.hasAm !== false && editingEvent.amType !== "off",
-                            amType: editingEvent.amType || "match",
-                            amTime: editingEvent.amTime || "08:00〜12:00",
-                            amLocation: editingEvent.amLocation || "",
-                            hasPm: editingEvent.hasPm !== undefined ? editingEvent.hasPm : true,
-                            pmType: editingEvent.pmType || "practice",
-                            pmTime: editingEvent.pmTime || "13:00〜17:00",
-                            pmLocation: editingEvent.pmLocation || "",
-                            dutyGroup: editingEvent.dutyGroup || "1班",
-                            carInfo: editingEvent.carInfo || "",
-                          };
-                          const grp2: ActivityGroup = {
-                            id: `grp_${Date.now()}_2`,
-                            name: "グループ2",
-                            targetGroup: "Bチーム",
-                            hasAm: true,
-                            amType: "practice",
-                            amTime: "09:00〜12:00",
-                            amLocation: "学校グラウンド",
-                            hasPm: false,
-                            pmType: "off",
-                            pmTime: "13:00〜17:00",
-                            pmLocation: "",
-                            dutyGroup: "2班",
-                            carInfo: "",
-                          };
-                          setEditingEvent({
-                            ...editingEvent,
-                            activityGroups: [grp1, grp2],
-                          });
-                          setActiveEditGroupId(grp1.id);
-                        } else {
-                          // 既存グループに追加（グループN）
-                          const nextNum = groups.length + 1;
-                          const newGrp: ActivityGroup = {
-                            id: `grp_${Date.now()}_${nextNum}`,
-                            name: `グループ${nextNum}`,
-                            targetGroup: "全体",
-                            hasAm: true,
-                            amType: "practice",
-                            amTime: "09:00〜12:00",
-                            amLocation: "学校グラウンド",
-                            hasPm: false,
-                            pmType: "off",
-                            pmTime: "13:00〜17:00",
-                            pmLocation: "",
-                            dutyGroup: "2班",
-                            carInfo: "",
-                          };
-                          setEditingEvent({
-                            ...editingEvent,
-                            activityGroups: [...groups, newGrp],
-                          });
-                          setActiveEditGroupId(newGrp.id);
-                        }
-                      }}
-                      className="py-1 px-3 rounded-xl bg-primary text-primary-foreground text-[10.5px] font-black shadow-xs active:scale-95 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>＋ グループ追加</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {hasGroups && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const base = currentEditGroup || groups[0];
+                            setEditingEvent({
+                              ...editingEvent,
+                              targetGroup: base?.targetGroup || editingEvent.targetGroup || "全体",
+                              hasAm: base ? (base.hasAm !== false && base.amType !== "off") : editingEvent.hasAm,
+                              amType: base?.amType || editingEvent.amType || "practice",
+                              amTime: base?.amTime || editingEvent.amTime || "08:00〜12:00",
+                              amLocation: base?.amLocation || editingEvent.amLocation || "",
+                              hasPm: base ? Boolean(base.hasPm && base.pmType !== "off") : editingEvent.hasPm,
+                              pmType: base?.pmType || editingEvent.pmType || "practice",
+                              pmTime: base?.pmTime || editingEvent.pmTime || "13:00〜17:00",
+                              pmLocation: base?.pmLocation || editingEvent.pmLocation || "",
+                              dutyGroup: base?.dutyGroup || editingEvent.dutyGroup || "1班",
+                              carInfo: base?.carInfo || editingEvent.carInfo || "",
+                              activityGroups: undefined,
+                            });
+                            setActiveEditGroupId("main");
+                          }}
+                          className="py-1 px-2.5 rounded-xl bg-card hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 text-[10.5px] font-bold border border-border/80 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                          title="グループ分けを解除して単一活動に戻す"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>単一活動に戻す</span>
+                        </button>
+                      )}
+
+                      {/* ＋ グループ追加ボタン */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!hasGroups) {
+                            // 単一から複数グループへ昇格（グループ1, グループ2）
+                            const grp1: ActivityGroup = {
+                              id: `grp_${Date.now()}_1`,
+                              name: "グループ1",
+                              targetGroup: editingEvent.targetGroup || "全体",
+                              hasAm: editingEvent.hasAm !== false && editingEvent.amType !== "off",
+                              amType: editingEvent.amType || "match",
+                              amTime: editingEvent.amTime || "08:00〜12:00",
+                              amLocation: editingEvent.amLocation || "",
+                              hasPm: editingEvent.hasPm !== undefined ? editingEvent.hasPm : true,
+                              pmType: editingEvent.pmType || "practice",
+                              pmTime: editingEvent.pmTime || "13:00〜17:00",
+                              pmLocation: editingEvent.pmLocation || "",
+                              dutyGroup: editingEvent.dutyGroup || "1班",
+                              carInfo: editingEvent.carInfo || "",
+                            };
+                            const grp2: ActivityGroup = {
+                              id: `grp_${Date.now()}_2`,
+                              name: "グループ2",
+                              targetGroup: "Bチーム",
+                              hasAm: true,
+                              amType: "practice",
+                              amTime: "09:00〜12:00",
+                              amLocation: "学校グラウンド",
+                              hasPm: false,
+                              pmType: "off",
+                              pmTime: "13:00〜17:00",
+                              pmLocation: "",
+                              dutyGroup: "2班",
+                              carInfo: "",
+                            };
+                            setEditingEvent({
+                              ...editingEvent,
+                              activityGroups: [grp1, grp2],
+                            });
+                            setActiveEditGroupId(grp1.id);
+                          } else {
+                            // 既存グループに追加（グループN）
+                            const nextNum = groups.length + 1;
+                            const newGrp: ActivityGroup = {
+                              id: `grp_${Date.now()}_${nextNum}`,
+                              name: `グループ${nextNum}`,
+                              targetGroup: "全体",
+                              hasAm: true,
+                              amType: "practice",
+                              amTime: "09:00〜12:00",
+                              amLocation: "学校グラウンド",
+                              hasPm: false,
+                              pmType: "off",
+                              pmTime: "13:00〜17:00",
+                              pmLocation: "",
+                              dutyGroup: "2班",
+                              carInfo: "",
+                            };
+                            setEditingEvent({
+                              ...editingEvent,
+                              activityGroups: [...groups, newGrp],
+                            });
+                            setActiveEditGroupId(newGrp.id);
+                          }
+                        }}
+                        className="py-1 px-3 rounded-xl bg-primary text-primary-foreground text-[10.5px] font-black shadow-xs active:scale-95 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>＋ グループ追加</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* グループタブバー */}
@@ -1844,29 +1896,46 @@ export default function LiffSchedulePage() {
                               )}
                             </button>
 
-                            {/* グループ削除（2つ以上ある場合） */}
-                            {groups.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const nextGroups = groups.filter(g => g.id !== grp.id);
+                            {/* グループ削除ボタン */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextGroups = groups.filter(g => g.id !== grp.id);
+                                if (nextGroups.length <= 1) {
+                                  // 残り1グループ以下になった場合は自動的に単一活動に復帰
+                                  const remaining = nextGroups[0];
                                   setEditingEvent({
                                     ...editingEvent,
-                                    activityGroups: nextGroups.length > 0 ? nextGroups : undefined,
+                                    targetGroup: remaining?.targetGroup || grp.targetGroup || editingEvent.targetGroup || "全体",
+                                    hasAm: remaining ? (remaining.hasAm !== false && remaining.amType !== "off") : (grp.hasAm !== false && grp.amType !== "off"),
+                                    amType: remaining?.amType || grp.amType || "practice",
+                                    amTime: remaining?.amTime || grp.amTime || "08:00〜12:00",
+                                    amLocation: remaining?.amLocation || grp.amLocation || "",
+                                    hasPm: remaining ? Boolean(remaining.hasPm && remaining.pmType !== "off") : Boolean(grp.hasPm && grp.pmType !== "off"),
+                                    pmType: remaining?.pmType || grp.pmType || "practice",
+                                    pmTime: remaining?.pmTime || grp.pmTime || "13:00〜17:00",
+                                    pmLocation: remaining?.pmLocation || grp.pmLocation || "",
+                                    dutyGroup: remaining?.dutyGroup || grp.dutyGroup || "1班",
+                                    carInfo: remaining?.carInfo || grp.carInfo || "",
+                                    activityGroups: undefined,
                                   });
-                                  if (nextGroups.length > 0) {
+                                  setActiveEditGroupId("main");
+                                } else {
+                                  setEditingEvent({
+                                    ...editingEvent,
+                                    activityGroups: nextGroups,
+                                  });
+                                  if (activeEditGroupId === grp.id) {
                                     setActiveEditGroupId(nextGroups[0].id);
-                                  } else {
-                                    setActiveEditGroupId("main");
                                   }
-                                }}
-                                className="ml-1 text-primary-foreground/70 hover:text-white dark:hover:text-rose-400 cursor-pointer p-0.5"
-                                title="グループ削除"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
+                                }
+                              }}
+                              className="ml-1 text-primary-foreground/70 hover:text-white dark:hover:text-rose-400 cursor-pointer p-0.5 rounded-full hover:bg-white/20 transition-all"
+                              title={groups.length <= 2 ? "このグループを削除して単一活動に戻す" : "グループ削除"}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           </div>
                         );
                       })
